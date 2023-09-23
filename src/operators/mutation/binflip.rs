@@ -1,0 +1,98 @@
+use crate::operators::{Genes, GeneticOperator, MutationOperator};
+use pyo3::prelude::*;
+use rand::{Rng, RngCore};
+
+#[derive(Clone, Debug)]
+pub struct BitFlipMutation {
+    pub gene_mutation_rate: f64,
+}
+
+impl BitFlipMutation {
+    pub fn new(gene_mutation_rate: f64) -> Self {
+        Self { gene_mutation_rate }
+    }
+}
+
+impl GeneticOperator for BitFlipMutation {
+    fn name(&self) -> String {
+        "BitFlipMutation".to_string()
+    }
+}
+
+impl MutationOperator for BitFlipMutation {
+    fn mutate(&self, individual: &Genes, rng: &mut dyn RngCore) -> Genes {
+        // Return a new mutated individual using mapv
+        individual.mapv(|gene| {
+            if rng.gen_bool(self.gene_mutation_rate) {
+                if gene == 0.0 {
+                    1.0
+                } else {
+                    0.0
+                }
+            } else {
+                gene
+            }
+        })
+    }
+}
+
+/// A Python class that encapsulates our Rust `BitFlipMutation`.
+#[pyclass(name = "BitFlipMutation")]
+#[derive(Clone)] // So we can clone when converting to Box<dyn MutationOperator>
+pub struct PyBitFlipMutation {
+    // The actual Rust struct
+    pub inner: BitFlipMutation,
+}
+
+#[pymethods]
+impl PyBitFlipMutation {
+    /// Python constructor: `BitFlipMutation(gene_mutation_rate=0.05)`
+    #[new]
+    fn new(gene_mutation_rate: f64) -> Self {
+        let bitflip = BitFlipMutation::new(gene_mutation_rate);
+        Self { inner: bitflip }
+    }
+
+    #[getter]
+    fn get_gene_mutation_rate(&self) -> f64 {
+        self.inner.gene_mutation_rate
+    }
+
+    #[setter]
+    fn set_gene_mutation_rate(&mut self, value: f64) {
+        self.inner.gene_mutation_rate = value;
+    }
+}
+
+// Tests module
+#[cfg(test)]
+mod tests {
+    use super::*; // Bring all items from the parent module into scope
+    use crate::genetic::PopulationGenes;
+    use numpy::ndarray::array;
+    use rand::rngs::StdRng;
+    use rand::SeedableRng;
+
+    #[test]
+    fn test_bit_flip_mutation() {
+        // Create an individual with known genes
+        let pop: PopulationGenes = array![[0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0]];
+
+        // Create a BitFlipMutation operator with a high gene mutation rate
+        let mutation_operator = BitFlipMutation::new(1.0); // Ensure all bits are flipped
+
+        // Use a fixed seed for RNG to make the test deterministic
+        let mut rng = StdRng::seed_from_u64(42);
+
+        println!("Original population: {:?}", pop);
+        // Mutate the population
+        let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
+
+        // Check that all bits have been flipped
+        let expected_pop: PopulationGenes =
+            array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
+        assert_eq!(expected_pop, mutated_pop);
+
+        println!("Mutated population: {:?}", mutated_pop);
+    }
+}

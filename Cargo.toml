@@ -1,0 +1,28 @@
+[package]
+name = "pymoors"
+version = "0.1.0"
+edition = "2021"
+
+
+[package.metadata.maturin]
+python-source = "python"
+
+[dependencies]
+pyo3 = { version = "0.23.4", features = ["extension-module", "multiple-pymethods"] }
+numpy = "0.23.0"
+rand = "0.8.5"
+num-traits = "0.2.19"
+ndarray = "0.16.1"
+enum_dispatch = "0.3.13"
+ordered-float = "4.6.0"
+rand_distr = "0.4.3"
+rayon = "1.10.0"
+
+[dev-dependencies]
+criterion = "0.5.1"
+rstest = "0.18.2"
+
+[[bench]]
+name = "benches"
+path = "benches/fds.rs"
+harness = false

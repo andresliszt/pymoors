@@ -1,0 +1,52 @@
+[build-system]
+requires = [
+    'maturin>=1,<2',
+]
+build-backend = 'maturin'
+
+[project]
+name = 'pymoors'
+requires-python = '>=3.10'
+authors = [
+    {name = 'Andrés Sandoval', email = 'andres.sndbrca@gmail.com'}
+]
+classifiers = [
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Rust',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Information Technology',
+    'License :: OSI Approved :: MIT License',
+    'Typing :: Typed',
+]
+
+dependencies = [
+    'pydantic >=2.0.0',
+    'numpy>=2.0.0',
+    "maturin",
+    "pytest",
+    "pytest-cov",
+]
+
+dynamic = [
+    'description',
+    'license',
+    'readme',
+    'version'
+]
+
+[tool.maturin]
+module-name = "pymoors._pymoors"
+bindings = "pyo3"
+python-source = "python"
+features = ["pyo3/extension-module"]
+
+[tool.black]
+color = true
+line-length = 95
+skip-string-normalization = true
+skip-magic-trailing-comma = true

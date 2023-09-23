@@ -1,0 +1,16 @@
+[build]
+rustflags = []
+
+
+[target.x86_64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+  "-C", "link-arg=-Wl,-rpath,/Users/andres.sandoval/opt/miniconda3/envs/pymoors/lib"
+]
+
+[target.aarch64-apple-darwin]
+rustflags = [
+  "-C", "link-arg=-undefined",
+  "-C", "link-arg=dynamic_lookup",
+]
