@@ -1,16 +1,14 @@
-pub mod non_dominated_sorting;
+extern crate core;
 
-pub fn add(left: usize, right: usize) -> usize {
-    left + right
-}
+mod non_dominated_sorting;
+use pyo3::prelude::*;
 
-#[cfg(test)]
-mod tests {
-    use super::*;
+pub use non_dominated_sorting::dominator::fast_non_dominated_sorting_py;
 
-    #[test]
-    fn it_works() {
-        let result = add(2, 2);
-        assert_eq!(result, 4);
-    }
+/// dominator module implemented in Rust
+#[pymodule]
+#[pyo3(name = "pymoors")]
+fn dominance(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
+    m.add_function(wrap_pyfunction!(fast_non_dominated_sorting_py, m)?)?;
+    Ok(())
 }

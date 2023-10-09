@@ -3,6 +3,12 @@ name = "pymoors"
 version = "0.1.0"
 edition = "2021"
 
+# [lib]
+# crate-type = ["cdylib"]
+# bench =  false
+
+[package.metadata.maturin]
+python-source = "python"
 
 [dependencies]
 pyo3 = { version = "0.19", features = ["extension-module"] }
