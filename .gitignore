@@ -8,6 +8,7 @@ package-lock.json
 test.py
 example.py
 
+/python/pymoors/*.so
 .cache/
 .hypothesis/
 build/

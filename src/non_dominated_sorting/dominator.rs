@@ -16,20 +16,24 @@ fn who_dominates(f1: ArrayView1<'_, f64>, f2: ArrayView1<'_, f64>) -> i8 {
     0
 }
 
-fn get_current_front(population_objectives: ArrayView2<'_, f64>) -> HashSet<usize> {
+fn get_current_front(
+    population_fitness: ArrayView2<'_, f64>,
+    remainder_indexes: &Vec<usize>,
+) -> Vec<usize> {
     // Get population size
-    let population_size = population_objectives.shape()[0];
+    let population_size = population_fitness.shape()[0];
+    // Create an empty vector for the current Pareto Front
+    let mut current_front: Vec<usize> = Vec::new();
     // Create empty container for dominated individuals. This is a vector of vectors, where
     // is_dominated[i] is a vector (possibly empty) of all individuals who dominates individual i
     // If is_dominated[i] is an empty vector, then individual i belongs to the Pareto Front
     let mut is_dominated: Vec<Vec<usize>> =
         Vec::from_iter(repeat(Vec::new()).take(population_size));
-    // Create an empty vector for the current Pareto Front
-    let mut current_front: HashSet<usize> = HashSet::new();
+
     for i in 0..population_size {
         for j in (i + 1)..population_size {
             let relation =
-                who_dominates(population_objectives.row(i), population_objectives.row(j));
+                who_dominates(population_fitness.row(i), population_fitness.row(j));
             // relation = 1 means that individual i dominates individual j
             if relation == 1 {
                 is_dominated[j].push(i)
@@ -40,23 +44,35 @@ fn get_current_front(population_objectives: ArrayView2<'_, f64>) -> HashSet<usiz
             }
         }
         if is_dominated[i].len() == 0 {
-            current_front.insert(i);
+            current_front.push(remainder_indexes[i]);
         }
     }
 
     current_front
 }
 
-fn fast_non_dominated_sorting(population_objectives: ArrayView2<f64>) -> Vec<Vec<usize>> {
+fn update_remainder_individuals<'a, 'b>(
+    remainder_individuals: &'a mut Vec<usize>,
+    current_front: &'b Vec<usize>,
+) -> &'a mut Vec<usize> {
+    let current_front_set: HashSet<usize> = current_front.iter().cloned().collect();
+    remainder_individuals.retain(|x| !current_front_set.contains(x));
+    remainder_individuals
+}
+
+fn fast_non_dominated_sorting(population_fitness: ArrayView2<f64>) -> Vec<Vec<usize>> {
     // Get population size
-    let population_size: usize = population_objectives.shape()[0];
+    let population_size: usize = population_fitness.shape()[0];
     // Container for the fronts
     let mut fronts: Vec<Vec<usize>> = Vec::new();
+    //
+    let mut initial_population_idx: Vec<usize> = Vec::from_iter(0..population_size);
     // Get the first front
-    let current_front: HashSet<usize> = get_current_front(population_objectives);
+    let current_front: Vec<usize> =
+        get_current_front(population_fitness, &initial_population_idx);
     // Check for remainder individuals that haven't been assiged yet
-    let remainder_individuals: HashSet<usize> =
-        &HashSet::from_iter(0..population_size) - &current_front;
+    let remainder_individuals: &mut Vec<usize> =
+        update_remainder_individuals(&mut initial_population_idx, &current_front);
     // push the first front
     fronts.push(Vec::from_iter(current_front));
     // if there are not more individuals finish
@@ -66,12 +82,14 @@ fn fast_non_dominated_sorting(population_objectives: ArrayView2<f64>) -> Vec<Vec
     // Iterate until all individuals are assigned
     loop {
         // filter out population objectives with individuals that haven't been assigned
-        let current_front: HashSet<usize> = get_current_front(
-            population_objectives
+        let current_front: Vec<usize> = get_current_front(
+            population_fitness
                 .select(Axis(0), &Vec::from_iter(remainder_individuals.clone()))
                 .view(),
+            &Vec::from_iter(remainder_individuals.clone()),
         );
-        let remainder_individuals: HashSet<usize> = &current_front - &remainder_individuals;
+        let remainder_individuals: &mut Vec<usize> =
+            update_remainder_individuals(remainder_individuals, &current_front);
         // Push the front
         fronts.push(Vec::from_iter(current_front));
         // Once all individuals have been assigned we break
@@ -82,9 +100,11 @@ fn fast_non_dominated_sorting(population_objectives: ArrayView2<f64>) -> Vec<Vec
     fronts
 }
 
-/// Python wrapper for domination_matrix
+/// Python wrapper for fast_non_dominated_sorting algorithm
 #[pyfunction]
 #[pyo3(name = "fast_non_dominated_sorting")]
-pub fn fast_non_dominated_sorting_py(population_objectives: PyReadonlyArray2<f64>) -> Vec<Vec<usize>> {
-    fast_non_dominated_sorting(population_objectives.as_array())
+pub fn fast_non_dominated_sorting_py(
+    population_fitness: PyReadonlyArray2<f64>,
+) -> Vec<Vec<usize>> {
+    fast_non_dominated_sorting(population_fitness.as_array())
 }

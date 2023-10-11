@@ -1,0 +1,52 @@
+[build-system]
+requires = [
+    'maturin>=1,<2',
+]
+build-backend = 'maturin'
+
+[project]
+name = 'pymoors'
+requires-python = '>=3.8'
+authors = [
+    {name = 'Andrés Sandoval', email = 'andres.sndbrca@gmail.com'}
+]
+classifiers = [
+    'Programming Language :: Python',
+    'Programming Language :: Python :: 3',
+    'Programming Language :: Python :: 3 :: Only',
+    'Programming Language :: Python :: 3.8',
+    'Programming Language :: Python :: 3.9',
+    'Programming Language :: Python :: 3.10',
+    'Programming Language :: Python :: 3.11',
+    'Programming Language :: Python :: 3.12',
+    'Programming Language :: Rust',
+    'Intended Audience :: Developers',
+    'Intended Audience :: Information Technology',
+    'License :: OSI Approved :: MIT License',
+    'Typing :: Typed',
+]
+
+dependencies = [
+    'typing-extensions >=4.6.0,!=4.7.0',
+    'numpy',
+]
+
+dynamic = [
+    'description',
+    'license',
+    'readme',
+    'version'
+]
+
+[tool.maturin]
+python-source = "python"
+module-name = "pymoors.dominance"
+bindings = 'pyo3'
+
+
+[tool.black]
+color = true
+line-length = 120
+target-version = ['py38', 'py39', 'py310']
+skip-string-normalization = true
+skip-magic-trailing-comma = true
