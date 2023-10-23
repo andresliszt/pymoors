@@ -11,7 +11,7 @@ from pymoors.dominance import fast_non_dominated_sorting
     [
         (np.array([[1, 0], [0, 1]], dtype=float), [[0, 1]]),
         (np.array([[0, 0, 0], [1, 1, 1]], dtype=float), [[0], [1]]),
-        #(np.array([[0, 0, 0], [1, 1, 0]], dtype=float), [[0], [1]]),
+        # (np.array([[0, 0, 0], [1, 1, 0]], dtype=float), [[0], [1]]),
     ],
 )
 def test_fast_non_dominated_sorting(population_fitness: np.ndarray, expected_fronts):
