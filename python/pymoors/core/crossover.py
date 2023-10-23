@@ -5,7 +5,7 @@ import numpy as np
 from pydantic import BaseModel, Field
 
 from pymoors._typing import OneDArray, TwoDArray, ThreeDArray
-from pymoors.errors import CrossoverDimensionError
+from pymoors.errors import CrossoverOutputError
 
 
 class Crossover(BaseModel, abc.ABC):
@@ -49,8 +49,8 @@ class Crossover(BaseModel, abc.ABC):
             # Set the offsprings for the current mating index
             off = self.crossover(population[:, mating_index, :])
             # Validate that the operator returns expected shape
-            if off.shape[0] != self.number_offsprings:
-                raise CrossoverDimensionError(expected_dimension=self.number_offsprings, recived_dimension=off.shape[0])
+            if off.ndim != self.number_offsprings:
+                raise CrossoverOutputError(expected_offsprings=self.number_offsprings, recived_offsprings=off.ndim)
             offsprings[:, mating_index, :] = off
 
         return offsprings

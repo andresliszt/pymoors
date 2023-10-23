@@ -31,14 +31,7 @@ class ErrorMixin(abc.ABC):
         return txt
 
 
-class OperatorDimensionError(ErrorMixin, ValueError):
+class CrossoverOutputError(ErrorMixin, ValueError):
     @property
     def msg_template(self):
-        return "Output dimension `{expected_dimension}` is expected for the Operator `{operator}`. Got `{recived_dimension}`"
-
-
-class CrossoverDimensionError(OperatorDimensionError):
-    def __init__(self, *, expected_dimension: int, recived_dimension: int) -> None:
-        super().__init__(
-            operator="crossover", expected_dimension=expected_dimension, recived_dimension=recived_dimension
-        )
+        return "Expected number of offsprings is `{expected_offsprings}` for the Crossover operator. Got `{recived_offsprings}`"
