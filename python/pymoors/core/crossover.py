@@ -14,18 +14,17 @@ class Crossover(BaseModel, abc.ABC):
     crossover_probability: float = Field(ge=0, le=1)
 
     def _selector(self, population: ThreeDArray) -> ThreeDArray:
-        """Select individual for which the crossover will be applied"""
+        """Select individuals for which the crossover will be applied"""
         return population[:, np.random.random(population.shape[1]) < self.crossover_probability]
 
     @abc.abstractmethod
     def crossover(self, parents: TwoDArray) -> Union[OneDArray, TwoDArray]:
-        """Defines single crossover operation
+        """Crossover operation beetween parents to produce offspring(s)
 
         `parents` is a 2D dimensional `numpy.ndarray` with number of rows equal
-        to `number_parents`. This method must return either a one dimensional `numpy.ndarray`
-        if `number_offsprings = 1` or a two dimensional `numpy.ndarray`
-        if `number_offsprings` is greater than 1. In the last case each
-        row is an offspring.
+        to `number_parents`. This method must return either a 1D `numpy.ndarray`
+        if `number_offsprings = 1` or a 2D `numpy.ndarray` if `number_offsprings` is greater
+        than 1. In the last case each row is an offspring.
 
         """
 
@@ -40,10 +39,13 @@ class Crossover(BaseModel, abc.ABC):
         """
         # First get individuals based on crossover probability
         population = self._selector(population)
+        if population.empty:
+            return np.empty(shape=(self.number_offsprings, 0, population.shape[-1]), dtype=population.dtype)
+
         # Get dimensions
         _, number_matings, number_variables = population.shape
         # Create a container where offsprings will be saved
-        offsprings = np.empty(shape=(self.number_offsprings, number_matings, number_variables))
+        offsprings = np.empty(shape=(self.number_offsprings, number_matings, number_variables), dtype=population.dtype)
         # Iterate over mating dimension
         for mating_index in range(number_matings):
             # Set the offsprings for the current mating index

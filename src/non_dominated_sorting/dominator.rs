@@ -32,8 +32,7 @@ fn get_current_front(
 
     for i in 0..population_size {
         for j in (i + 1)..population_size {
-            let relation =
-                who_dominates(population_fitness.row(i), population_fitness.row(j));
+            let relation = who_dominates(population_fitness.row(i), population_fitness.row(j));
             // relation = 1 means that individual i dominates individual j
             if relation == 1 {
                 is_dominated[j].push(i)
@@ -68,8 +67,7 @@ fn fast_non_dominated_sorting(population_fitness: ArrayView2<f64>) -> Vec<Vec<us
     //
     let mut initial_population_idx: Vec<usize> = Vec::from_iter(0..population_size);
     // Get the first front
-    let current_front: Vec<usize> =
-        get_current_front(population_fitness, &initial_population_idx);
+    let current_front: Vec<usize> = get_current_front(population_fitness, &initial_population_idx);
     // Check for remainder individuals that haven't been assiged yet
     let remainder_individuals: &mut Vec<usize> =
         update_remainder_individuals(&mut initial_population_idx, &current_front);
@@ -103,8 +101,6 @@ fn fast_non_dominated_sorting(population_fitness: ArrayView2<f64>) -> Vec<Vec<us
 /// Python wrapper for fast_non_dominated_sorting algorithm
 #[pyfunction]
 #[pyo3(name = "fast_non_dominated_sorting")]
-pub fn fast_non_dominated_sorting_py(
-    population_fitness: PyReadonlyArray2<f64>,
-) -> Vec<Vec<usize>> {
+pub fn fast_non_dominated_sorting_py(population_fitness: PyReadonlyArray2<f64>) -> Vec<Vec<usize>> {
     fast_non_dominated_sorting(population_fitness.as_array())
 }
