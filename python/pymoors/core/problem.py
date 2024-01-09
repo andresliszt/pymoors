@@ -4,7 +4,7 @@ from typing import final, Optional
 import numpy as np
 from pydantic import BaseModel, Field, ConfigDict, model_validator
 
-from pymoors._typing import OneDArray, TwoDArray
+from pymoors.typing import OneDArray, TwoDArray
 
 
 class Evaluation(BaseModel):
@@ -26,10 +26,16 @@ class Problem(BaseModel, abc.ABC):
     def validate_bounds(self) -> "Problem":
         if (
             self.lower_bounds.ndim is not None
-            and (self.lower_bounds.ndim != 0 or len(self.lower_bounds) != self.number_variables)
+            and (
+                self.lower_bounds.ndim != 0
+                or len(self.lower_bounds) != self.number_variables
+            )
         ) or (
             self.upper_bounds.ndim is not None
-            and (self.upper_bounds_bounds.ndim != 0 or len(self.upper_bounds_bounds) != self.number_variables)
+            and (
+                self.upper_bounds_bounds.ndim != 0
+                or len(self.upper_bounds_bounds) != self.number_variables
+            )
         ):
             raise ValueError(
                 "upper_bounds and lower_bounds if provided must be 1D `numpy.ndarray` and their "

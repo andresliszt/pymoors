@@ -4,7 +4,7 @@ from typing import final, Union, ClassVar
 import numpy as np
 from pydantic import BaseModel, Field
 
-from pymoors._typing import OneDArray, TwoDArray, ThreeDArray
+from pymoors.typing import OneDArray, TwoDArray, ThreeDArray
 from pymoors.errors import CrossoverOutputError
 
 
@@ -15,7 +15,9 @@ class Crossover(BaseModel, abc.ABC):
 
     def _selector(self, population: ThreeDArray) -> ThreeDArray:
         """Select individuals for which the crossover will be applied"""
-        return population[:, np.random.random(population.shape[1]) < self.crossover_probability]
+        return population[
+            :, np.random.random(population.shape[1]) < self.crossover_probability
+        ]
 
     @abc.abstractmethod
     def crossover(self, parents: TwoDArray) -> Union[OneDArray, TwoDArray]:
@@ -40,19 +42,28 @@ class Crossover(BaseModel, abc.ABC):
         # First get individuals based on crossover probability
         population = self._selector(population)
         if population.empty:
-            return np.empty(shape=(self.number_offsprings, 0, population.shape[-1]), dtype=population.dtype)
+            return np.empty(
+                shape=(self.number_offsprings, 0, population.shape[-1]),
+                dtype=population.dtype,
+            )
 
         # Get dimensions
         _, number_matings, number_variables = population.shape
         # Create a container where offsprings will be saved
-        offsprings = np.empty(shape=(self.number_offsprings, number_matings, number_variables), dtype=population.dtype)
+        offsprings = np.empty(
+            shape=(self.number_offsprings, number_matings, number_variables),
+            dtype=population.dtype,
+        )
         # Iterate over mating dimension
         for mating_index in range(number_matings):
             # Set the offsprings for the current mating index
             off = self.crossover(population[:, mating_index, :])
             # Validate that the operator returns expected shape
             if off.ndim != self.number_offsprings:
-                raise CrossoverOutputError(expected_offsprings=self.number_offsprings, recived_offsprings=off.ndim)
+                raise CrossoverOutputError(
+                    expected_offsprings=self.number_offsprings,
+                    recived_offsprings=off.ndim,
+                )
             offsprings[:, mating_index, :] = off
 
         return offsprings

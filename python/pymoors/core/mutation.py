@@ -4,7 +4,7 @@ from typing import final
 import numpy as np
 from pydantic import BaseModel, Field
 
-from pymoors._typing import OneDArray, TwoDArray
+from pymoors.typing import OneDArray, TwoDArray
 
 
 class Mutation(BaseModel, abc.ABC):
@@ -12,7 +12,9 @@ class Mutation(BaseModel, abc.ABC):
 
     def _selector(self, population: TwoDArray) -> TwoDArray:
         """Select individuals for which the mutation will be applied"""
-        return population[np.random.random(population.shape[0]) < self.mutation_probability]
+        return population[
+            np.random.random(population.shape[0]) < self.mutation_probability
+        ]
 
     @abc.abstractmethod
     def mutation(self, individual: OneDArray) -> OneDArray:

@@ -2,7 +2,7 @@ from typing import List
 
 from attrs import define
 
-from pymoors._typing import NDArray2x2
+from pymoors.typing import NDArray2x2
 from pymoors.population.individual import Individual
 
 

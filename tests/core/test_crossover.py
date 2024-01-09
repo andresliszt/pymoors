@@ -3,7 +3,7 @@ from typing import ClassVar
 import pytest
 import numpy as np
 
-from pymoors._typing import OneDArray, TwoDArray
+from pymoors.typing import OneDArray, TwoDArray
 from pymoors.core.crossover import Crossover
 from pymoors.errors import CrossoverOutputError
 
@@ -35,6 +35,7 @@ def test_invalid_crossover():
     population = np.ones((2, 10, 5))
     # This test should fail because mating expects two offsprings per crossover
     with pytest.raises(
-        CrossoverOutputError, match="Expected number of offsprings is `2` for the Crossover operator. Got `1`"
+        CrossoverOutputError,
+        match="Expected number of offsprings is `2` for the Crossover operator. Got `1`",
     ):
         DummyCrossover(crossover_probability=1).operate(population=population)

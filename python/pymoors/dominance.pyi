@@ -1,8 +1,8 @@
 from typing import List
 
-import numpy as np
+from pymoors.typing import TwoDArray
 
-def fast_non_dominated_sorting(population_fitness: np.ndarray) -> List[List[int]]:
+def fast_non_dominated_sorting(population_fitness: TwoDArray) -> List[List[int]]:
     """Fast Dominated Soriting Algorithm
 
     Here `population_fitness` is a matriz of shape `(n,m) = (population number, objectives number)`
