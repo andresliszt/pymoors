@@ -31,6 +31,7 @@ def test_add_variables():
     assert (x + y).expressions == [x, y]
     assert (y + x).expressions == [y, x]
     assert (x + x + y).expressions == [x, x, y]
+    assert (x + y + 10).expressions == [x, y, 10]
     # Invalid sum
     with pytest.raises(
         ValueError,

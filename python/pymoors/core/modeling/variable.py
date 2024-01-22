@@ -20,6 +20,7 @@ class Variable(Expression):
         if data.get("coefficients") is None:
             data["coefficients"] = np.ones(data["number_variables"])
         if len(data["coefficients"]) != data["number_variables"]:
+            # TODO: Complete this error msg
             raise ValueError("")
         return data
 
@@ -30,3 +31,6 @@ class Variable(Expression):
     @property
     def name(self) -> str:
         return f"var_{self.expression_id}(size={self.size})"
+
+    def decode(self) -> OneDArray:
+        return self.coefficients

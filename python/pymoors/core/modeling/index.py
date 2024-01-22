@@ -17,7 +17,7 @@ class Index(Expression):
 
     @staticmethod
     def __check_key_against_size(index: int, size: int) -> None:
-        if (index <= -size) or (0 <= index <= size):
+        if -size < index < size:
             return
         raise IndexError(
             f"index {index} is out of bounds for expression with size {size}"
@@ -30,7 +30,12 @@ class Index(Expression):
     @model_validator(mode="after")
     def validate_key_and_size(self) -> Index:
         # Check against all elements on the list
-        list(map(partial(self.__check_key_against_size, size=self.size), self.index))
+        list(
+            map(
+                partial(self.__check_key_against_size, size=self.expression.size),
+                self.index,
+            )
+        )
         return self
 
     @property
