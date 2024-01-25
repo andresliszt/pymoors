@@ -76,8 +76,16 @@ class Expression(BaseModel, abc.ABC):
 
     @helpers.cast_other_to_constant
     def __mul__(self, other: float):
-        if not isinstance(other, helpers.constant()):
+        if not any(
+            [isinstance(self, helpers.constant()), isinstance(other, helpers.constant())]
+        ):
             raise TypeError("Currently multiplication by scalar is supported only")
+
+        if not isinstance(other, Expression):
+            raise TypeError(
+                f"Trying to multiply by a non-expression object of type {type(other)}"
+            )
+
         return helpers.multiply_expression()(scalar=other.value, expression=self)
 
     def __rmul__(self, other: float):

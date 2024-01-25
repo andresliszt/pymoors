@@ -1,43 +1,48 @@
-from typing import Callable, List, Optional
+from typing import Callable, List, Union, Optional
 
 import numpy as np
-from pydantic import BaseModel
+from pydantic import BaseModel, model_validator, PrivateAttr
 
 from pymoors.typing import OneDArray, TwoDArray
-from pymoors.core.constraints.inequality import Inequality
-from pymoors.core.modeling.expression import Expression
-from pymoors.core.modeling.add import AddExpression
-from pymoors.core.modeling.constant import Constant
-from pymoors.core.modeling.variable import Variable
-
-ConstraintIndividualCallable = Callable[[OneDArray], OneDArray]
-ConstraintPopulationCallable = Callable[[TwoDArray], TwoDArray]
+from pymoors.core.constraints.linear import AffineConstraints
+from pymoors.typing import PopulationCallable
 
 
-def affine_inequality_factory(
-    coefficients: OneDArray, rhs: float
-) -> ConstraintIndividualCallable:
-    def inequality_function(ind: OneDArray) -> OneDArray:
-        return np.dot(coefficients, ind) - rhs
+class Constraints(BaseModel):
+    constraints_function: Optional[PopulationCallable]
+    affine_constraints: Optional[AffineConstraints]
 
-    return inequality_function
+    _function: PopulationCallable = PrivateAttr(default=None)
 
+    @model_validator(model="after")
+    def validate_constraints(self):
+        if self.constraints_function is None and self.affine_constraints is None:
+            raise TypeError(
+                "At least one of `constraints_function` and `affine_constraints` must be given"
+            )
+        return self
 
-class AffineConstraint(BaseModel):
-    affine_constraints: List[Inequality]
+    @property
+    def function(self) -> PopulationCallable:
+        if self._function is None:
+            if (
+                self.constraints_function is not None
+                and self.affine_constraints is not None
+            ):
+                aff_function: PopulationCallable = self.affine_constraints.function
+                custom_function: PopulationCallable = self.constraints_function
 
-    def decode_inequality(self, inequality: Inequality):
-        # expression is lhs - rhs
-        add_expression: AddExpression = inequality.expression
-        # We get the sum of all constant involved in AddExpression
-        constant: Constant = add_expression.constant
-        # Get non constant expressions
-        pure_expressions: List[Expression] = add_expression.pure_expressions
+                def _function(population: TwoDArray) -> TwoDArray:
+                    return np.concatenate(
+                        (aff_function(population), custom_function(population)), axis=1
+                    )
 
-        if len(pure_expressions) == 0:
-            # This case is when the inequality includes all the variables at the same time, e.g x >= 1
-            if isinstance(pure_expressions[0], Variable):
-                return affine_inequality_factory(coefficients=pure_expressions[0].coefficients, rhs = constant.value)
+                self._function = _function
+            elif self.constraints_function is not None:
+                self._function = self.constraints_function
+            else:
+                self._function = self.affine_constraints.function
+        return self._function
 
-    def constraints_function_from_affine(self) -> ConstraintPopulationCallable:
-        ...
+    def evaluate(self, population: TwoDArray) -> TwoDArray:
+        return self.function(population)

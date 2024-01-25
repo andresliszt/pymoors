@@ -1,4 +1,4 @@
-import functools
+from typing import Union
 
 from pymoors.core.modeling.expression import Expression
 from pymoors.core.helpers import cast_other_to_constant
@@ -6,6 +6,11 @@ from pymoors.core.helpers import cast_other_to_constant
 
 class Constant(Expression):
     value: float
+
+    def __init__(self, value: Union[float, "Constant"], **kwargs) -> None:
+        if isinstance(value, Constant):
+            value = value.value
+        super().__init__(value=value, **kwargs)
 
     @property
     def size(self) -> int:
