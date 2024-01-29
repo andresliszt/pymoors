@@ -19,9 +19,7 @@ class Index(Expression):
     def __check_key_against_size(index: int, size: int) -> None:
         if -size < index < size:
             return
-        raise IndexError(
-            f"index {index} is out of bounds for expression with size {size}"
-        )
+        raise IndexError(f"index {index} is out of bounds for expression with size {size}")
 
     @field_validator("index", mode="before")
     def cast_index_to_list(cls, index: Union[List[int], int]):
@@ -31,10 +29,7 @@ class Index(Expression):
     def validate_key_and_size(self) -> Index:
         # Check against all elements on the list
         list(
-            map(
-                partial(self.__check_key_against_size, size=self.expression.size),
-                self.index,
-            )
+            map(partial(self.__check_key_against_size, size=self.expression.size), self.index)
         )
         return self
 

@@ -12,9 +12,7 @@ class Mutation(BaseModel, abc.ABC):
 
     def _selector(self, population: TwoDArray) -> TwoDArray:
         """Select individuals for which the mutation will be applied"""
-        return population[
-            np.random.random(population.shape[0]) < self.mutation_probability
-        ]
+        return population[np.random.random(population.shape[0]) < self.mutation_probability]
 
     @abc.abstractmethod
     def mutation(self, individual: OneDArray) -> OneDArray:

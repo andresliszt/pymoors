@@ -16,7 +16,10 @@ def constant():
 
 
 def cast_to_constant(value):
-    if isinstance(value, (int, float)):
+    if isinstance(value, (int, float, list)):
+        if isinstance(value, list):
+            if not all(isinstance(v, (int, float)) for v in value):
+                raise TypeError("If value is a list, all elements must be numbers")
         from pymoors.core.modeling.constant import Constant
 
         return Constant(value=value)

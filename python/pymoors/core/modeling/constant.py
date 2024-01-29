@@ -1,25 +1,42 @@
-from typing import Union
+from typing import Union, Iterable
+
+
+import numpy as np
+
 
 from pymoors.core.modeling.expression import Expression
 from pymoors.core.helpers import cast_other_to_constant
 
+from pymoors.typing import OneDArray
+
 
 class Constant(Expression):
-    value: float
+    value: Union[float, OneDArray]
 
-    def __init__(self, value: Union[float, "Constant"], **kwargs) -> None:
+    def __init__(self, value: Union[float, "Constant", Iterable], **kwargs) -> None:
         if isinstance(value, Constant):
             value = value.value
+        if isinstance(value, (int, float)):
+            pass
+        else:
+            value = np.array(value)
         super().__init__(value=value, **kwargs)
 
     @property
     def size(self) -> int:
-        """Constant size is always zero"""
-        return 0
+        return 1 if isinstance(self.value, float) else len(self.value)
 
     @property
     def is_zero(self) -> bool:
-        return self.value == 0
+        return self.value == 0 if isinstance(self.value, float) else np.all(self.value == 0)
+
+    @property
+    def is_constant(self) -> bool:
+        return True
+
+    @property
+    def constant(self) -> "Constant":
+        return self
 
     @property
     def name(self) -> int:

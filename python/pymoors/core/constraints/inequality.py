@@ -25,4 +25,4 @@ class Inequality(BaseModel):
 
     @property
     def expression(self) -> AddExpression:
-        return self.rhs - self.lhs
+        return self.lhs - self.rhs

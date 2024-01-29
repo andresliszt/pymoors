@@ -3,7 +3,7 @@ import abc
 from collections import Counter
 from typing import TypeVar, List, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 
 
 from pymoors.core import helpers
@@ -28,6 +28,8 @@ id_generator = IDGenerator()
 class Expression(BaseModel, abc.ABC):
     expression_id: int = Field(default_factory=id_generator.generate_id)
 
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
     @property
     @abc.abstractmethod
     def name(self) -> str:
@@ -39,8 +41,20 @@ class Expression(BaseModel, abc.ABC):
         "Expression size"
 
     @property
+    def expressions(self) -> List[ExpressionLike]:
+        return [self]
+
+    @property
+    def constant(self):
+        return helpers.constant()(value=0)
+
+    @property
+    def non_constant_expressions(self) -> List[Expression]:
+        return [expr for expr in self.expressions if not isinstance(expr, helpers.constant())]
+
+    @property
     def is_constant(self) -> bool:
-        return self.size == 0
+        return False
 
     def __len__(self) -> int:
         return self.size
@@ -61,9 +75,7 @@ class Expression(BaseModel, abc.ABC):
         return helpers.inequeality()(lhs=other, rhs=self)
 
     def __getitem__(self, index: Union[int, List[int]]):
-        return helpers.index()(
-            index=index, expression=self, expression_id=self.expression_id
-        )
+        return helpers.index()(index=index, expression=self, expression_id=self.expression_id)
 
     @helpers.cast_other_to_constant
     def __add__(self, other: ExpressionLike):
@@ -72,7 +84,7 @@ class Expression(BaseModel, abc.ABC):
         return helpers.add_expression()(self, other)
 
     def __radd__(self, other: ExpressionLike):
-        return self.__add__(other)
+        return self + other
 
     @helpers.cast_other_to_constant
     def __mul__(self, other: float):
@@ -86,10 +98,10 @@ class Expression(BaseModel, abc.ABC):
                 f"Trying to multiply by a non-expression object of type {type(other)}"
             )
 
-        return helpers.multiply_expression()(scalar=other.value, expression=self)
+        return helpers.multiply_expression()(other.value, self)
 
     def __rmul__(self, other: float):
-        return self.__mul__(other)
+        return self * other
 
     @helpers.cast_other_to_constant
     def __sub__(self, other: ExpressionLike):

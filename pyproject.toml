@@ -46,7 +46,7 @@ bindings = 'pyo3'
 
 [tool.black]
 color = true
-line-length = 90
+line-length = 95
 target-version = ['py38', 'py39', 'py310']
 skip-string-normalization = true
 skip-magic-trailing-comma = true

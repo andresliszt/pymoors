@@ -43,8 +43,7 @@ class Crossover(BaseModel, abc.ABC):
         population = self._selector(population)
         if population.empty:
             return np.empty(
-                shape=(self.number_offsprings, 0, population.shape[-1]),
-                dtype=population.dtype,
+                shape=(self.number_offsprings, 0, population.shape[-1]), dtype=population.dtype
             )
 
         # Get dimensions
@@ -61,8 +60,7 @@ class Crossover(BaseModel, abc.ABC):
             # Validate that the operator returns expected shape
             if off.ndim != self.number_offsprings:
                 raise CrossoverOutputError(
-                    expected_offsprings=self.number_offsprings,
-                    recived_offsprings=off.ndim,
+                    expected_offsprings=self.number_offsprings, recived_offsprings=off.ndim
                 )
             offsprings[:, mating_index, :] = off
 

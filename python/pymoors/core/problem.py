@@ -39,9 +39,7 @@ class Problem(BaseModel, abc.ABC):
             for constr in self.constraints:
                 if isinstance(constr, PopulationCallable):
                     if _custom_function is not None:
-                        raise ValueError(
-                            "Only one custom constraint callable must be given"
-                        )
+                        raise ValueError("Only one custom constraint callable must be given")
                     _custom_function = constr
                 else:
                     _affine_constr.append(constr)

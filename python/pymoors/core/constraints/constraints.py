@@ -3,7 +3,7 @@ from typing import Callable, List, Union, Optional
 import numpy as np
 from pydantic import BaseModel, model_validator, PrivateAttr
 
-from pymoors.typing import OneDArray, TwoDArray
+from pymoors.typing import TwoDArray
 from pymoors.core.constraints.linear import AffineConstraints
 from pymoors.typing import PopulationCallable
 
@@ -14,7 +14,7 @@ class Constraints(BaseModel):
 
     _function: PopulationCallable = PrivateAttr(default=None)
 
-    @model_validator(model="after")
+    @model_validator(mode="after")
     def validate_constraints(self):
         if self.constraints_function is None and self.affine_constraints is None:
             raise TypeError(
@@ -25,10 +25,7 @@ class Constraints(BaseModel):
     @property
     def function(self) -> PopulationCallable:
         if self._function is None:
-            if (
-                self.constraints_function is not None
-                and self.affine_constraints is not None
-            ):
+            if self.constraints_function is not None and self.affine_constraints is not None:
                 aff_function: PopulationCallable = self.affine_constraints.function
                 custom_function: PopulationCallable = self.constraints_function
 
