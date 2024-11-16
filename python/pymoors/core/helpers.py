@@ -34,6 +34,12 @@ def cast_other_to_constant(meth):
     return wrapper_cast_to_constant
 
 
+def equality():
+    from pymoors.core.constraints.inequality import Equality
+
+    return Equality
+
+
 def index():
     from pymoors.core.modeling.index import Index
 

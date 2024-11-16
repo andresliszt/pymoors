@@ -1,9 +1,9 @@
 from __future__ import annotations
 import abc
 from collections import Counter
-from typing import TypeVar, List, Union
+from typing import TypeVar, Tuple, List, Union
 
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, PrivateAttr, model_validator
 
 
 from pymoors.core import helpers
@@ -27,34 +27,39 @@ id_generator = IDGenerator()
 
 class Expression(BaseModel, abc.ABC):
     expression_id: int = Field(default_factory=id_generator.generate_id)
+    _shape: Tuple[int, ...] = PrivateAttr(default=None)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    @model_validator(mode="after")
+    def set_shape(self):
+        self._shape = self._shape_from_expressions()
+        return self
 
     @property
     @abc.abstractmethod
     def name(self) -> str:
         """Expression name"""
 
-    @property
     @abc.abstractmethod
-    def size(self) -> int:
-        "Expression size"
+    def _shape_from_expressions(self) -> Tuple[int, ...]:
+        "Expression shape"
 
     @property
-    def expressions(self) -> List[ExpressionLike]:
-        return [self]
+    def shape(self) -> Tuple[int, ...]:
+        return self._shape
 
     @property
-    def constant(self):
-        return helpers.constant()(value=0)
-
-    @property
-    def non_constant_expressions(self) -> List[Expression]:
-        return [expr for expr in self.expressions if not isinstance(expr, helpers.constant())]
+    def is_scalar(self) -> bool:
+        return self.shape == ()
 
     @property
     def is_constant(self) -> bool:
         return False
+
+    @helpers.cast_other_to_constant
+    def __eq__(self, other):
+        return helpers.equality()(lhs=self, rhs=other)
 
     def __len__(self) -> int:
         return self.size
@@ -62,17 +67,19 @@ class Expression(BaseModel, abc.ABC):
     def __repr__(self) -> str:
         return self.name
 
-    def __le__(self, other: ExpressionLike) -> None:
+    def __lt__(self, other: ExpressionLike) -> None:
         return NotImplementedError
 
-    def __lt__(self, other: ExpressionLike):
-        return helpers.inequeality()(lhs=self, rhs=other)
+    @helpers.cast_other_to_constant
+    def __le__(self, other: ExpressionLike):
+        return helpers.inequeality()(lhs=self, rhs=other, type="<=")
 
-    def __ge__(self, other: ExpressionLike) -> None:
+    def __gt__(self, other: ExpressionLike) -> None:
         return NotImplementedError
 
-    def __gt__(self, other: ExpressionLike):
-        return helpers.inequeality()(lhs=other, rhs=self)
+    @helpers.cast_other_to_constant
+    def __ge__(self, other: ExpressionLike):
+        return helpers.inequeality()(lhs=self, rhs=other, type=">=")
 
     def __getitem__(self, index: Union[int, List[int]]):
         return helpers.index()(index=index, expression=self, expression_id=self.expression_id)
@@ -98,10 +105,13 @@ class Expression(BaseModel, abc.ABC):
                 f"Trying to multiply by a non-expression object of type {type(other)}"
             )
 
-        return helpers.multiply_expression()(other.value, self)
+        return helpers.multiply_expression()(other, self)
 
     def __rmul__(self, other: float):
         return self * other
+
+    # @helpers.cast_other_to_constant
+    # def __matmul__(self, other )
 
     @helpers.cast_other_to_constant
     def __sub__(self, other: ExpressionLike):

@@ -1,11 +1,12 @@
 from pydantic import BaseModel, model_validator, field_validator
+from typing import Literal
 
 from pymoors.core.modeling.expression import Expression
 from pymoors.core.modeling.add import AddExpression
 from pymoors.core import helpers
 
 
-class Inequality(BaseModel):
+class _Equality(BaseModel):
     lhs: Expression
     rhs: Expression
 
@@ -26,3 +27,17 @@ class Inequality(BaseModel):
     @property
     def expression(self) -> AddExpression:
         return self.lhs - self.rhs
+
+
+class Equality(_Equality):
+    ...
+
+
+class Inequality(_Equality):
+    type: Literal[">=", "<="]
+
+    @property
+    def expression(self) -> AddExpression:
+        if self.type == "<=":
+            return super().expression
+        return -1 * (super().expression)

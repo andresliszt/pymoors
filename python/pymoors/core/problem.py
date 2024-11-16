@@ -1,59 +1,49 @@
-import abc
 from typing import List, Dict, Union, Optional
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, PrivateAttr, model_validator
+import numpy as np
 
 from pymoors.core.modeling.variable import Variable
-from pymoors.core.constraints.constraints import Constraints, AffineConstraints
-from pymoors.core.constraints.inequality import Inequality
+from pymoors.core.constraints.constraints import Constraints
+from pymoors.core.constraints.inequality import Inequality, Equality
 from pymoors.typing import TwoDArray, PopulationCallable
 
 
-class Problem(BaseModel, abc.ABC):
-    objectives: PopulationCallable
+class Problem(BaseModel):
+    objectives: List[PopulationCallable]
     variables: Union[Variable, List[Variable]]
-    constraints: Optional[Constraints]
+    constraints: Optional[List[Union[Inequality, Equality, PopulationCallable]]] = None
+    _constraints_handler: Constraints = PrivateAttr(default=None)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
-    def __init__(
-        self,
-        variables: Union[Variable, List[Variable]],
-        constraints: Optional[
-            Union[
-                PopulationCallable,
-                List[Inequality],
-                List[Union[Inequality, PopulationCallable]],
-            ]
-        ] = None,
-        **kwargs,
-    ):
-        if isinstance(constraints, PopulationCallable):
-            constraints = Constraints(constraints_function=constraints)
-
-        elif isinstance(constraints, list):
-            # Check that if there is a callable in the list, this is unique.
-            # Also sets the constraint function used in `evaluate`
-            _custom_function = None
-            _affine_constr = []
-            for constr in self.constraints:
-                if isinstance(constr, PopulationCallable):
-                    if _custom_function is not None:
-                        raise ValueError("Only one custom constraint callable must be given")
-                    _custom_function = constr
-                else:
-                    _affine_constr.append(constr)
-            # Create constraints object
-            constraints = Constraints(
-                constraints_function=_custom_function,
-                affine_constraints=AffineConstraints(
-                    variables=variables, affine_constraints=_affine_constr
-                ),
+    @model_validator
+    def _set_constraints_handler(self):
+        if self.constraints is not None:
+            self._constraints_handler = Constraints(
+                variables=self.variables, constraints=self.constraints
             )
-        super().__init__(variables=variables, constraints=constraints, **kwargs)
+        return self
+
+    @property
+    def constraints_handler(self) -> Constraints:
+        return self._constraints_handler
+
+    @property
+    def number_variables(self) -> int:
+        return (
+            self.variables.size
+            if isinstance(self.variables, Variable)
+            else sum(var.size for var in self.variables)
+        )
+
+    @property
+    def number_objectives(self) -> int:
+        return len(self.objectives)
 
     def evaluate(self, population: TwoDArray) -> Dict[str, TwoDArray]:
-        result = {"objectives": self.objectives(population)}
+        # Keep this dict definition out of pydantic.
+        result = {"objectives": np.column_stack([obj(population) for obj in self.objectives])}
         if self.constraints:
-            result["constraints"] = self.constraints.evaluate(population)
+            result["constraints"] = self.constraints_handler.function(population)
         return result

@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Tuple
 
 
 import numpy as np
@@ -7,24 +7,26 @@ import numpy as np
 from pymoors.core.modeling.expression import Expression
 from pymoors.core.helpers import cast_other_to_constant
 
-from pymoors.typing import OneDArray
+from pymoors.typing import OneDArray, TwoDArray
 
 
 class Constant(Expression):
-    value: Union[float, OneDArray]
+    value: Union[OneDArray, TwoDArray]
 
-    def __init__(self, value: Union[float, "Constant", Iterable], **kwargs) -> None:
+    def __init__(
+        self, value: Union[float, "Constant", Iterable, OneDArray, TwoDArray], **kwargs
+    ) -> None:
         if isinstance(value, Constant):
             value = value.value
-        if isinstance(value, (int, float)):
-            pass
-        else:
-            value = np.array(value)
+        value = np.array(value)
         super().__init__(value=value, **kwargs)
 
     @property
     def size(self) -> int:
         return 1 if isinstance(self.value, float) else len(self.value)
+
+    def _shape_from_expressions(self) -> Tuple[int, ...]:
+        return self.value.shape
 
     @property
     def is_zero(self) -> bool:
@@ -33,10 +35,6 @@ class Constant(Expression):
     @property
     def is_constant(self) -> bool:
         return True
-
-    @property
-    def constant(self) -> "Constant":
-        return self
 
     @property
     def name(self) -> int:

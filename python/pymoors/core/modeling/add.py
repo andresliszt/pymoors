@@ -11,22 +11,27 @@ class AddExpression(Expression):
     _size: int = PrivateAttr(default=None)
 
     def __init__(self, var1: Expression, var2: Expression, **kwargs) -> None:
-        if len(var1) != len(var2):
-            if not (
-                isinstance(var2, Constant)
-                and var2.size == 1
-                or isinstance(var1, Constant)
-                and var1.size == 1
-            ):
-                raise ValueError(
-                    f"Two expressions with different sizes cannot be added. Got sizes {len(var1)} and {len(var2)}"
-                )
-        # Simplify the constants
-        constant = var1.constant + var2.constant
-        expressions = [constant, *var1.non_constant_expressions, *var2.non_constant_expressions]
+        if len(var1) != len(var2) and not (
+            isinstance(var2, Constant)
+            and var2.size == 1
+            or isinstance(var1, Constant)
+            and var1.size == 1
+        ):
+            raise ValueError(
+                f"Two expressions with different sizes cannot be added. Got sizes {len(var1)} and {len(var2)}"
+            )
+        if isinstance(var1, AddExpression) and isinstance(var2, AddExpression):
+            expressions = [*var1.expressions, *var2.expressions]
+        elif isinstance(var1, AddExpression):
+            expressions = [*var1.expressions, var2]
+        elif isinstance(var2, AddExpression):
+            expressions = [var1 * var2.expressions]
+        else:
+            expressions = [var1, var2]
+
         super().__init__(**kwargs)
-        # We set the size of this expression.
-        self._size = var1.size
+        # We set the size of this expression. We use max to handle constants with length = 1
+        self._size = max(var1.size, var2.size)
         self._expressions = expressions
 
     @property
@@ -44,4 +49,4 @@ class AddExpression(Expression):
 
     @property
     def constant(self) -> Constant:
-        return self.expressions[0]
+        return sum(expr.constant for expr in self.expressions if isinstance(expr, Constant))
