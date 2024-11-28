@@ -1,8 +1,8 @@
 use std::f64::INFINITY;
 
 use numpy::ndarray::{Array1, ArrayView1, ArrayView2};
+use numpy::{IntoPyArray, PyArray1, PyReadonlyArray2};
 use pyo3::prelude::*;
-use numpy::{IntoPyArray, PyReadonlyArray2, PyArray1};
 
 fn argsort(arr: ArrayView1<f64>) -> Vec<usize> {
     let mut indices: Vec<usize> = (0..arr.len()).collect();
@@ -43,6 +43,9 @@ pub fn crodwing_distance(front: ArrayView2<f64>) -> Array1<f64> {
 /// Python wrapper for crodwing distnace
 #[pyfunction]
 #[pyo3(name = "crowding_distance")]
-pub fn crodwing_distance_py<'py>(py: Python<'py>, front: PyReadonlyArray2<f64>) ->&'py PyArray1<f64> {
+pub fn crodwing_distance_py<'py>(
+    py: Python<'py>,
+    front: PyReadonlyArray2<f64>,
+) -> &'py PyArray1<f64> {
     crodwing_distance(front.as_array()).into_pyarray(py)
 }

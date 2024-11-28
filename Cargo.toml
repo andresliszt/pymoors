@@ -13,6 +13,7 @@ python-source = "python"
 [dependencies]
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
 numpy = "0.20.0"
+rand = "0.8.5"
 
 [dev-dependencies]
 rstest = "0.18.2"
