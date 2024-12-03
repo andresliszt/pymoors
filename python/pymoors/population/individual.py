@@ -6,6 +6,6 @@ from pymoors.typing import NDArray2x2
 
 
 @define
-class Individual:
+class Genes:
     fitness: NDArray2x2
     constraints: NDArray2x2

@@ -14,6 +14,8 @@ python-source = "python"
 pyo3 = { version = "0.20.0", features = ["extension-module"] }
 numpy = "0.20.0"
 rand = "0.8.5"
+num-traits = "0.2.19"
+ndarray = "0.16.1"
 
 [dev-dependencies]
 rstest = "0.18.2"
