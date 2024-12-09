@@ -15,7 +15,7 @@ class TestMultiplyExpression:
         )
 
     def test_multiply(self):
-        mul = Constant(value=10)*Variable(length=1)
+        mul = Constant(value=10) * Variable(length=1)
         import pdb
 
         pdb.set_trace()

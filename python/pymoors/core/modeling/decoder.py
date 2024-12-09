@@ -11,7 +11,6 @@ from pymoors.core.constraints.inequality import Inequality
 from pymoors.typing import OneDArray, TwoDArray
 
 
-
 class LinearDecoder(BaseModel):
     """Gets coefficients from linear expressions"""
 
