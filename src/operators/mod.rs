@@ -1,11 +1,14 @@
-use crate::genetic::{Genes, GenesMut, PopulationGenes};
+use crate::genetic::{Fitness, Genes, GenesMut, Individual, Population, PopulationGenes};
+use rand::prelude::SliceRandom;
 use rand::Rng;
 use std::fmt::Debug;
 
+pub mod crossover;
+pub mod evolve;
 pub mod mutation;
 pub mod sampling;
+pub mod selection;
 pub mod survival;
-pub mod crossover;
 
 pub trait GeneticOperator: Clone + Debug {
     fn name(&self) -> String;
@@ -55,53 +58,64 @@ where
 
 pub trait MutationOperator<Dna>: GeneticOperator
 where
-    Dna: Clone + Debug + PartialEq + Send + Sync,
+    Dna: Clone + Debug,
 {
-    /// Mutates a single individual.
-    fn mutate<R>(&self, individual: &mut GenesMut<Dna>, rng: &mut R)
+    /// Mutates a single individual and returns the mutated individual.
+    fn mutate<R>(&self, individual: &Genes<Dna>, rng: &mut R) -> Genes<Dna>
     where
         R: Rng + Sized;
 
-    /// Selects ¿´+dindividuals for mutation based on the mutation rate.
-    fn select_individuals_for_mutation<R>(
+    /// Selects individuals for mutation based on the mutation rate.
+    fn _select_individuals_for_mutation<R>(
         &self,
         population_size: usize,
-        individual_mutation_rate: f64,
+        mutation_rate: f64,
         rng: &mut R,
-    ) -> Vec<usize>
+    ) -> Vec<bool>
     where
         R: Rng + Sized,
     {
-        let dist = rand::distributions::Uniform::new(0.0, 1.0);
         (0..population_size)
-            .filter(|_| rng.sample(dist) < individual_mutation_rate)
+            .map(|_| rng.gen::<f64>() < mutation_rate)
             .collect()
     }
 
     /// Applies the mutation operator to the population.
     fn operate<R>(
         &self,
-        population: &mut PopulationGenes<Dna>,
-        individual_mutation_rate: f64,
+        population: &PopulationGenes<Dna>,
+        mutation_rate: f64,
         rng: &mut R,
-    ) where
+    ) -> PopulationGenes<Dna>
+    where
         R: Rng + Sized,
     {
-        let selected_indices =
-            self.select_individuals_for_mutation(population.nrows(), individual_mutation_rate, rng);
+        // Step 1: Generate a boolean mask for mutation
+        let mask: Vec<bool> =
+            self._select_individuals_for_mutation(population.len(), mutation_rate, rng);
 
-        for &idx in &selected_indices {
-            let mut individual = population.row_mut(idx);
-            self.mutate(&mut individual, rng);
-        }
+        // Step 2: Create a new population with mutated individuals
+        let mut new_population = population.clone();
+        new_population
+            .outer_iter_mut()
+            .enumerate()
+            .for_each(|(i, mut individual)| {
+                if mask[i] {
+                    let mutated = self.mutate(&individual.to_owned(), rng);
+                    individual.assign(&mutated);
+                }
+            });
+
+        new_population
     }
 }
 
-
 pub trait CrossoverOperator<Dna>: GeneticOperator
 where
-    Dna: Clone + Debug + PartialEq + Send + Sync,
+    Dna: Clone + Debug,
 {
+    const N_OFFSPRINGS_PER_CROSSOVER: usize = 2;
+
     /// Performs crossover between two parents to produce two offspring.
     fn crossover<R>(
         &self,
@@ -119,7 +133,7 @@ where
         parents_a: &PopulationGenes<Dna>,
         parents_b: &PopulationGenes<Dna>,
         rng: &mut R,
-    ) -> (PopulationGenes<Dna>, PopulationGenes<Dna>)
+    ) -> PopulationGenes<Dna>
     where
         R: Rng + Sized,
     {
@@ -138,8 +152,8 @@ where
         );
 
         // Prepare flat vectors to collect offspring genes
-        let mut flat_offspring_a = Vec::with_capacity(population_size * num_genes);
-        let mut flat_offspring_b = Vec::with_capacity(population_size * num_genes);
+        let mut flat_offspring =
+            Vec::with_capacity(Self::N_OFFSPRINGS_PER_CROSSOVER * population_size * num_genes);
 
         for i in 0..population_size {
             let parent_a = parents_a.row(i).to_owned();
@@ -147,23 +161,114 @@ where
             let (child_a, child_b) = self.crossover(&parent_a, &parent_b, rng);
 
             // Extend the flat vectors with the offspring genes
-            flat_offspring_a.extend(child_a.into_iter());
-            flat_offspring_b.extend(child_b.into_iter());
+            flat_offspring.extend(child_a.into_iter());
+            flat_offspring.extend(child_b.into_iter());
         }
 
         // Create PopulationGenes<Dna> directly from the flat vectors
-        let offspring_population_a = PopulationGenes::from_shape_vec(
-            (population_size, num_genes),
-            flat_offspring_a,
+        let offspring_population = PopulationGenes::from_shape_vec(
+            (
+                Self::N_OFFSPRINGS_PER_CROSSOVER * population_size,
+                num_genes,
+            ),
+            flat_offspring,
         )
         .expect("Failed to create offspring_population_a");
+        offspring_population
+    }
+}
 
-        let offspring_population_b = PopulationGenes::from_shape_vec(
-            (population_size, num_genes),
-            flat_offspring_b,
-        )
-        .expect("Failed to create offspring_population_b");
+// Enum to represent the result of a tournament duel.
+pub enum DuelResult {
+    LeftWins,
+    RightWins,
+    Tie,
+}
 
-        (offspring_population_a, offspring_population_b)
+pub trait SelectionOperator<Dna, F>: GeneticOperator
+where
+    Dna: Clone + Debug,
+    F: Fitness,
+{
+    const PRESSURE: usize = 2;
+    const N_PARENTS_PER_CROSSOVER: usize = 2;
+
+    /// Selects random participants from the population for the tournaments.
+    /// If `n_crossovers * pressure` is greater than the population size, it will create multiple permutations
+    /// to ensure there are enough random indices.
+    fn _select_participants<R>(
+        &self,
+        pop_size: usize,
+        n_crossovers: usize,
+        rng: &mut R,
+    ) -> Vec<Vec<usize>>
+    where
+        R: Rng + Sized,
+    {
+        // Note that we have fixed n_parents = 2 and pressure = 2
+        let total_needed = n_crossovers * Self::N_PARENTS_PER_CROSSOVER * Self::PRESSURE;
+        let mut all_indices = Vec::with_capacity(total_needed);
+
+        let n_perms = (total_needed + pop_size - 1) / pop_size; // Ceil division
+        for _ in 0..n_perms {
+            let mut perm: Vec<usize> = (0..pop_size).collect();
+            perm.shuffle(rng);
+            all_indices.extend_from_slice(&perm);
+        }
+
+        all_indices.truncate(total_needed);
+
+        // Now split all_indices into chunks of size 2
+        let mut result = Vec::with_capacity(n_crossovers);
+        for chunk in all_indices.chunks(2) {
+            // chunk is a slice of length 2
+            result.push(vec![chunk[0], chunk[1]]);
+        }
+
+        result
+    }
+
+    /// Tournament between 2 individuals.
+    fn tournament_duel(&self, p1: &Individual<Dna, F>, p2: &Individual<Dna, F>) -> DuelResult;
+
+    fn operate<R>(
+        &self,
+        population: &Population<Dna, F>,
+        n_crossovers: usize,
+        rng: &mut R,
+    ) -> (Population<Dna, F>, Population<Dna, F>)
+    where
+        R: Rng + Sized,
+    {
+        let pop_size = population.len();
+
+        let participants = self._select_participants(pop_size, n_crossovers, rng);
+
+        let mut winners = Vec::with_capacity(n_crossovers);
+
+        // For binary tournaments:
+        // Each row of 'participants' is [p1, p2]
+        for row in &participants {
+            let ind_a = population.get(row[0]);
+            let ind_b = population.get(row[1]);
+            let duel_result = self.tournament_duel(&ind_a, &ind_b);
+            let winner = match duel_result {
+                DuelResult::LeftWins => row[0],
+                DuelResult::RightWins => row[1],
+                DuelResult::Tie => row[1], // TODO: use random?
+            };
+            winners.push(winner);
+        }
+
+        // Split winners into two halves
+        let mid = winners.len() / 2;
+        let first_half = &winners[..mid];
+        let second_half = &winners[mid..];
+
+        // Create two new populations based on the split
+        let population_a = population.selected(first_half);
+        let population_b = population.selected(second_half);
+
+        (population_a, population_b)
     }
 }

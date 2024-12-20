@@ -26,7 +26,7 @@ def cast_to_constant(value):
     return value
 
 
-def cast_other_to_constant(meth):
+def cast_other_to_expression(meth):
     @functools.wraps(meth)
     def wrapper_cast_to_constant(self, other):
         return meth(self, cast_to_constant(other))

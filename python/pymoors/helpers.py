@@ -16,6 +16,12 @@ def mul_expression():
     return Mul
 
 
+def pow_expression():
+    from pymoors.modeling.pow import Pow
+
+    return Pow
+
+
 def cast_to_constant(value):
     if isinstance(value, numbers.Number):
         # if isinstance(value, list):
@@ -27,7 +33,7 @@ def cast_to_constant(value):
     return value
 
 
-def cast_other_to_constant(meth):
+def cast_other_to_expression(meth):
     @functools.wraps(meth)
     def wrapper_cast_to_constant(self, other):
         return meth(self, cast_to_constant(other))

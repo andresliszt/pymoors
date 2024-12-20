@@ -2,7 +2,7 @@ use std::f64::INFINITY;
 
 use ndarray::Array1;
 
-use crate::genetic::{FitnessValue, PopulationFitness};
+use crate::genetic::{Fitness, PopulationFitness};
 
 /// Computes the crowding distance for a given Pareto population_fitness.
 ///
@@ -13,7 +13,7 @@ use crate::genetic::{FitnessValue, PopulationFitness};
 /// - A 1D array of crowding distances for each individual in the population_fitness.
 pub fn crowding_distance<F>(population_fitness: &PopulationFitness<F>) -> Array1<f64>
 where
-    F: FitnessValue + Into<f64>,
+    F: Fitness + Into<f64>,
 {
     let num_individuals = population_fitness.shape()[0];
     let num_objectives = population_fitness.shape()[1];

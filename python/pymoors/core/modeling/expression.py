@@ -57,7 +57,7 @@ class Expression(BaseModel, abc.ABC):
     def is_constant(self) -> bool:
         return False
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __eq__(self, other):
         return helpers.equality()(lhs=self, rhs=other)
 
@@ -70,21 +70,21 @@ class Expression(BaseModel, abc.ABC):
     def __lt__(self, other: ExpressionLike) -> None:
         return NotImplementedError
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __le__(self, other: ExpressionLike):
         return helpers.inequeality()(lhs=self, rhs=other, type="<=")
 
     def __gt__(self, other: ExpressionLike) -> None:
         return NotImplementedError
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __ge__(self, other: ExpressionLike):
         return helpers.inequeality()(lhs=self, rhs=other, type=">=")
 
     def __getitem__(self, index: Union[int, List[int]]):
         return helpers.index()(index=index, expression=self, expression_id=self.expression_id)
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __add__(self, other: ExpressionLike):
         if isinstance(other, helpers.constant()) and other.is_zero:
             return self
@@ -93,7 +93,7 @@ class Expression(BaseModel, abc.ABC):
     def __radd__(self, other: ExpressionLike):
         return self + other
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __mul__(self, other: float):
         if not any(
             [isinstance(self, helpers.constant()), isinstance(other, helpers.constant())]
@@ -110,15 +110,15 @@ class Expression(BaseModel, abc.ABC):
     def __rmul__(self, other: float):
         return self * other
 
-    # @helpers.cast_other_to_constant
+    # @helpers.cast_other_to_expression
     # def __matmul__(self, other )
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __sub__(self, other: ExpressionLike):
         if isinstance(other, helpers.constant()) and other.is_zero:
             return self
         return self + (-1 * other)
 
-    @helpers.cast_other_to_constant
+    @helpers.cast_other_to_expression
     def __rsub__(self, other: ExpressionLike):
         return -1 * (self - other)

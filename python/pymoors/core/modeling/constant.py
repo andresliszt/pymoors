@@ -5,7 +5,7 @@ import numpy as np
 
 
 from pymoors.core.modeling.expression import Expression
-from pymoors.core.helpers import cast_other_to_constant
+from pymoors.core.helpers import cast_other_to_expression
 
 from pymoors.typing import OneDArray, TwoDArray
 
@@ -40,7 +40,7 @@ class Constant(Expression):
     def name(self) -> int:
         return f"constant(value = {self.value})"
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __add__(self, other):
         if isinstance(other, Constant):
             return Constant(value=self.value + other.value)
@@ -49,17 +49,17 @@ class Constant(Expression):
     def __radd__(self, other):
         return self.__add__(other)
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __sub__(self, other):
         if isinstance(other, Constant):
             return Constant(value=self.value - other.value)
         return super().__sub__(other)
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __rsub__(self, other):
         return other.__sub__(self)
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __mul__(self, other):
         if isinstance(other, Constant):
             return Constant(value=self.value * other.value)

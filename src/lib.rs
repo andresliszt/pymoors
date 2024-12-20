@@ -4,9 +4,10 @@ pub mod evaluator;
 pub mod genetic;
 pub mod prelude;
 
+mod helpers;
 mod non_dominated_sorting;
 mod operators;
-mod pymoors_core;
+mod algorithms;
 
 // use pyo3::{prelude::*, wrap_pymodule};
 

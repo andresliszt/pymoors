@@ -4,7 +4,7 @@ import numbers
 from typing import ClassVar
 from pymoors.expression import Expression
 
-from pymoors.helpers import cast_other_to_constant
+from pymoors.helpers import cast_other_to_expression
 
 
 class Constant(Expression):
@@ -30,19 +30,31 @@ class Constant(Expression):
     def value(self) -> numbers.Number:
         return self._value
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __eq__(self, other):
         if isinstance(other, Constant):
             return self.value == other.value
-        return False
+        return NotImplemented
 
-    @cast_other_to_constant
+    @cast_other_to_expression
+    def __lt__(self, other):
+        if isinstance(other, Constant):
+            return self.value < other.value
+        return NotImplemented
+
+    @cast_other_to_expression
+    def __gt__(self, other):
+        if isinstance(other, Constant):
+            return self.value > other.value
+        return NotImplemented
+
+    @cast_other_to_expression
     def __add__(self, other):
         if isinstance(other, Constant):
             return Constant(self.value + other.value)
         return super().__add__(other)
 
-    @cast_other_to_constant
+    @cast_other_to_expression
     def __mul__(self, other):
         if isinstance(other, Constant):
             return Constant(self.value * other.value)

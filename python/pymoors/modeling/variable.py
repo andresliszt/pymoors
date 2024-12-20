@@ -1,6 +1,9 @@
-from typing import ClassVar
+from typing import ClassVar, TypeVar
 
 from pymoors.expression import Expression
+
+
+MatrixLike = TypeVar("MatrixLike")
 
 
 class Variable(Expression):
@@ -33,13 +36,13 @@ class Variable(Expression):
     def __repr__(self):
         return self.__str__()
 
+    def __matmul__(self, other) -> Expression:
+        return NotImplementedError
+
+
+
     def _hashable_content(self) -> tuple[str, int, int]:
         return (self.name, self.length)
-
-    def __add__(self, other):
-        if any(isinstance(o, Variable) and o.length != self.length for o in other.args):
-            raise ValueError("Can't add variables with different length")
-        return super().__add__(other)
 
     def __getitem__(self, index: int):
         if self.length == 1:

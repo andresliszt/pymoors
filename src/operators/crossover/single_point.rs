@@ -1,8 +1,8 @@
+use ndarray::{concatenate, s, Array1, Axis};
 use rand::Rng;
-use ndarray::{Axis, Array1, concatenate, s};
 
-use crate::operators::{GeneticOperator, CrossoverOperator};
 use crate::genetic::Genes;
+use crate::operators::{CrossoverOperator, GeneticOperator};
 
 #[derive(Clone, Debug)]
 pub struct SinglePointBinaryCrossover;
@@ -75,7 +75,8 @@ mod tests {
         let crossover_operator = SinglePointBinaryCrossover::new();
         let mut rng = StdRng::seed_from_u64(42);
 
-        let (offspring_a, offspring_b) = crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
+        let (offspring_a, offspring_b) =
+            crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
 
         // Since the seed is fixed, the crossover point is deterministic
         // For the seed 42 and num_genes = 5, crossover_point should be 3

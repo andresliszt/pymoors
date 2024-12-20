@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use ndarray::{ArrayView1, ArrayView2, Axis};
 
-use crate::genetic::{FitnessValue, PopulationFitness};
+use crate::genetic::{Fitness, PopulationFitness};
 
 /// Determines if one fitness vector _dominates another in multi-objective optimization.
 ///
@@ -39,7 +39,7 @@ use crate::genetic::{FitnessValue, PopulationFitness};
 /// ```
 fn _dominates<F>(f1: &ArrayView1<F>, f2: &ArrayView1<F>) -> bool
 where
-    F: FitnessValue,
+    F: Fitness,
 {
     let mut better_in_any = false;
 
@@ -62,7 +62,7 @@ fn _get_current_front<F>(
     remainder_indexes: &Vec<usize>,
 ) -> Vec<usize>
 where
-    F: FitnessValue,
+    F: Fitness,
 {
     // Filter population fitness based on remainder_indexes
     let filtered_population = population_fitness.select(Axis(0), remainder_indexes);
@@ -115,7 +115,7 @@ fn _update_remainder_individuals<'a, 'b>(
 
 pub fn fast_non_dominated_sorting<F>(population_fitness: &PopulationFitness<F>) -> Vec<Vec<usize>>
 where
-    F: FitnessValue,
+    F: Fitness,
 {
     // Get population size
     let population_size: usize = population_fitness.shape()[0];

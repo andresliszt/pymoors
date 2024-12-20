@@ -1,9 +1,9 @@
-use rand::Rng;
-use rand::distributions::Uniform;
 use ndarray::Array1;
+use rand::distributions::Uniform;
+use rand::Rng;
 
 use crate::genetic::Genes;
-use crate::operators::{GeneticOperator, CrossoverOperator};
+use crate::operators::{CrossoverOperator, GeneticOperator};
 
 #[derive(Clone, Debug)]
 pub struct UniformBinaryCrossover;
@@ -73,7 +73,8 @@ mod tests {
         let crossover_operator = UniformBinaryCrossover::new();
         let mut rng = StdRng::seed_from_u64(42);
 
-        let (offspring_a, offspring_b) = crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
+        let (offspring_a, offspring_b) =
+            crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
 
         // Expected offspring based on the fixed seed and swapping decisions
         let expected_offspring_a = array![0u8, 1, 1, 1, 0];
