@@ -1,25 +1,13 @@
-use ndarray::Array1;
-use rand::distributions::{Distribution, Uniform};
+use rand::distributions::Distribution;
 use rand::Rng;
-
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
+use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct RandomSamplingFloat {
-    dimensions: usize,
-    lower_bound: f64,
-    upper_bound: f64,
-}
-
-impl RandomSamplingFloat {
-    pub fn new(dimensions: usize, lower_bound: f64, upper_bound: f64) -> Self {
-        Self {
-            dimensions,
-            lower_bound,
-            upper_bound,
-        }
-    }
+    pub min: f64,
+    pub max: f64,
 }
 
 impl GeneticOperator for RandomSamplingFloat {
@@ -28,33 +16,22 @@ impl GeneticOperator for RandomSamplingFloat {
     }
 }
 
-impl SamplingOperator<f64> for RandomSamplingFloat {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes<f64>
+impl SamplingOperator for RandomSamplingFloat {
+    fn sample_individual<R>(&self, rng: &mut R) -> Genes
     where
         R: Rng + Sized,
     {
-        let uniform = Uniform::new(self.lower_bound, self.upper_bound);
-        (0..self.dimensions)
-            .map(|_| uniform.sample(rng))
-            .collect::<Array1<f64>>()
+        let num_genes = 10; // Example number of genes
+        (0..num_genes)
+            .map(|_| rng.gen_range(self.min..self.max))
+            .collect()
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct RandomSamplingInt {
-    dimensions: usize,
-    lower_bound: i32,
-    upper_bound: i32,
-}
-
-impl RandomSamplingInt {
-    pub fn new(dimensions: usize, lower_bound: i32, upper_bound: i32) -> Self {
-        Self {
-            dimensions,
-            lower_bound,
-            upper_bound,
-        }
-    }
+    pub min: i32,
+    pub max: i32,
 }
 
 impl GeneticOperator for RandomSamplingInt {
@@ -63,28 +40,20 @@ impl GeneticOperator for RandomSamplingInt {
     }
 }
 
-impl SamplingOperator<i32> for RandomSamplingInt {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes<i32>
+impl SamplingOperator for RandomSamplingInt {
+    fn sample_individual<R>(&self, rng: &mut R) -> Genes
     where
         R: Rng + Sized,
     {
-        let uniform = Uniform::new(self.lower_bound, self.upper_bound);
-        (0..self.dimensions)
-            .map(|_| uniform.sample(rng))
-            .collect::<Array1<i32>>()
+        let num_genes = 10; // Example number of genes
+        (0..num_genes)
+            .map(|_| rng.gen_range(self.min..self.max) as f64)
+            .collect()
     }
 }
 
 #[derive(Clone, Debug)]
-pub struct RandomSamplingBinary {
-    dimensions: usize,
-}
-
-impl RandomSamplingBinary {
-    pub fn new(dimensions: usize) -> Self {
-        Self { dimensions }
-    }
-}
+pub struct RandomSamplingBinary;
 
 impl GeneticOperator for RandomSamplingBinary {
     fn name(&self) -> String {
@@ -92,15 +61,15 @@ impl GeneticOperator for RandomSamplingBinary {
     }
 }
 
-impl SamplingOperator<u8> for RandomSamplingBinary {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes<u8>
+impl SamplingOperator for RandomSamplingBinary {
+    fn sample_individual<R>(&self, rng: &mut R) -> Genes
     where
         R: Rng + Sized,
     {
-        let uniform = Uniform::new(0, 2); // Binary values: 0 or 1
-        (0..self.dimensions)
-            .map(|_| uniform.sample(rng) as u8)
-            .collect::<Array1<u8>>()
+        let num_genes = 10; // Example number of genes
+        (0..num_genes)
+            .map(|_| if rng.gen_bool(0.5) { 1.0 } else { 0.0 })
+            .collect()
     }
 }
 
@@ -112,12 +81,12 @@ mod tests {
 
     #[test]
     fn test_random_sampling_float() {
-        let sampler = RandomSamplingFloat::new(5, -1.0, 1.0);
+        let sampler = RandomSamplingFloat { min: -1.0, max: 1.0 };
         let mut rng = StdRng::from_seed([0; 32]);
         let population = sampler.operate(10, &mut rng);
 
         assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
+        assert_eq!(population.ncols(), 10);
         for &gene in population.iter() {
             assert!(gene >= -1.0 && gene < 1.0);
         }
@@ -125,27 +94,27 @@ mod tests {
 
     #[test]
     fn test_random_sampling_int() {
-        let sampler = RandomSamplingInt::new(5, 0, 10);
+        let sampler = RandomSamplingInt { min: 0, max: 10 };
         let mut rng = StdRng::from_seed([0; 32]);
         let population = sampler.operate(10, &mut rng);
 
         assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
+        assert_eq!(population.ncols(), 10);
         for &gene in population.iter() {
-            assert!(gene >= 0 && gene < 10);
+            assert!(gene >= 0.0 && gene < 10.0);
         }
     }
 
     #[test]
     fn test_random_sampling_binary() {
-        let sampler = RandomSamplingBinary::new(5);
+        let sampler = RandomSamplingBinary;
         let mut rng = StdRng::from_seed([0; 32]);
         let population = sampler.operate(10, &mut rng);
 
         assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
+        assert_eq!(population.ncols(), 10);
         for &gene in population.iter() {
-            assert!(gene == 0 || gene == 1);
+            assert!(gene == 0.0 || gene == 1.0);
         }
     }
 }

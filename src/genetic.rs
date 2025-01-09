@@ -1,66 +1,47 @@
-use std::cmp::PartialOrd;
-use std::fmt::Debug;
-use std::ops::Add;
-
-use ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
+use numpy::ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
 
 /// Represents an individual in the population.
-/// Each `Genes` is an `Array1<Dna>`, where `Dna` is the type of the genes.
-pub type Genes<Dna> = Array1<Dna>;
-pub type GenesMut<'a, Dna> = ArrayViewMut1<'a, Dna>;
+/// Each `Genes` is an `Array1<f64>`.
+pub type Genes = Array1<f64>;
+pub type GenesMut<'a> = ArrayViewMut1<'a, f64>;
 
 /// The `Parents` type represents the input for a binary genetic operator, such as a crossover operator.
-/// It is a tuple of two 2-dimensional arrays (`Array2<Dna>`) where `Parents.0[i]` will be operated with
+/// It is a tuple of two 2-dimensional arrays (`Array2<f64>`) where `Parents.0[i]` will be operated with
 /// `Parents.1[i]` for each `i` in the population size. Each array corresponds to one "parent" group
 /// participating in the operation.
-pub type Parents<Dna> = (Array1<Dna>, Array1<Dna>);
-pub type ParentsMut<'a, Dna> = (ArrayViewMut1<'a, Dna>, ArrayViewMut1<'a, Dna>);
+pub type Parents = (Array1<f64>, Array1<f64>);
+
 /// The `Children` type defines the output of a binary genetic operator, such as the crossover operator.
-/// It is a tuple of two 2-dimensional arrays (`Array2<Dna>`) where each array represents the resulting
+/// It is a tuple of two 2-dimensional arrays (`Array2<f64>`) where each array represents the resulting
 /// offspring derived from the corresponding parent arrays in `Parents`.
-pub type Children<Dna> = (Array1<Dna>, Array1<Dna>);
-pub type ChildrenMut<'a, Dna> = (ArrayViewMut1<'a, Dna>, ArrayViewMut1<'a, Dna>);
+pub type Children = (Array1<f64>, Array1<f64>);
 
 /// The `PopulationGenes` type defines the current set of individuals in the population.
-/// It is represented as a 2-dimensional array (`Array2<Dna>`), where each row corresponds to an individual.
-pub type PopulationGenes<Dna> = Array2<Dna>;
-
-pub trait Fitness: PartialOrd + Copy + Add<Output = Self> + Debug {}
-
-impl<F> Fitness for F where F: PartialOrd + Copy + Add<Output = Self> + Debug {}
+/// It is represented as a 2-dimensional array (`Array2<f64>`), where each row corresponds to an individual.
+pub type PopulationGenes = Array2<f64>;
 
 /// Fitness associated to one Genes
-pub type IndividualFitness<F> = Array1<F>;
+pub type IndividualFitness = Array1<f64>;
 /// PopulationGenes Fitness
-pub type PopulationFitness<F> = Array2<F>;
+pub type PopulationFitness = Array2<f64>;
 
-pub trait ConstraintsValue: PartialOrd + Copy + Add<Output = Self> + Debug {}
+pub type IndividualConstraints = Array1<f64>;
 
-impl<G> ConstraintsValue for G where G: PartialOrd + Copy + Add<Output = Self> + Debug {}
+pub type PopulationConstraints = Array2<f64>;
 
-pub type IndividualConstraints<G> = Array1<G>;
-
-pub type PopulationConstraints<G> = Array2<G>;
-
-pub struct Individual<Dna, F>
-where
-    F: Fitness,
-{
-    pub genes: Genes<Dna>,
-    pub fitness: IndividualFitness<F>,
-    pub constraints: Option<IndividualConstraints<f64>>,
+pub struct Individual {
+    pub genes: Genes,
+    pub fitness: IndividualFitness,
+    pub constraints: Option<IndividualConstraints>,
     pub rank: usize,
     pub crowding_distance: f64,
 }
 
-impl<Dna, F> Individual<Dna, F>
-where
-    F: Fitness,
-{
+impl Individual {
     pub fn new(
-        genes: Genes<Dna>,
-        fitness: IndividualFitness<F>,
-        constraints: Option<IndividualConstraints<f64>>,
+        genes: Genes,
+        fitness: IndividualFitness,
+        constraints: Option<IndividualConstraints>,
         rank: usize,
         crowding_distance: f64,
     ) -> Self {
@@ -86,28 +67,33 @@ where
 
 /// The `Population` struct containing genes, fitness, rank, and crowding distance.
 /// `rank` and `crowding_distance` are optional and may be set during the process.
-pub struct Population<Dna, F>
-where
-    F: Fitness,
-{
-    pub genes: PopulationGenes<Dna>,
-    pub fitness: PopulationFitness<F>,
-    pub constraints: Option<PopulationConstraints<f64>>,
+pub struct Population {
+    pub genes: PopulationGenes,
+    pub fitness: PopulationFitness,
+    pub constraints: Option<PopulationConstraints>,
     pub rank: Array1<usize>,
     pub crowding_distance: Array1<f64>,
 }
 
-impl<Dna, F> Population<Dna, F>
-where
-    Dna: Clone,
-    F: Fitness + Clone,
-{
+impl Clone for Population {
+    fn clone(&self) -> Self {
+        Self {
+            genes: self.genes.clone(),
+            fitness: self.fitness.clone(),
+            constraints: self.constraints.clone(),
+            rank: self.rank.clone(),
+            crowding_distance: self.crowding_distance.clone(),
+        }
+    }
+}
+
+impl Population {
     /// Creates a new `Population` instance with the given genes and fitness.
     /// `rank` and `crowding_distance` are initially `None`.
     pub fn new(
-        genes: PopulationGenes<Dna>,
-        fitness: PopulationFitness<F>,
-        constraints: Option<PopulationConstraints<f64>>,
+        genes: PopulationGenes,
+        fitness: PopulationFitness,
+        constraints: Option<PopulationConstraints>,
         rank: Array1<usize>,
         crowding_distance: Array1<f64>,
     ) -> Self {
@@ -121,7 +107,7 @@ where
     }
 
     /// Retrieves an `Individual` from the population by index.
-    pub fn get(&self, idx: usize) -> Individual<Dna, F> {
+    pub fn get(&self, idx: usize) -> Individual {
         let constraints = self.constraints.as_ref().map(|c| c.row(idx).to_owned());
 
         Individual::new(
@@ -132,31 +118,10 @@ where
             self.crowding_distance[idx],
         )
     }
-    /// Retains only the individuals at the specified indices,
-    /// modifying the current `Population` in place.
-    /// TODO: Change indices to be Vec<usize>
-    pub fn select(&mut self, indices: &Array1<usize>) {
-        // Convert indices to a slice for compatibility
-        let indices_slice = indices
-            .as_slice()
-            .expect("Indices should be contiguous in memory");
-
-        // Filter genes based on indices
-        self.genes = self.genes.select(Axis(0), indices_slice).to_owned();
-        // Filter fitness based on indices
-        self.fitness = self.fitness.select(Axis(0), indices_slice).to_owned();
-        // Filter rank
-        self.rank = self.rank.select(Axis(0), indices_slice).to_owned();
-        // Filter crowding_distance
-        self.crowding_distance = self
-            .crowding_distance
-            .select(Axis(0), indices_slice)
-            .to_owned()
-    }
 
     /// Returns a new `Population` containing only the individuals at the specified indices.
     /// Indices may be repeated, resulting in repeated individuals in the new population.
-    pub fn selected(&self, indices: &[usize]) -> Population<Dna, F> {
+    pub fn selected(&self, indices: &[usize]) -> Population {
         let genes = self.genes.select(Axis(0), indices);
         let fitness = self.fitness.select(Axis(0), indices);
         let rank = self.rank.select(Axis(0), indices);
@@ -176,23 +141,16 @@ where
     }
 }
 
-pub type Fronts<Dna, F> = Vec<Population<Dna, F>>;
+pub type Fronts = Vec<Population>;
 
-/// An extension trait for the `Fronts<Dna, F>` type to add a `.flatten()` method
-/// that combines multiple fronts into a single `Population<Dna, F>`.
-pub trait FrontsExt<Dna, F>
-where
-    F: Fitness,
-{
-    fn flatten_fronts(&self) -> Population<Dna, F>;
+/// An extension trait for the `Fronts` type to add a `.flatten()` method
+/// that combines multiple fronts into a single `Population`.
+pub trait FrontsExt {
+    fn flatten_fronts(&self) -> Population;
 }
 
-impl<Dna, F> FrontsExt<Dna, F> for Vec<Population<Dna, F>>
-where
-    Dna: Clone,
-    F: Fitness + Clone, // Make sure F: PartialOrd, Copy, etc. is in your Fitness trait
-{
-    fn flatten_fronts(&self) -> Population<Dna, F> {
+impl FrontsExt for Vec<Population> {
+    fn flatten_fronts(&self) -> Population {
         if self.is_empty() {
             panic!("Cannot flatten empty fronts!");
         }

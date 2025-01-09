@@ -1,8 +1,8 @@
 use std::collections::HashSet;
 
-use ndarray::{ArrayView1, ArrayView2, Axis};
+use numpy::ndarray::{ArrayView1, ArrayView2, Axis};
 
-use crate::genetic::{Fitness, PopulationFitness};
+use crate::genetic::PopulationFitness;
 
 /// Determines if one fitness vector _dominates another in multi-objective optimization.
 ///
@@ -10,16 +10,11 @@ use crate::genetic::{Fitness, PopulationFitness};
 ///
 /// - `a`: Reference to the first fitness vector.
 /// - `b`: Reference to the second fitness vector.
-/// - `epsilon`: Optional epsilon value for epsilon-dominance. If `None`, zero is used.
 ///
 /// # Returns
 ///
 /// - `true` if `a` _dominates `b`.
 /// - `false` otherwise.
-///
-/// # Type Constraints
-///
-/// - `F`: Must implement `PartialOrd`, `Copy`, `Add<Output = F>`, and `Zero`.
 ///
 /// # Panics
 ///
@@ -28,19 +23,16 @@ use crate::genetic::{Fitness, PopulationFitness};
 /// # Example
 ///
 /// ```rust
-/// use ndarray::array;
+/// use numpy::ndarray::array;
 /// // Assume the `_dominates` function is defined in the current scope.
 ///
 /// let a = array![1.0, 2.0, 3.0];
 /// let b = array![1.5, 1.5, 3.0];
 ///
-/// assert_eq!(_dominates(&a, &b, None), false);
-/// assert_eq!(_dominates(&b, &a, None), true);
+/// assert_eq!(_dominates(&a, &b), false);
+/// assert_eq!(_dominates(&b, &a), true);
 /// ```
-fn _dominates<F>(f1: &ArrayView1<F>, f2: &ArrayView1<F>) -> bool
-where
-    F: Fitness,
-{
+fn _dominates(f1: &ArrayView1<f64>, f2: &ArrayView1<f64>) -> bool {
     let mut better_in_any = false;
 
     for (&f1_i, &f2_i) in f1.iter().zip(f2.iter()) {
@@ -57,13 +49,10 @@ where
     better_in_any
 }
 
-fn _get_current_front<F>(
-    population_fitness: ArrayView2<'_, F>,
+fn _get_current_front(
+    population_fitness: ArrayView2<'_, f64>,
     remainder_indexes: &Vec<usize>,
-) -> Vec<usize>
-where
-    F: Fitness,
-{
+) -> Vec<usize> {
     // Filter population fitness based on remainder_indexes
     let filtered_population = population_fitness.select(Axis(0), remainder_indexes);
 
@@ -113,10 +102,7 @@ fn _update_remainder_individuals<'a, 'b>(
     remainder_individuals
 }
 
-pub fn fast_non_dominated_sorting<F>(population_fitness: &PopulationFitness<F>) -> Vec<Vec<usize>>
-where
-    F: Fitness,
-{
+pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec<Vec<usize>> {
     // Get population size
     let population_size: usize = population_fitness.shape()[0];
     // Container for the fronts
@@ -147,10 +133,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{array, Array2};
+    use numpy::ndarray::{array, Array2};
 
     #[test]
-    fn test_dominates_f64() {
+    fn test_dominates() {
         // Test case 1: First vector _dominates the second
         let a = array![1.0, 2.0, 3.0];
         let b = array![2.0, 3.0, 4.0];
@@ -173,30 +159,7 @@ mod tests {
     }
 
     #[test]
-    fn test_dominates_i32() {
-        // Test case 1: First vector _dominates the second
-        let a = array![1, 2, 3];
-        let b = array![2, 3, 4];
-        assert_eq!(_dominates(&a.view(), &b.view()), true);
-
-        // Test case 2: Second vector _dominates the first
-        let a = array![3, 3, 3];
-        let b = array![2, 4, 5];
-        assert_eq!(_dominates(&a.view(), &b.view()), false);
-
-        // Test case 3: Neither vector _dominates the other
-        let a = array![1, 2, 3];
-        let b = array![2, 1, 3];
-        assert_eq!(_dominates(&a.view(), &b.view()), false);
-
-        // Test case 4: Equal vectors
-        let a = array![1, 2, 3];
-        let b = array![1, 2, 3];
-        assert_eq!(_dominates(&a.view(), &b.view()), false);
-    }
-
-    #[test]
-    fn test_get_current_front_f64() {
+    fn test_get_current_front() {
         // Define the fitness values of the population
         let population_fitness = array![
             [1.0, 2.0], // Genes 0
@@ -213,28 +176,6 @@ mod tests {
 
         // Expected front: individuals 0, 1, and 2 (not dominated by anyone in this set)
         let expected_front = vec![0, 1, 2];
-
-        assert_eq!(current_front, expected_front);
-    }
-
-    #[test]
-    fn test_get_current_front_i32() {
-        // Define the fitness values of the population
-        let population_fitness = array![
-            [1, 2], // Genes 0
-            [2, 1], // Genes 1
-            [1, 1], // Genes 2 (dominated by no one)
-            [3, 4], // Genes 3 (dominated by everyone)
-        ];
-
-        // All individuals are initially considered
-        let remainder_indexes = vec![0, 1, 2, 3];
-
-        // Compute the current Pareto front
-        let current_front = _get_current_front(population_fitness.view(), &remainder_indexes);
-
-        // Expected front: individual 2 dominates everyone
-        let expected_front = vec![2];
 
         assert_eq!(current_front, expected_front);
     }

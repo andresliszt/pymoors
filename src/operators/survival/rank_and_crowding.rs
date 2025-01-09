@@ -1,62 +1,72 @@
-use crate::genetic::{Fitness, Fronts, FrontsExt, Population};
-use crate::operators::GeneticOperator;
+use crate::genetic::{Fronts, FrontsExt, Population};
+use crate::operators::{GeneticOperator, SurvivalOperator};
+use std::fmt::Debug;
 
-impl GeneticOperator for RankCrowdSurvival {
+#[derive(Clone, Debug)]
+pub struct RankCrowdingSurvival;
+
+impl GeneticOperator for RankCrowdingSurvival {
     fn name(&self) -> String {
-        "RankCrowdSurvival".to_string()
+        "RankCrowdingSurvival".to_string()
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct RankCrowdSurvival;
+impl RankCrowdingSurvival {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
-impl RankCrowdSurvival {
-    /// Performs survival selection based on rank and crowding distance.
-    pub fn operate<Dna, F>(
-        &self,
-        fronts: &mut Fronts<Dna, F>,
-        n_survive: usize,
-    ) -> Population<Dna, F>
-    where
-        Dna: Clone,
-        F: Fitness + Into<f64>,
-    {
+impl SurvivalOperator for RankCrowdingSurvival {
+    fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population {
+        // We will collect sub-populations (fronts) that survive here
+        let mut chosen_fronts: Vec<Population> = Vec::new();
         let mut n_survivors = 0;
-        for pop_front in fronts.iter_mut() {
-            if n_survivors + pop_front.len() <= n_survive {
-                // all individuals in this front are survivors
-                n_survivors += pop_front.len();
-                continue;
-            } else {
-                let remaining = n_survive - n_survivors;
-                // Sort the individuals by crowding distance in descending order
-                let cd = pop_front.crowding_distance.clone();
-                let mut indices: Vec<usize> = (0..pop_front.len()).collect();
-                indices.sort_by(|&i, &j| {
-                    cd[j]
-                        .partial_cmp(&cd[i])
-                        .unwrap_or(std::cmp::Ordering::Equal)
-                });
 
-                // Keep only the top `remaining` individuals
-                let selected_indices = indices.into_iter().take(remaining).collect::<Vec<_>>();
-                pop_front.select(&ndarray::Array1::from_vec(selected_indices));
-                break; // Stop, we've reached `n_survive`
+        for front in fronts.iter() {
+            let front_size = front.len();
+
+            // If this entire front fits into the survivor count
+            if n_survivors + front_size <= n_survive {
+                chosen_fronts.push(front.clone());
+                n_survivors += front_size;
+            } else {
+                // Only part of this front fits
+                let remaining = n_survive - n_survivors;
+                if remaining > 0 {
+                    // Sort by crowding distance (descending)
+                    let cd = front.crowding_distance.clone();
+                    let mut indices: Vec<usize> = (0..front_size).collect();
+                    indices.sort_by(|&i, &j| {
+                        cd[j]
+                            .partial_cmp(&cd[i])
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+
+                    // Take only 'remaining' individuals
+                    let selected_indices = indices.into_iter().take(remaining).collect::<Vec<_>>();
+                    let partial = front.selected(&selected_indices);
+                    chosen_fronts.push(partial);
+                }
+                // No more slots left after this
+                break;
             }
         }
-        fronts.flatten_fronts()
+
+        // Finally, combine the chosen fronts into a single population
+        chosen_fronts.flatten_fronts()
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{arr1, arr2, Array2};
+    use numpy::ndarray::{arr1, arr2, Array2};
 
     #[test]
     fn test_survival_selection_all_survive_single_front() {
         // All individuals can survive without partial selection.
-        let genes = arr2(&[[0, 1], [2, 3], [4, 5]]);
+        let genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]]);
         let fitness = arr2(&[[0.1], [0.2], [0.3]]);
         let constraints: Option<Array2<f64>> = None;
         let rank = arr1(&[0, 0, 0]);
@@ -69,10 +79,10 @@ mod tests {
             rank.clone(),
             crowding_distance.clone(),
         );
-        let mut fronts: Fronts<_, f64> = vec![population];
+        let mut fronts: Fronts = vec![population];
 
         let n_survive = 3;
-        let selector = RankCrowdSurvival;
+        let selector = RankCrowdingSurvival;
         let new_population = selector.operate(&mut fronts, n_survive);
 
         // All three should survive unchanged
@@ -84,7 +94,7 @@ mod tests {
     #[test]
     fn test_survival_selection_partial_survival_single_front() {
         // Only a subset of individuals survive, chosen by descending crowding distance.
-        let genes = arr2(&[[0, 1], [2, 3], [4, 5]]);
+        let genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]]);
         let fitness = arr2(&[[0.1], [0.2], [0.3]]);
         let constraints: Option<Array2<f64>> = None;
         let rank = arr1(&[0, 0, 0]);
@@ -97,16 +107,16 @@ mod tests {
             rank.clone(),
             crowding_distance.clone(),
         );
-        let mut fronts: Fronts<_, f64> = vec![population];
+        let mut fronts: Fronts = vec![population];
 
         let n_survive = 2;
-        let selector = RankCrowdSurvival;
+        let selector = RankCrowdingSurvival;
         let new_population = selector.operate(&mut fronts, n_survive);
 
         // Sort by CD descending: indices by CD would be [0 (10.0), 2 (7.0), 1 (5.0)]
         // Top two: indices [0,2]
         assert_eq!(new_population.len(), 2);
-        assert_eq!(new_population.genes, arr2(&[[0, 1], [4, 5]]));
+        assert_eq!(new_population.genes, arr2(&[[0.0, 1.0], [4.0, 5.0]]));
         assert_eq!(new_population.fitness, arr2(&[[0.1], [0.3]]));
     }
 
@@ -117,13 +127,13 @@ mod tests {
         // Front 2: 3 individuals, but we only need 2 more to reach n_survive=4 total
         // Selection from Front 2 should be by crowding distance.
 
-        let front1_genes = arr2(&[[0, 1], [2, 3]]);
+        let front1_genes = arr2(&[[0.0, 1.0], [2.0, 3.0]]);
         let front1_fitness = arr2(&[[0.1], [0.2]]);
         let front1_constraints: Option<Array2<f64>> = None;
         let front1_rank = arr1(&[0, 0]);
         let front1_cd = arr1(&[8.0, 9.0]);
 
-        let front2_genes = arr2(&[[4, 5], [6, 7], [8, 9]]);
+        let front2_genes = arr2(&[[4.0, 5.0], [6.0, 7.0], [8.0, 9.0]]);
         let front2_fitness = arr2(&[[0.3], [0.4], [0.5]]);
         let front2_constraints: Option<Array2<f64>> = None;
         let front2_rank = arr1(&[1, 1, 1]);
@@ -145,10 +155,10 @@ mod tests {
             front2_cd,
         );
 
-        let mut fronts: Fronts<_, f64> = vec![population1, population2];
+        let mut fronts: Fronts = vec![population1, population2];
 
         let n_survive = 4; // We want 4 individuals total
-        let selector = RankCrowdSurvival;
+        let selector = RankCrowdingSurvival;
         let new_population = selector.operate(&mut fronts, n_survive);
 
         // After selecting the full first front (2 individuals),
@@ -168,7 +178,7 @@ mod tests {
         // front2 index 1 -> [6, 7]
         // front2 index 0 -> [4, 5]
 
-        let expected_genes = arr2(&[[0, 1], [2, 3], [6, 7], [4, 5]]);
+        let expected_genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [6.0, 7.0], [4.0, 5.0]]);
         let expected_fitness = arr2(&[[0.1], [0.2], [0.4], [0.3]]);
         assert_eq!(new_population.genes, expected_genes);
         assert_eq!(new_population.fitness, expected_fitness);

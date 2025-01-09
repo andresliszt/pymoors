@@ -1,4 +1,4 @@
-use ndarray::{concatenate, s, Array1, Axis};
+use numpy::ndarray::{concatenate, s, Array1, Axis};
 use rand::Rng;
 
 use crate::genetic::Genes;
@@ -19,13 +19,13 @@ impl GeneticOperator for SinglePointBinaryCrossover {
     }
 }
 
-impl CrossoverOperator<u8> for SinglePointBinaryCrossover {
+impl CrossoverOperator for SinglePointBinaryCrossover {
     fn crossover<R>(
         &self,
-        parent_a: &Genes<u8>,
-        parent_b: &Genes<u8>,
+        parent_a: &Genes,
+        parent_b: &Genes,
         rng: &mut R,
-    ) -> (Genes<u8>, Genes<u8>)
+    ) -> (Genes, Genes)
     where
         R: Rng + Sized,
     {
@@ -63,14 +63,14 @@ impl CrossoverOperator<u8> for SinglePointBinaryCrossover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::array;
+    use numpy::ndarray::array;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
     #[test]
     fn test_single_point_binary_crossover() {
-        let parent_a = array![0u8, 1, 1, 0, 1];
-        let parent_b = array![1u8, 0, 0, 1, 0];
+        let parent_a = array![0.0, 1.0, 1.0, 0.0, 1.0];
+        let parent_b = array![1.0, 0.0, 0.0, 1.0, 0.0];
 
         let crossover_operator = SinglePointBinaryCrossover::new();
         let mut rng = StdRng::seed_from_u64(42);
@@ -80,8 +80,8 @@ mod tests {
 
         // Since the seed is fixed, the crossover point is deterministic
         // For the seed 42 and num_genes = 5, crossover_point should be 3
-        let expected_offspring_a = array![0u8, 1, 1, 1, 0];
-        let expected_offspring_b = array![1u8, 0, 0, 0, 1];
+        let expected_offspring_a = array![0.0, 1.0, 1.0, 1.0, 0.0];
+        let expected_offspring_b = array![1.0, 0.0, 0.0, 0.0, 1.0];
 
         assert_eq!(offspring_a, expected_offspring_a);
         assert_eq!(offspring_b, expected_offspring_b);

@@ -18,15 +18,19 @@ impl GeneticOperator for BitFlipMutation {
     }
 }
 
-impl MutationOperator<u8> for BitFlipMutation {
-    fn mutate<R>(&self, individual: &Genes<u8>, rng: &mut R) -> Genes<u8>
+impl MutationOperator for BitFlipMutation {
+    fn mutate<R>(&self, individual: &Genes, rng: &mut R) -> Genes
     where
         R: Rng + Sized,
     {
         // Return a new mutated individual using mapv
         individual.mapv(|gene| {
             if rng.gen_bool(self.gene_mutation_rate) {
-                gene ^ 1 // Flip 0 to 1 and 1 to 0
+                if gene == 0.0 {
+                    1.0
+                } else {
+                    0.0
+                }
             } else {
                 gene
             }
@@ -39,14 +43,14 @@ impl MutationOperator<u8> for BitFlipMutation {
 mod tests {
     use super::*; // Bring all items from the parent module into scope
     use crate::genetic::PopulationGenes;
-    use ndarray::array;
+    use numpy::ndarray::array;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
     #[test]
     fn test_bit_flip_mutation() {
         // Create an individual with known genes
-        let pop: PopulationGenes<u8> = array![[0u8, 0, 0, 0, 0], [1u8, 1, 1, 1, 1]];
+        let pop: PopulationGenes = array![[0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0]];
 
         // Create a BitFlipMutation operator with a high gene mutation rate
         let mutation_operator = BitFlipMutation::new(1.0); // Ensure all bits are flipped
@@ -59,7 +63,7 @@ mod tests {
         let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
 
         // Check that all bits have been flipped
-        let expected_pop: PopulationGenes<u8> = array![[1u8, 1, 1, 1, 1], [0u8, 0, 0, 0, 0]];
+        let expected_pop: PopulationGenes = array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
         assert_eq!(expected_pop, mutated_pop);
 
         println!("Mutated population: {:?}", mutated_pop);

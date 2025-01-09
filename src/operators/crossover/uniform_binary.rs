@@ -1,4 +1,4 @@
-use ndarray::Array1;
+use numpy::ndarray::Array1;
 use rand::distributions::Uniform;
 use rand::Rng;
 
@@ -20,13 +20,13 @@ impl GeneticOperator for UniformBinaryCrossover {
     }
 }
 
-impl CrossoverOperator<u8> for UniformBinaryCrossover {
+impl CrossoverOperator for UniformBinaryCrossover {
     fn crossover<R>(
         &self,
-        parent_a: &Genes<u8>,
-        parent_b: &Genes<u8>,
+        parent_a: &Genes,
+        parent_b: &Genes,
         rng: &mut R,
-    ) -> (Genes<u8>, Genes<u8>)
+    ) -> (Genes, Genes)
     where
         R: Rng + Sized,
     {
@@ -61,14 +61,14 @@ impl CrossoverOperator<u8> for UniformBinaryCrossover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::array;
+    use numpy::ndarray::array;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 
     #[test]
     fn test_uniform_binary_crossover() {
-        let parent_a = array![0u8, 1, 1, 0, 1];
-        let parent_b = array![1u8, 0, 0, 1, 0];
+        let parent_a = array![0.0, 1.0, 1.0, 0.0, 1.0];
+        let parent_b = array![1.0, 0.0, 0.0, 1.0, 0.0];
 
         let crossover_operator = UniformBinaryCrossover::new();
         let mut rng = StdRng::seed_from_u64(42);
@@ -77,8 +77,8 @@ mod tests {
             crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
 
         // Expected offspring based on the fixed seed and swapping decisions
-        let expected_offspring_a = array![0u8, 1, 1, 1, 0];
-        let expected_offspring_b = array![1u8, 0, 0, 0, 1];
+        let expected_offspring_a = array![0.0, 1.0, 1.0, 1.0, 0.0];
+        let expected_offspring_b = array![1.0, 0.0, 0.0, 0.0, 1.0];
 
         assert_eq!(offspring_a, expected_offspring_a);
         assert_eq!(offspring_b, expected_offspring_b);

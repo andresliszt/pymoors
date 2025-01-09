@@ -1,27 +1,29 @@
 use std::fmt::Debug;
 
-use crate::genetic::{Fitness, Individual};
+use crate::genetic::Individual;
 use crate::operators::{DuelResult, GeneticOperator, SelectionOperator};
 
 // TODO: Enable pressure. Currently is fixed in 2
 
 #[derive(Clone, Debug)]
-pub struct TournamentSelection {}
+pub struct RankAndCrowdingSelection {}
 
-impl GeneticOperator for TournamentSelection {
-    fn name(&self) -> String {
-        "TournamentSelection".to_string()
+impl RankAndCrowdingSelection {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl<Dna, F> SelectionOperator<Dna, F> for TournamentSelection
-where
-    Dna: Clone + Debug,
-    F: Fitness,
-{
+impl GeneticOperator for RankAndCrowdingSelection {
+    fn name(&self) -> String {
+        "RankAndCrowdingSelection".to_string()
+    }
+}
+
+impl SelectionOperator for RankAndCrowdingSelection {
     /// Runs the tournament selection on the given population and returns a vector of winners.
     /// This example assumes binary tournaments (pressure = 2)
-    fn tournament_duel(&self, p1: &Individual<Dna, F>, p2: &Individual<Dna, F>) -> DuelResult {
+    fn tournament_duel(&self, p1: &Individual, p2: &Individual) -> DuelResult {
         // get feasibility
         let p1_feasible = p1.is_feasible();
         let p2_feasible = p2.is_feasible();
@@ -62,7 +64,7 @@ where
 mod tests {
     use super::*;
     use crate::genetic::Population;
-    use ndarray::{arr1, arr2};
+    use numpy::ndarray::{arr1, arr2, Array2};
     use rand::prelude::*;
 
     #[test]
@@ -70,7 +72,7 @@ mod tests {
         // For a population of 4:
         // Rank: [0, 1, 0, 1]
         // CD: [10.0, 5.0, 9.0, 1.0]
-        let genes = arr2(&[[1, 2], [3, 4], [5, 6], [7, 8]]);
+        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]]);
         let fitness = arr2(&[[0.5], [0.6], [0.7], [0.8]]);
         let constraints = None;
         let rank = arr1(&[0, 1, 0, 1]);
@@ -82,7 +84,7 @@ mod tests {
         // total_needed = 2 * 2 * 2 = 8 participants → 4 tournaments → 4 winners.
         // After splitting: pop_a = 2 winners, pop_b = 2 winners.
         let n_crossovers = 2;
-        let selector = TournamentSelection {};
+        let selector = RankAndCrowdingSelection {};
         let mut rng = thread_rng();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
@@ -95,7 +97,7 @@ mod tests {
         // Two individuals:
         // Individual 0: feasible
         // Individual 1: infeasible
-        let genes = arr2(&[[1, 2], [3, 4]]);
+        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
         let fitness = arr2(&[[0.5], [0.6]]);
         let constraints = Some(arr2(&[[-1.0, 0.0], [1.0, 1.0]]));
         let rank = arr1(&[0, 0]);
@@ -107,7 +109,7 @@ mod tests {
         // total_needed = 1 * 2 * 2 = 4 participants → 2 tournaments → 2 winners total.
         // After splitting: pop_a = 1 winner, pop_b = 1 winner.
         let n_crossovers = 1;
-        let selector = TournamentSelection {};
+        let selector = RankAndCrowdingSelection {};
         let mut rng = thread_rng();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
@@ -120,7 +122,7 @@ mod tests {
     fn test_tournament_selection_same_rank_and_cd() {
         // If two individuals have the same rank and the same CD,
         // the second one wins in the event of a tie.
-        let genes = arr2(&[[1, 2], [3, 4]]);
+        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
         let fitness = arr2(&[[0.5], [0.6]]);
         let constraints = None;
         let rank = arr1(&[0, 0]);
@@ -132,7 +134,7 @@ mod tests {
         // total_needed = 4 participants → 2 tournaments → 2 winners
         // After splitting: pop_a = 1 winner, pop_b = 1 winner
         let n_crossovers = 1;
-        let selector = TournamentSelection {};
+        let selector = RankAndCrowdingSelection {};
         let mut rng = thread_rng();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
@@ -147,8 +149,8 @@ mod tests {
         let pop_size = 100;
         let n_genes = 5;
 
-        let genes = ndarray::Array2::from_shape_fn((pop_size, n_genes), |(i, _)| i as i32);
-        let fitness = ndarray::Array2::from_shape_fn((pop_size, 1), |(i, _)| i as f64 / 100.0);
+        let genes = Array2::from_shape_fn((pop_size, n_genes), |(i, _)| i as f64);
+        let fitness = Array2::from_shape_fn((pop_size, 1), |(i, _)| i as f64 / 100.0);
         let constraints = None;
 
         let mut rng = thread_rng();
@@ -164,7 +166,7 @@ mod tests {
         // total_needed = 50 * 2 * 2 = 200 participants → 100 tournaments → 100 winners.
         // After splitting: pop_a = 50 winners, pop_b = 50 winners.
         let n_crossovers = 50;
-        let selector = TournamentSelection {};
+        let selector = RankAndCrowdingSelection {};
         let mut rng = thread_rng();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
@@ -177,7 +179,7 @@ mod tests {
         // One crossover:
         // total_needed = 1 * 2 * 2 = 4 participants → 2 tournaments → 2 winners
         // After splitting: pop_a = 1, pop_b = 1
-        let genes = arr2(&[[10, 20], [30, 40]]);
+        let genes = arr2(&[[10.0, 20.0], [30.0, 40.0]]);
         let fitness = arr2(&[[1.0], [2.0]]);
         let constraints = None;
         let rank = arr1(&[0, 1]);
@@ -186,7 +188,7 @@ mod tests {
         let population = Population::new(genes, fitness, constraints, rank, cd);
 
         let n_crossovers = 1;
-        let selector = TournamentSelection {};
+        let selector = RankAndCrowdingSelection {};
         let mut rng = thread_rng();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 

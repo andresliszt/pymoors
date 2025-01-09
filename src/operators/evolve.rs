@@ -1,22 +1,16 @@
 use crate::{
-    evaluator::Evaluator,
-    genetic::{Fitness, Population, PopulationGenes},
-    operators::{CrossoverOperator, MutationOperator, SelectionOperator}
+    genetic::{Population, PopulationGenes},
+    operators::{CrossoverOperator, MutationOperator, SelectionOperator},
 };
 use rand::Rng;
 use std::{fmt::Debug, marker::PhantomData};
 
-pub struct Evolve<Dna, F, S, C, M>
+pub struct Evolve<S, C, M>
 where
-    Dna: Clone + Debug,
-    F: Fitness,
-    M: MutationOperator<Dna>,
-    C: CrossoverOperator<Dna>,
-    S: SelectionOperator<Dna, F>,
+    M: MutationOperator,
+    C: CrossoverOperator,
+    S: SelectionOperator,
 {
-    _f: PhantomData<F>,
-    _d: PhantomData<Dna>,
-    evaluator: Evaluator<Dna, F>,
     selection: S,
     crossover: C,
     mutation: M,
@@ -33,16 +27,13 @@ pub enum EvolveError {
     },
 }
 
-impl<Dna, F, S, C, M> Evolve<Dna, F, S, C, M>
+impl<S, C, M> Evolve<S, C, M>
 where
-    Dna: Clone + Debug,
-    F: Fitness,
-    M: MutationOperator<Dna>,
-    C: CrossoverOperator<Dna>,
-    S: SelectionOperator<Dna, F>,
+    M: MutationOperator,
+    C: CrossoverOperator,
+    S: SelectionOperator,
 {
-    fn new(
-        evaluator: Evaluator<Dna, F>,
+    pub fn new(
         selection: S,
         crossover: C,
         mutation: M,
@@ -50,9 +41,6 @@ where
         crossover_rate: f64,
     ) -> Self {
         Self {
-            _f: PhantomData,
-            _d: PhantomData,
-            evaluator,
             selection,
             crossover,
             mutation,
@@ -63,10 +51,10 @@ where
 
     fn _mating<R>(
         &self,
-        parents_a: &PopulationGenes<Dna>,
-        parents_b: &PopulationGenes<Dna>,
+        parents_a: &PopulationGenes,
+        parents_b: &PopulationGenes,
         rng: &mut R,
-    ) -> PopulationGenes<Dna>
+    ) -> PopulationGenes
     where
         R: Rng + Sized,
     {
@@ -80,11 +68,11 @@ where
 
     pub fn evolve<R>(
         &self,
-        population: &Population<Dna, F>,
+        population: &Population,
         n_offsprings: usize,
         max_iter: usize,
         rng: &mut R,
-    ) -> Result<PopulationGenes<Dna>, EvolveError>
+    ) -> Result<PopulationGenes, EvolveError>
     where
         R: Rng + Sized,
     {
@@ -119,7 +107,7 @@ where
         }
 
         // Convert the Vec back into an Array2
-        let offspring_data: Vec<Dna> = all_offsprings.into_iter().flat_map(|row| row).collect();
+        let offspring_data: Vec<f64> = all_offsprings.into_iter().flat_map(|row| row).collect();
 
         let offspring_array =
             PopulationGenes::from_shape_vec((achieved_offsprings, num_genes), offspring_data)

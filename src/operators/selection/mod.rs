@@ -1,1 +1,3 @@
-pub mod rank_and_distance_tournament;
+pub mod rank_and_crowding_tournament;
+
+pub use rank_and_crowding_tournament::RankAndCrowdingSelection;

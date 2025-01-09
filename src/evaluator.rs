@@ -1,45 +1,31 @@
-use ndarray::{Array1, Axis};
 use crate::{
-    genetic::{
-        Fitness, Fronts, Population, PopulationConstraints, PopulationFitness, PopulationGenes,
-    },
-    non_dominated_sorting::{crowding_distance, fast_non_dominated_sorting}
+    genetic::{Fronts, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
+    non_dominated_sorting::{crowding_distance, fast_non_dominated_sorting},
 };
-use std::marker::PhantomData;
+use numpy::ndarray::{Array1, Axis};
+
 /// Evaluator struct for calculating fitness and (optionally) constraints,
 /// then assembling a `Population`.
 
-pub struct Evaluator<Dna, F> {
-    fitness_fn: Box<dyn Fn(&PopulationGenes<Dna>) -> PopulationFitness<F>>,
-    constraints_fn:
-        Option<Box<dyn Fn(&PopulationGenes<Dna>) -> PopulationConstraints<f64>>>,
-    _phantom: PhantomData<(Dna, F)>,
+pub struct Evaluator {
+    fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
+    constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
 }
 
-impl<Dna, F> Evaluator<Dna, F>
-where
-    Dna: Clone + 'static,
-    F: Fitness + Into<f64>,
-{
+impl Evaluator {
     /// Creates a new `Evaluator` with a fitness function and an optional constraints function.
     pub fn new(
-        fitness_fn: Box<dyn Fn(&PopulationGenes<Dna>) -> PopulationFitness<F>>,
-        constraints_fn: Option<
-            Box<dyn Fn(&PopulationGenes<Dna>) -> PopulationConstraints<f64>>,
-        >,
+        fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
+        constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
     ) -> Self {
         Self {
             fitness_fn,
             constraints_fn,
-            _phantom: PhantomData,
         }
     }
 
     /// Evaluates the fitness of the population genes (2D ndarray).
-    pub fn evaluate_fitness(
-        &self,
-        population_genes: &PopulationGenes<Dna>,
-    ) -> PopulationFitness<F> {
+    pub fn evaluate_fitness(&self, population_genes: &PopulationGenes) -> PopulationFitness {
         (self.fitness_fn)(population_genes)
     }
 
@@ -47,32 +33,22 @@ where
     /// Returns `None` if no constraints function was given.
     pub fn evaluate_constraints(
         &self,
-        population_genes: &PopulationGenes<Dna>,
-    ) -> Option<PopulationConstraints<f64>> {
+        population_genes: &PopulationGenes,
+    ) -> Option<PopulationConstraints> {
         self.constraints_fn.as_ref().map(|cf| cf(population_genes))
     }
 
-    /// Builds multiple fronts, each being a `Population<Dna, F>`:
-    /// - The 1st front (rank 0) is a single `Population` containing all individuals in that front.
-    /// - The 2nd front (rank 1) is another `Population`, and so forth.
-    ///
-    /// Each returned `Population` in the `Fronts<Dna, F>` will have:
-    ///   - the subset of `genes` belonging to that front
-    ///   - the corresponding subset of `fitness` rows
-    ///   - constraints (if any)
-    ///   - `rank` assigned to each individual in that front
-    ///   - per-individual `crowding_distance`
-    pub fn build_fronts(&self, genes: PopulationGenes<Dna>) -> Fronts<Dna, F> {
+    pub fn build_fronts(&self, genes: &PopulationGenes) -> Fronts {
         // 1) Evaluate fitness
-        let fitness = self.evaluate_fitness(&genes);
+        let fitness = self.evaluate_fitness(genes);
 
         // 2) Evaluate constraints (optional)
-        let constraints = self.evaluate_constraints(&genes);
+        let constraints = self.evaluate_constraints(genes);
 
         // 3) Perform non-dominated sorting: returns Vec<Vec<usize>> representing the indices per front
         let sorted_fronts = fast_non_dominated_sorting(&fitness);
 
-        let mut results: Fronts<Dna, F> = Vec::new();
+        let mut results: Fronts = Vec::new();
 
         // For each front (rank = front_index), extract the sub-population
         for (front_index, indices) in sorted_fronts.iter().enumerate() {
@@ -110,10 +86,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::{array, Axis};
+    use numpy::ndarray::{array, Axis, concatenate};
 
     // Fitness function
-    fn fitness_fn(genes: &PopulationGenes<f64>) -> PopulationFitness<f64> {
+    fn fitness_fn(genes: &PopulationGenes) -> PopulationFitness {
         // Sphere function: sum of squares for each individual
         genes
             .map_axis(Axis(1), |individual| {
@@ -123,7 +99,7 @@ mod tests {
     }
 
     // Constraints function
-    fn constraints_fn(genes: &PopulationGenes<f64>) -> PopulationConstraints<f64> {
+    fn constraints_fn(genes: &PopulationGenes) -> PopulationConstraints {
         // Constraint 1: sum of genes - 10 ≤ 0
         let sum_constraint = genes
             .sum_axis(Axis(1))
@@ -134,7 +110,7 @@ mod tests {
         let non_neg_constraints = genes.mapv(|x| -x);
 
         // Combine constraints into one array of shape (n_individuals, n_constraints)
-        ndarray::concatenate(
+        concatenate(
             Axis(1),
             &[sum_constraint.view(), non_neg_constraints.view()],
         )
@@ -143,7 +119,7 @@ mod tests {
 
     #[test]
     fn test_evaluator_evaluate_fitness() {
-        let evaluator = Evaluator::<f64, f64>::new(Box::new(fitness_fn), None);
+        let evaluator = Evaluator::new(Box::new(fitness_fn), None);
 
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [0.0, 0.0],];
 
@@ -160,7 +136,7 @@ mod tests {
     #[test]
     fn test_evaluator_evaluate_constraints() {
         let evaluator =
-            Evaluator::<f64, f64>::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
+            Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
 
         let population_genes = array![
             [1.0, 2.0], // Feasible (sum=3, sum-10=-7; genes >= 0)
@@ -192,13 +168,13 @@ mod tests {
     #[test]
     fn test_evaluator_build_fronts() {
         let evaluator =
-            Evaluator::<f64, f64>::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
+            Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
 
         // We'll create a small population with 3 individuals
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0],];
 
         // Build multiple fronts
-        let fronts = evaluator.build_fronts(population_genes.clone());
+        let fronts = evaluator.build_fronts(&population_genes);
 
         // Expecting 3 individuals distributed across one or more fronts:
         // single-objective (sphere) + strictly dominated solutions

@@ -1,4 +1,6 @@
-use crate::genetic::{Fitness, Genes, GenesMut, Individual, Population, PopulationGenes};
+use crate::genetic::{
+    Fronts, Genes, Individual, Population, PopulationFitness, PopulationGenes,
+};
 use rand::prelude::SliceRandom;
 use rand::Rng;
 use std::fmt::Debug;
@@ -14,17 +16,14 @@ pub trait GeneticOperator: Clone + Debug {
     fn name(&self) -> String;
 }
 
-pub trait SamplingOperator<Dna>: GeneticOperator
-where
-    Dna: Clone + Debug + PartialEq + Send + Sync,
-{
+pub trait SamplingOperator: GeneticOperator {
     /// Samples a single individual.
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes<Dna>
+    fn sample_individual<R>(&self, rng: &mut R) -> Genes
     where
         R: Rng + Sized;
 
     /// Samples a population of individuals.
-    fn operate<R>(&self, population_size: usize, rng: &mut R) -> PopulationGenes<Dna>
+    fn operate<R>(&self, population_size: usize, rng: &mut R) -> PopulationGenes
     where
         R: Rng + Sized,
     {
@@ -40,7 +39,7 @@ where
         let num_genes = population[0].len();
 
         // Flatten the population into a single vector
-        let flat_population: Vec<Dna> = population
+        let flat_population: Vec<f64> = population
             .into_iter()
             .flat_map(|individual| individual.into_iter())
             .collect();
@@ -48,7 +47,7 @@ where
         // Create the shape: (number of individuals, number of genes)
         let shape = (population_size, num_genes);
 
-        // Use from_shape_vec to create PopulationGenes<Dna::Item>
+        // Use from_shape_vec to create PopulationGenes
         let population_genes = PopulationGenes::from_shape_vec(shape, flat_population)
             .expect("Failed to create PopulationGenes from vector");
 
@@ -56,12 +55,9 @@ where
     }
 }
 
-pub trait MutationOperator<Dna>: GeneticOperator
-where
-    Dna: Clone + Debug,
-{
+pub trait MutationOperator: GeneticOperator {
     /// Mutates a single individual and returns the mutated individual.
-    fn mutate<R>(&self, individual: &Genes<Dna>, rng: &mut R) -> Genes<Dna>
+    fn mutate<R>(&self, individual: &Genes, rng: &mut R) -> Genes
     where
         R: Rng + Sized;
 
@@ -83,10 +79,10 @@ where
     /// Applies the mutation operator to the population.
     fn operate<R>(
         &self,
-        population: &PopulationGenes<Dna>,
+        population: &PopulationGenes,
         mutation_rate: f64,
         rng: &mut R,
-    ) -> PopulationGenes<Dna>
+    ) -> PopulationGenes
     where
         R: Rng + Sized,
     {
@@ -110,19 +106,16 @@ where
     }
 }
 
-pub trait CrossoverOperator<Dna>: GeneticOperator
-where
-    Dna: Clone + Debug,
-{
+pub trait CrossoverOperator: GeneticOperator {
     const N_OFFSPRINGS_PER_CROSSOVER: usize = 2;
 
     /// Performs crossover between two parents to produce two offspring.
     fn crossover<R>(
         &self,
-        parent_a: &Genes<Dna>,
-        parent_b: &Genes<Dna>,
+        parent_a: &Genes,
+        parent_b: &Genes,
         rng: &mut R,
-    ) -> (Genes<Dna>, Genes<Dna>)
+    ) -> (Genes, Genes)
     where
         R: Rng + Sized;
 
@@ -130,10 +123,10 @@ where
     /// Takes two parent populations and returns two offspring populations.
     fn operate<R>(
         &self,
-        parents_a: &PopulationGenes<Dna>,
-        parents_b: &PopulationGenes<Dna>,
+        parents_a: &PopulationGenes,
+        parents_b: &PopulationGenes,
         rng: &mut R,
-    ) -> PopulationGenes<Dna>
+    ) -> PopulationGenes
     where
         R: Rng + Sized,
     {
@@ -165,7 +158,7 @@ where
             flat_offspring.extend(child_b.into_iter());
         }
 
-        // Create PopulationGenes<Dna> directly from the flat vectors
+        // Create PopulationGenes directly from the flat vectors
         let offspring_population = PopulationGenes::from_shape_vec(
             (
                 Self::N_OFFSPRINGS_PER_CROSSOVER * population_size,
@@ -185,11 +178,7 @@ pub enum DuelResult {
     Tie,
 }
 
-pub trait SelectionOperator<Dna, F>: GeneticOperator
-where
-    Dna: Clone + Debug,
-    F: Fitness,
-{
+pub trait SelectionOperator: GeneticOperator {
     const PRESSURE: usize = 2;
     const N_PARENTS_PER_CROSSOVER: usize = 2;
 
@@ -229,14 +218,14 @@ where
     }
 
     /// Tournament between 2 individuals.
-    fn tournament_duel(&self, p1: &Individual<Dna, F>, p2: &Individual<Dna, F>) -> DuelResult;
+    fn tournament_duel(&self, p1: &Individual, p2: &Individual) -> DuelResult;
 
     fn operate<R>(
         &self,
-        population: &Population<Dna, F>,
+        population: &Population,
         n_crossovers: usize,
         rng: &mut R,
-    ) -> (Population<Dna, F>, Population<Dna, F>)
+    ) -> (Population, Population)
     where
         R: Rng + Sized,
     {
@@ -271,4 +260,9 @@ where
 
         (population_a, population_b)
     }
+}
+
+pub trait SurvivalOperator: GeneticOperator {
+    /// Selects the individuals that will survive to the next generation.
+    fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population;
 }

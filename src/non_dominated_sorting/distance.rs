@@ -1,8 +1,8 @@
 use std::f64::INFINITY;
 
-use ndarray::Array1;
+use numpy::ndarray::Array1;
 
-use crate::genetic::{Fitness, PopulationFitness};
+use crate::genetic::PopulationFitness;
 
 /// Computes the crowding distance for a given Pareto population_fitness.
 ///
@@ -11,10 +11,7 @@ use crate::genetic::{Fitness, PopulationFitness};
 ///
 /// # Returns:
 /// - A 1D array of crowding distances for each individual in the population_fitness.
-pub fn crowding_distance<F>(population_fitness: &PopulationFitness<F>) -> Array1<f64>
-where
-    F: Fitness + Into<f64>,
-{
+pub fn crowding_distance(population_fitness: &PopulationFitness) -> Array1<f64> {
     let num_individuals = population_fitness.shape()[0];
     let num_objectives = population_fitness.shape()[1];
 
@@ -51,15 +48,15 @@ where
         distances[sorted_indices[num_individuals - 1]] = INFINITY;
 
         // Get min and max values for normalization
-        let min_value: f64 = objective_values[sorted_indices[0]].into();
-        let max_value: f64 = objective_values[sorted_indices[num_individuals - 1]].into();
+        let min_value = objective_values[sorted_indices[0]];
+        let max_value = objective_values[sorted_indices[num_individuals - 1]];
         let range = max_value - min_value;
 
         if range != 0.0 {
             // Calculate crowding distances for intermediate individuals
             for k in 1..(num_individuals - 1) {
-                let next = objective_values[sorted_indices[k + 1]].into();
-                let prev = objective_values[sorted_indices[k - 1]].into();
+                let next = objective_values[sorted_indices[k + 1]];
+                let prev = objective_values[sorted_indices[k - 1]];
                 distances[sorted_indices[k]] += (next - prev) / range;
             }
         }
@@ -71,10 +68,10 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use ndarray::array;
+    use numpy::ndarray::array;
 
     #[test]
-    fn test_crowding_distance_f64() {
+    fn test_crowding_distance() {
         // Define a population_fitness with multiple individuals
         let population_fitness = array![[1.0, 2.0], [2.0, 1.0], [1.5, 1.5], [3.0, 3.0]];
 
@@ -124,20 +121,6 @@ mod tests {
 
         // Expected: all distances should remain zero except for the first
         let expected = array![INFINITY, 0.0, 0.0, 0.0, INFINITY];
-
-        assert_eq!(distances.as_slice().unwrap(), expected.as_slice().unwrap());
-    }
-
-    #[test]
-    fn test_crowding_distance_i32() {
-        // Define a population_fitness with integer values
-        let population_fitness = array![[1, 2], [2, 1], [1, 1], [3, 3]];
-
-        // Compute crowding distances
-        let distances = crowding_distance(&population_fitness);
-
-        // Expected distances: corner individuals have INFINITY
-        let expected = array![INFINITY, 0.5, 0.5, INFINITY];
 
         assert_eq!(distances.as_slice().unwrap(), expected.as_slice().unwrap());
     }
