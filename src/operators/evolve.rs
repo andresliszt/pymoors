@@ -2,18 +2,14 @@ use crate::{
     genetic::{Population, PopulationGenes},
     operators::{CrossoverOperator, MutationOperator, SelectionOperator},
 };
-use rand::Rng;
-use std::{fmt::Debug, marker::PhantomData};
+use rand::RngCore;
+use std::fmt::Debug;
 
-pub struct Evolve<S, C, M>
-where
-    M: MutationOperator,
-    C: CrossoverOperator,
-    S: SelectionOperator,
-{
-    selection: S,
-    crossover: C,
-    mutation: M,
+#[derive(Debug)]
+pub struct Evolve {
+    selection: Box<dyn SelectionOperator>,
+    crossover: Box<dyn CrossoverOperator>,
+    mutation: Box<dyn MutationOperator>,
     mutation_rate: f64,
     crossover_rate: f64,
 }
@@ -27,16 +23,11 @@ pub enum EvolveError {
     },
 }
 
-impl<S, C, M> Evolve<S, C, M>
-where
-    M: MutationOperator,
-    C: CrossoverOperator,
-    S: SelectionOperator,
-{
+impl Evolve {
     pub fn new(
-        selection: S,
-        crossover: C,
-        mutation: M,
+        selection: Box<dyn SelectionOperator>,
+        crossover: Box<dyn CrossoverOperator>,
+        mutation: Box<dyn MutationOperator>,
         mutation_rate: f64,
         crossover_rate: f64,
     ) -> Self {
@@ -49,15 +40,12 @@ where
         }
     }
 
-    fn _mating<R>(
+    fn _mating(
         &self,
         parents_a: &PopulationGenes,
         parents_b: &PopulationGenes,
-        rng: &mut R,
-    ) -> PopulationGenes
-    where
-        R: Rng + Sized,
-    {
+        rng: &mut dyn RngCore,
+    ) -> PopulationGenes {
         // Do the crossover
         let offsprings = self.crossover.operate(&parents_a, &parents_b, rng);
         // Do the mutation. Note that mutation mutates inplace
@@ -66,16 +54,13 @@ where
         return offsprings;
     }
 
-    pub fn evolve<R>(
+    pub fn evolve(
         &self,
         population: &Population,
         n_offsprings: usize,
         max_iter: usize,
-        rng: &mut R,
-    ) -> Result<PopulationGenes, EvolveError>
-    where
-        R: Rng + Sized,
-    {
+        rng: &mut dyn RngCore,
+    ) -> Result<PopulationGenes, EvolveError> {
         let num_genes = population.genes.ncols();
         let mut all_offsprings = Vec::with_capacity(n_offsprings);
         let mut iterations = 0;

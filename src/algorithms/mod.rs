@@ -1,67 +1,56 @@
-use rand::Rng;
 use rand::thread_rng;
-use std::fmt::Debug;
+use rand::Rng;
 
 use crate::{
     evaluator::Evaluator,
-    genetic::{FrontsExt, Population, PopulationGenes, PopulationFitness, PopulationConstraints},
+    genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     operators::{
-        evolve::Evolve, CrossoverOperator, MutationOperator, SelectionOperator,
-        SurvivalOperator, sampling::random::RandomSamplingFloat
+        evolve::Evolve, CrossoverOperator, MutationOperator, SelectionOperator, SurvivalOperator, SamplingOperator
     },
 };
 
 pub mod nsga2;
 
-pub struct MultiObjectiveAlgorithm<Sel, Sur, Cross, Mut>
-where
-    Sel: SelectionOperator,
-    Sur: SurvivalOperator,
-    Cross: CrossoverOperator,
-    Mut: MutationOperator,
-{
+pub struct MultiObjectiveAlgorithm {
     population: Population,
-    survivor: Sur,
-    evolve: Evolve<Sel, Cross, Mut>,
+    survivor: Box<dyn SurvivalOperator>,
+    evolve: Evolve,
     evaluator: Evaluator,
-    n_offsprings: i32,
     pop_size: usize,
+    n_offsprings: usize,
     num_iterations: usize,
 }
 
-impl<Sel, Sur, Cross, Mut> MultiObjectiveAlgorithm<Sel, Sur, Cross, Mut>
-where
-    Sel: SelectionOperator,
-    Sur: SurvivalOperator,
-    Cross: CrossoverOperator,
-    Mut: MutationOperator,
-{
+impl MultiObjectiveAlgorithm {
     pub fn new(
-        genes: PopulationGenes,
-        selector: Sel,
-        survivor: Sur,
-        crossover: Cross,
-        mutation: Mut,
+        sampler: Box<dyn SamplingOperator>,
+        selector: Box<dyn SelectionOperator>,
+        survivor: Box<dyn SurvivalOperator>,
+        crossover: Box<dyn CrossoverOperator>,
+        mutation: Box<dyn MutationOperator>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
         constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
-        n_offsprings: i32,
+        pop_size: usize,
+        n_offsprings: usize,
         num_iterations: usize,
         mutation_rate: f64,
         crossover_rate: f64,
     ) -> Self {
-        let evaluator = Evaluator::new(fitness_fn, constraints_fn);
+        // build the initial population from its genes
+        let mut rng = thread_rng();
+        let genes = sampler.operate(pop_size, &mut rng);
         let pop_size = genes.len();
         let evolve = Evolve::new(selector, crossover, mutation, mutation_rate, crossover_rate);
-        // build the initial population from its genes
+        let evaluator = Evaluator::new(fitness_fn, constraints_fn);
         let population = evaluator.build_fronts(&genes).flatten_fronts();
         Self {
             population,
             survivor,
             evolve,
             evaluator,
-            n_offsprings,
             pop_size,
-            num_iterations
+            n_offsprings,
+            num_iterations,
         }
     }
 

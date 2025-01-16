@@ -56,19 +56,19 @@ fn _get_current_front(
     // Filter population fitness based on remainder_indexes
     let filtered_population = population_fitness.select(Axis(0), remainder_indexes);
 
-    let population_size = filtered_population.shape()[0];
+    let pop_size = filtered_population.shape()[0];
 
     // Create an empty vector for the current Pareto Front
     let mut current_front: Vec<usize> = Vec::new();
 
     // Create a vector to keep track of the domination count for each individual
-    let mut domination_count: Vec<usize> = vec![0; population_size];
+    let mut domination_count: Vec<usize> = vec![0; pop_size];
 
     // Create a list of individuals that each individual dominates
-    let mut dominated_individuals: Vec<Vec<usize>> = vec![Vec::new(); population_size];
+    let mut dominated_individuals: Vec<Vec<usize>> = vec![Vec::new(); pop_size];
 
-    for i in 0..population_size {
-        for j in (i + 1)..population_size {
+    for i in 0..pop_size {
+        for j in (i + 1)..pop_size {
             let p = filtered_population.row(i);
             let q = filtered_population.row(j);
             if _dominates(&p, &q) {
@@ -84,7 +84,7 @@ fn _get_current_front(
     }
 
     // Individuals with domination count zero belong to the current front
-    for i in 0..population_size {
+    for i in 0..pop_size {
         if domination_count[i] == 0 {
             current_front.push(remainder_indexes[i]);
         }
@@ -104,11 +104,11 @@ fn _update_remainder_individuals<'a, 'b>(
 
 pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec<Vec<usize>> {
     // Get population size
-    let population_size: usize = population_fitness.shape()[0];
+    let pop_size: usize = population_fitness.shape()[0];
     // Container for the fronts
     let mut fronts: Vec<Vec<usize>> = Vec::new();
     // Initial list of individual indices
-    let mut remainder_indexes: Vec<usize> = (0..population_size).collect();
+    let mut remainder_indexes: Vec<usize> = (0..pop_size).collect();
 
     // Generate fronts iteratively
     while !remainder_indexes.is_empty() {

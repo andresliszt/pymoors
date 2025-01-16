@@ -1,8 +1,8 @@
-use rand::distributions::Distribution;
-use rand::Rng;
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
+use rand::{Rng, RngCore};
 use std::fmt::Debug;
+use pyo3::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct RandomSamplingFloat {
@@ -17,10 +17,7 @@ impl GeneticOperator for RandomSamplingFloat {
 }
 
 impl SamplingOperator for RandomSamplingFloat {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes
-    where
-        R: Rng + Sized,
-    {
+    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
         let num_genes = 10; // Example number of genes
         (0..num_genes)
             .map(|_| rng.gen_range(self.min..self.max))
@@ -41,10 +38,7 @@ impl GeneticOperator for RandomSamplingInt {
 }
 
 impl SamplingOperator for RandomSamplingInt {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes
-    where
-        R: Rng + Sized,
-    {
+    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
         let num_genes = 10; // Example number of genes
         (0..num_genes)
             .map(|_| rng.gen_range(self.min..self.max) as f64)
@@ -62,16 +56,107 @@ impl GeneticOperator for RandomSamplingBinary {
 }
 
 impl SamplingOperator for RandomSamplingBinary {
-    fn sample_individual<R>(&self, rng: &mut R) -> Genes
-    where
-        R: Rng + Sized,
-    {
+    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
         let num_genes = 10; // Example number of genes
         (0..num_genes)
             .map(|_| if rng.gen_bool(0.5) { 1.0 } else { 0.0 })
             .collect()
     }
 }
+
+
+// A Python-exposed class that wraps the Rust `RandomSamplingFloat`.
+#[pyclass]
+#[derive(Clone)]
+pub struct PyRandomSamplingFloat {
+    pub inner: RandomSamplingFloat,
+}
+
+#[pymethods]
+impl PyRandomSamplingFloat {
+    /// Python constructor: `RandomSamplingFloat(min, max)`
+    #[new]
+    fn new(min: f64, max: f64) -> Self {
+        Self {
+            inner: RandomSamplingFloat { min, max },
+        }
+    }
+
+    #[getter]
+    fn get_min(&self) -> f64 {
+        self.inner.min
+    }
+
+    #[setter]
+    fn set_min(&mut self, value: f64) {
+        self.inner.min = value;
+    }
+
+    #[getter]
+    fn get_max(&self) -> f64 {
+        self.inner.max
+    }
+
+    #[setter]
+    fn set_max(&mut self, value: f64) {
+        self.inner.max = value;
+    }
+}
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyRandomSamplingInt {
+    pub inner: RandomSamplingInt,
+}
+
+#[pymethods]
+impl PyRandomSamplingInt {
+    /// Python constructor: `RandomSamplingInt(min, max)`
+    #[new]
+    fn new(min: i32, max: i32) -> Self {
+        Self {
+            inner: RandomSamplingInt { min, max },
+        }
+    }
+
+    #[getter]
+    fn get_min(&self) -> i32 {
+        self.inner.min
+    }
+
+    #[setter]
+    fn set_min(&mut self, value: i32) {
+        self.inner.min = value;
+    }
+
+    #[getter]
+    fn get_max(&self) -> i32 {
+        self.inner.max
+    }
+
+    #[setter]
+    fn set_max(&mut self, value: i32) {
+        self.inner.max = value;
+    }
+}
+
+
+#[pyclass]
+#[derive(Clone)]
+pub struct PyRandomSamplingBinary {
+    pub inner: RandomSamplingBinary,
+}
+
+#[pymethods]
+impl PyRandomSamplingBinary {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: RandomSamplingBinary,
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -81,7 +166,10 @@ mod tests {
 
     #[test]
     fn test_random_sampling_float() {
-        let sampler = RandomSamplingFloat { min: -1.0, max: 1.0 };
+        let sampler = RandomSamplingFloat {
+            min: -1.0,
+            max: 1.0,
+        };
         let mut rng = StdRng::from_seed([0; 32]);
         let population = sampler.operate(10, &mut rng);
 

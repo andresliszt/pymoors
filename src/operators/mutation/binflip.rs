@@ -1,5 +1,6 @@
 use crate::operators::{Genes, GeneticOperator, MutationOperator};
-use rand::prelude::*;
+use rand::{Rng, RngCore};
+use pyo3::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct BitFlipMutation {
@@ -19,10 +20,7 @@ impl GeneticOperator for BitFlipMutation {
 }
 
 impl MutationOperator for BitFlipMutation {
-    fn mutate<R>(&self, individual: &Genes, rng: &mut R) -> Genes
-    where
-        R: Rng + Sized,
-    {
+    fn mutate(&self, individual: &Genes, rng: &mut dyn RngCore) -> Genes {
         // Return a new mutated individual using mapv
         individual.mapv(|gene| {
             if rng.gen_bool(self.gene_mutation_rate) {
@@ -37,6 +35,36 @@ impl MutationOperator for BitFlipMutation {
         })
     }
 }
+
+
+/// A Python class that encapsulates our Rust `BitFlipMutation`.
+#[pyclass]
+#[derive(Clone)]  // So we can clone when converting to Box<dyn MutationOperator>
+pub struct PyBitFlipMutation {
+    // The actual Rust struct
+    pub inner: BitFlipMutation,
+}
+
+#[pymethods]
+impl PyBitFlipMutation {
+    /// Python constructor: `BitFlipMutation(gene_mutation_rate=0.05)`
+    #[new]
+    fn new(gene_mutation_rate: f64) -> Self {
+        let bitflip = BitFlipMutation::new(gene_mutation_rate);
+        Self { inner: bitflip }
+    }
+
+    #[getter]
+    fn get_gene_mutation_rate(&self) -> f64 {
+        self.inner.gene_mutation_rate
+    }
+
+    #[setter]
+    fn set_gene_mutation_rate(&mut self, value: f64) {
+        self.inner.gene_mutation_rate = value;
+    }
+}
+
 
 // Tests module
 #[cfg(test)]
@@ -63,7 +91,8 @@ mod tests {
         let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
 
         // Check that all bits have been flipped
-        let expected_pop: PopulationGenes = array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
+        let expected_pop: PopulationGenes =
+            array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
         assert_eq!(expected_pop, mutated_pop);
 
         println!("Mutated population: {:?}", mutated_pop);

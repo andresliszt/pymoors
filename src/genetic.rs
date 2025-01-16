@@ -67,6 +67,7 @@ impl Individual {
 
 /// The `Population` struct containing genes, fitness, rank, and crowding distance.
 /// `rank` and `crowding_distance` are optional and may be set during the process.
+#[derive(Debug)]
 pub struct Population {
     pub genes: PopulationGenes,
     pub fitness: PopulationFitness,

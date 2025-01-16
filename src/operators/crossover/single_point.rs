@@ -1,5 +1,6 @@
 use numpy::ndarray::{concatenate, s, Array1, Axis};
-use rand::Rng;
+use rand::{Rng, RngCore};
+use pyo3::prelude::*;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -20,15 +21,12 @@ impl GeneticOperator for SinglePointBinaryCrossover {
 }
 
 impl CrossoverOperator for SinglePointBinaryCrossover {
-    fn crossover<R>(
+    fn crossover(
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut R,
-    ) -> (Genes, Genes)
-    where
-        R: Rng + Sized,
-    {
+        rng: &mut dyn RngCore,
+    ) -> (Genes, Genes) {
         let num_genes = parent_a.len();
         assert_eq!(
             num_genes,
@@ -57,6 +55,23 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
         ];
 
         (offspring_a, offspring_b)
+    }
+}
+
+/// A Python-exposed class that wraps the Rust `SinglePointBinaryCrossover`.
+#[pyclass]
+#[derive(Clone)]
+pub struct PySinglePointBinaryCrossover {
+    pub inner: SinglePointBinaryCrossover,
+}
+
+#[pymethods]
+impl PySinglePointBinaryCrossover {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: SinglePointBinaryCrossover::new()
+        }
     }
 }
 

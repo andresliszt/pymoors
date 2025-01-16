@@ -1,6 +1,7 @@
 use numpy::ndarray::Array1;
 use rand::distributions::Uniform;
-use rand::Rng;
+use rand::{Rng, RngCore};
+use pyo3::prelude::*;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -21,15 +22,12 @@ impl GeneticOperator for UniformBinaryCrossover {
 }
 
 impl CrossoverOperator for UniformBinaryCrossover {
-    fn crossover<R>(
+    fn crossover(
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut R,
-    ) -> (Genes, Genes)
-    where
-        R: Rng + Sized,
-    {
+        rng: &mut dyn RngCore,
+    ) -> (Genes, Genes) {
         assert_eq!(
             parent_a.len(),
             parent_b.len(),
@@ -55,6 +53,23 @@ impl CrossoverOperator for UniformBinaryCrossover {
         }
 
         (offspring_a, offspring_b)
+    }
+}
+
+/// A Python-exposed class that wraps the Rust `UniformBinaryCrossover`.
+#[pyclass]
+#[derive(Clone)]
+pub struct PyUniformBinaryCrossover {
+    pub inner: UniformBinaryCrossover,
+}
+
+#[pymethods]
+impl PyUniformBinaryCrossover {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: UniformBinaryCrossover::new()
+        }
     }
 }
 

@@ -86,7 +86,7 @@ impl Evaluator {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use numpy::ndarray::{array, Axis, concatenate};
+    use numpy::ndarray::{array, concatenate, Axis};
 
     // Fitness function
     fn fitness_fn(genes: &PopulationGenes) -> PopulationFitness {
@@ -135,8 +135,7 @@ mod tests {
 
     #[test]
     fn test_evaluator_evaluate_constraints() {
-        let evaluator =
-            Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
+        let evaluator = Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
 
         let population_genes = array![
             [1.0, 2.0], // Feasible (sum=3, sum-10=-7; genes >= 0)
@@ -167,8 +166,7 @@ mod tests {
 
     #[test]
     fn test_evaluator_build_fronts() {
-        let evaluator =
-            Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
+        let evaluator = Evaluator::new(Box::new(fitness_fn), Some(Box::new(constraints_fn)));
 
         // We'll create a small population with 3 individuals
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0],];
