@@ -17,9 +17,8 @@ impl GeneticOperator for RandomSamplingFloat {
 }
 
 impl SamplingOperator for RandomSamplingFloat {
-    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
-        let num_genes = 10; // Example number of genes
-        (0..num_genes)
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+        (0..n_vars)
             .map(|_| rng.gen_range(self.min..self.max))
             .collect()
     }
@@ -38,9 +37,8 @@ impl GeneticOperator for RandomSamplingInt {
 }
 
 impl SamplingOperator for RandomSamplingInt {
-    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
-        let num_genes = 10; // Example number of genes
-        (0..num_genes)
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+        (0..n_vars)
             .map(|_| rng.gen_range(self.min..self.max) as f64)
             .collect()
     }
@@ -56,16 +54,15 @@ impl GeneticOperator for RandomSamplingBinary {
 }
 
 impl SamplingOperator for RandomSamplingBinary {
-    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes {
-        let num_genes = 10; // Example number of genes
-        (0..num_genes)
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+        (0..n_vars)
             .map(|_| if rng.gen_bool(0.5) { 1.0 } else { 0.0 })
             .collect()
     }
 }
 
 // A Python-exposed class that wraps the Rust `RandomSamplingFloat`.
-#[pyclass]
+#[pyclass(name="RandomSamplingFloat")]
 #[derive(Clone)]
 pub struct PyRandomSamplingFloat {
     pub inner: RandomSamplingFloat,
@@ -102,7 +99,7 @@ impl PyRandomSamplingFloat {
     }
 }
 
-#[pyclass]
+#[pyclass(name="RandomSamplingInt")]
 #[derive(Clone)]
 pub struct PyRandomSamplingInt {
     pub inner: RandomSamplingInt,
@@ -139,7 +136,7 @@ impl PyRandomSamplingInt {
     }
 }
 
-#[pyclass]
+#[pyclass(name="RandomSamplingBinary")]
 #[derive(Clone)]
 pub struct PyRandomSamplingBinary {
     pub inner: RandomSamplingBinary,
@@ -168,7 +165,7 @@ mod tests {
             max: 1.0,
         };
         let mut rng = StdRng::from_seed([0; 32]);
-        let population = sampler.operate(10, &mut rng);
+        let population = sampler.operate(10, 5, &mut rng);
 
         assert_eq!(population.nrows(), 10);
         assert_eq!(population.ncols(), 10);
@@ -181,7 +178,7 @@ mod tests {
     fn test_random_sampling_int() {
         let sampler = RandomSamplingInt { min: 0, max: 10 };
         let mut rng = StdRng::from_seed([0; 32]);
-        let population = sampler.operate(10, &mut rng);
+        let population = sampler.operate(10, 5, &mut rng);
 
         assert_eq!(population.nrows(), 10);
         assert_eq!(population.ncols(), 10);
@@ -194,7 +191,7 @@ mod tests {
     fn test_random_sampling_binary() {
         let sampler = RandomSamplingBinary;
         let mut rng = StdRng::from_seed([0; 32]);
-        let population = sampler.operate(10, &mut rng);
+        let population = sampler.operate(10, 5, &mut rng);
 
         assert_eq!(population.nrows(), 10);
         assert_eq!(population.ncols(), 10);

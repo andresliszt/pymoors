@@ -1,4 +1,6 @@
 use pyo3::prelude::*;
+use numpy::PyArray2;
+use numpy::IntoPyArray;
 
 use crate::algorithms::MultiObjectiveAlgorithm;
 use crate::genetic::{PopulationConstraints, PopulationFitness, PopulationGenes};
@@ -22,6 +24,7 @@ impl Nsga2 {
         crossover: Box<dyn CrossoverOperator>,
         mutation: Box<dyn MutationOperator>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
+        n_vars: usize,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
@@ -38,6 +41,7 @@ impl Nsga2 {
             crossover,
             mutation,
             fitness_fn,
+            n_vars,
             pop_size,
             n_offsprings,
             num_iterations,
@@ -73,6 +77,7 @@ impl PyNsga2 {
         crossover: PyObject,
         mutation: PyObject,
         fitness_fn: PyObject,
+        n_vars: usize,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
@@ -102,6 +107,7 @@ impl PyNsga2 {
             crossover_box,
             mutation_box,
             fitness_closure,
+            n_vars,
             pop_size,
             n_offsprings,
             num_iterations,
@@ -116,5 +122,15 @@ impl PyNsga2 {
     /// Expose the .run() method to Python
     pub fn run(&mut self) {
         self.inner.run();
+    }
+
+    /// Expose the population genes as a numpy array to Python
+    pub fn get_population_genes<'py>(&self, py: Python<'py>) -> &'py PyArray2<f64> {
+        self.inner.algorithm.population.genes.to_owned().into_pyarray(py)
+    }
+
+    /// Expose the population fitness as a numpy array to Python
+    pub fn get_population_fitness<'py>(&self, py: Python<'py>) -> &'py PyArray2<f64> {
+        self.inner.algorithm.population.fitness.to_owned().into_pyarray(py)
     }
 }

@@ -30,6 +30,7 @@ impl MultiObjectiveAlgorithm {
         crossover: Box<dyn CrossoverOperator>,
         mutation: Box<dyn MutationOperator>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
+        n_vars: usize,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
@@ -39,7 +40,7 @@ impl MultiObjectiveAlgorithm {
     ) -> Self {
         // build the initial population from its genes
         let mut rng = thread_rng();
-        let genes = sampler.operate(pop_size, &mut rng);
+        let genes = sampler.operate(pop_size, n_vars, &mut rng);
         let pop_size = genes.len();
         let evolve = Evolve::new(selector, crossover, mutation, mutation_rate, crossover_rate);
         let evaluator = Evaluator::new(fitness_fn, constraints_fn);

@@ -37,7 +37,7 @@ impl MutationOperator for BitFlipMutation {
 }
 
 /// A Python class that encapsulates our Rust `BitFlipMutation`.
-#[pyclass]
+#[pyclass(name="BitFlipMutation")]
 #[derive(Clone)] // So we can clone when converting to Box<dyn MutationOperator>
 pub struct PyBitFlipMutation {
     // The actual Rust struct

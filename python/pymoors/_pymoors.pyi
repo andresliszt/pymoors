@@ -9,6 +9,20 @@ class MutationOperator:
 class CrossoverOperator:
     def __init__(self, *args, **kwargs): ...
 
+class RandomSamplingFloat(SamplingOperator):
+    def __init__(self, min: float, max: float): ...
+
+class RandomSamplingInt(SamplingOperator):
+    def __init__(self, min: int, max: int): ...
+
+class RandomSamplingBinary(SamplingOperator):
+    def __init__(self): ...
+
+class BitFlipMutation(MutationOperator):
+    def __init__(self, gene_mutation_rate: float): ...
+
+class SinglePointBinaryCrossover(CrossoverOperator):
+    def __init__(self): ...
 
 class Nsga2:
     def __init__(
@@ -16,7 +30,8 @@ class Nsga2:
         sampler: SamplingOperator,
         mutation: MutationOperator,
         crossover: CrossoverOperator,
-        fitness_function: Callable,
+        fitness_fn: Callable,
+        n_vars: int,
         pop_size: int,
         n_offsprings: int,
         num_iterations: int,

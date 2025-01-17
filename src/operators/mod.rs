@@ -19,15 +19,15 @@ pub trait GeneticOperator: Debug {
 
 pub trait SamplingOperator: GeneticOperator {
     /// Samples a single individual.
-    fn sample_individual(&self, rng: &mut dyn RngCore) -> Genes;
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes;
 
     /// Samples a population of individuals.
-    fn operate(&self, pop_size: usize, rng: &mut dyn RngCore) -> PopulationGenes {
+    fn operate(&self, pop_size: usize, n_vars: usize, rng: &mut dyn RngCore) -> PopulationGenes {
         let mut population = Vec::with_capacity(pop_size);
 
         // Sample individuals and collect them
         for _ in 0..pop_size {
-            let individual = self.sample_individual(rng);
+            let individual = self.sample_individual(n_vars, rng);
             population.push(individual);
         }
 
