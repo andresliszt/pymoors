@@ -3,7 +3,7 @@ from typing import List
 import pytest
 import numpy as np
 
-from pymoors.dominance import fast_non_dominated_sorting
+from pymoors.moo_algorithms import fast_non_dominated_sorting
 
 
 @pytest.mark.parametrize(

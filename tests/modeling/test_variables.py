@@ -56,4 +56,4 @@ def test_pow() -> None:
     # Check groups
     assert z**2 == Pow(x, 4)
     # Check expand
-    assert (x + 1)**2 == x*+2 + 2*x +1 == ((x+1)**2).expand()
+    assert (x + 1) ** 2 == x * +2 + 2 * x + 1 == ((x + 1) ** 2).expand()

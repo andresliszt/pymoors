@@ -1,8 +1,8 @@
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
+use pyo3::prelude::*;
 use rand::{Rng, RngCore};
 use std::fmt::Debug;
-use pyo3::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct RandomSamplingFloat {
@@ -63,7 +63,6 @@ impl SamplingOperator for RandomSamplingBinary {
             .collect()
     }
 }
-
 
 // A Python-exposed class that wraps the Rust `RandomSamplingFloat`.
 #[pyclass]
@@ -140,7 +139,6 @@ impl PyRandomSamplingInt {
     }
 }
 
-
 #[pyclass]
 #[derive(Clone)]
 pub struct PyRandomSamplingBinary {
@@ -156,7 +154,6 @@ impl PyRandomSamplingBinary {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

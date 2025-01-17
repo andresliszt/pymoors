@@ -1,6 +1,6 @@
 use numpy::ndarray::{concatenate, s, Array1, Axis};
-use rand::{Rng, RngCore};
 use pyo3::prelude::*;
+use rand::{Rng, RngCore};
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -70,7 +70,7 @@ impl PySinglePointBinaryCrossover {
     #[new]
     fn new() -> Self {
         Self {
-            inner: SinglePointBinaryCrossover::new()
+            inner: SinglePointBinaryCrossover::new(),
         }
     }
 }

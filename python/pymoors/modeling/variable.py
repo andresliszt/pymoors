@@ -39,8 +39,6 @@ class Variable(Expression):
     def __matmul__(self, other) -> Expression:
         return NotImplementedError
 
-
-
     def _hashable_content(self) -> tuple[str, int, int]:
         return (self.name, self.length)
 

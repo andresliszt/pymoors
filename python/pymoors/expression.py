@@ -60,7 +60,6 @@ class Expression(abc.ABC):
             return False
         return self._hashable_content() == other._hashable_content()
 
-
     def __hash__(self) -> int:
         return hash(self._hashable_content())
 
@@ -111,7 +110,6 @@ class Expression(abc.ABC):
         if other == Constant(value=0):
             raise ZeroDivisionError("division by zero")
         return self.__mul__(other.__pow__(-1))
-
 
 
 class MathOperator(Expression):

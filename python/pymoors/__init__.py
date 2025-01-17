@@ -1,5 +1,4 @@
-from pymoors.core.modeling.variable import Variable
-from pymoors.core.modeling.constant import Constant
+from ._pymoors import Nsga2
 
 
-__all__ = ("Variable", "Constant")
+__all__ = ("Nsga2",)

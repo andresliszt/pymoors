@@ -5,7 +5,8 @@ use crate::{
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     operators::{
-        evolve::Evolve, CrossoverOperator, MutationOperator, SelectionOperator, SurvivalOperator, SamplingOperator
+        evolve::Evolve, CrossoverOperator, MutationOperator, SamplingOperator, SelectionOperator,
+        SurvivalOperator,
     },
 };
 
@@ -29,12 +30,12 @@ impl MultiObjectiveAlgorithm {
         crossover: Box<dyn CrossoverOperator>,
         mutation: Box<dyn MutationOperator>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
-        constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
         mutation_rate: f64,
         crossover_rate: f64,
+        constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
     ) -> Self {
         // build the initial population from its genes
         let mut rng = thread_rng();

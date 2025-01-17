@@ -2,12 +2,15 @@ use pyo3::prelude::*;
 
 use crate::algorithms::MultiObjectiveAlgorithm;
 use crate::genetic::{PopulationConstraints, PopulationFitness, PopulationGenes};
+use crate::helpers::functions::{
+    create_population_constraints_closure, create_population_fitness_closure,
+};
+use crate::helpers::parser::{
+    unwrap_crossover_operator, unwrap_mutation_operator, unwrap_sampling_operator,
+};
 use crate::operators::selection::RankAndCrowdingSelection;
 use crate::operators::survival::RankCrowdingSurvival;
 use crate::operators::{CrossoverOperator, MutationOperator, SamplingOperator};
-use crate::helpers::functions::{create_population_fitness_closure, create_population_constraints_closure};
-use crate::helpers::parser::{unwrap_crossover_operator, unwrap_mutation_operator, unwrap_sampling_operator};
-
 
 pub struct Nsga2 {
     algorithm: MultiObjectiveAlgorithm,
@@ -19,12 +22,12 @@ impl Nsga2 {
         crossover: Box<dyn CrossoverOperator>,
         mutation: Box<dyn MutationOperator>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
-        constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
         mutation_rate: f64,
         crossover_rate: f64,
+        constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
     ) -> Self {
         let selector = Box::new(RankAndCrowdingSelection::new());
         let survivor = Box::new(RankCrowdingSurvival::new());
@@ -35,12 +38,12 @@ impl Nsga2 {
             crossover,
             mutation,
             fitness_fn,
-            constraints_fn,
             pop_size,
             n_offsprings,
             num_iterations,
             mutation_rate,
             crossover_rate,
+            constraints_fn,
         );
         Self { algorithm }
     }
@@ -50,7 +53,7 @@ impl Nsga2 {
     }
 }
 
-#[pyclass(name="Nsga2")]
+#[pyclass(name = "Nsga2", unsendable)]
 pub struct PyNsga2 {
     pub inner: Nsga2,
 }
@@ -65,25 +68,17 @@ impl PyNsga2 {
     ///   mutation_rate=0.1, crossover_rate=0.8
     /// )
     #[new]
-    #[args(
-        pop_size="100usize",
-        n_offsprings="50usize",
-        num_iterations="200usize",
-        mutation_rate="0.1",
-        crossover_rate="0.8",
-        constraints_fn="None"
-    )]
     pub fn new(
         sampler: PyObject,
         crossover: PyObject,
         mutation: PyObject,
         fitness_fn: PyObject,
-        constraints_fn: Option<PyObject>,
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
         mutation_rate: f64,
         crossover_rate: f64,
+        constraints_fn: Option<PyObject>,
     ) -> PyResult<Self> {
         // 1) Unwrap the genetic operators
         let sampler_box = unwrap_sampling_operator(sampler)?;
@@ -107,12 +102,12 @@ impl PyNsga2 {
             crossover_box,
             mutation_box,
             fitness_closure,
-            constraints_closure,
             pop_size,
             n_offsprings,
             num_iterations,
             mutation_rate,
             crossover_rate,
+            constraints_closure,
         );
 
         Ok(Self { inner: nsga2 })

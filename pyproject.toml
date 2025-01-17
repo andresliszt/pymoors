@@ -39,10 +39,10 @@ dynamic = [
 ]
 
 [tool.maturin]
+module-name = "pymoors._pymoors"
+bindings = "pyo3"
 python-source = "python"
-module-name = "pymoors.dominance"
-bindings = 'pyo3'
-
+features = ["pyo3/extension-module"]
 
 [tool.black]
 color = true

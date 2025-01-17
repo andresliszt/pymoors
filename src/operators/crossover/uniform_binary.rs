@@ -1,7 +1,7 @@
 use numpy::ndarray::Array1;
+use pyo3::prelude::*;
 use rand::distributions::Uniform;
 use rand::{Rng, RngCore};
-use pyo3::prelude::*;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -68,7 +68,7 @@ impl PyUniformBinaryCrossover {
     #[new]
     fn new() -> Self {
         Self {
-            inner: UniformBinaryCrossover::new()
+            inner: UniformBinaryCrossover::new(),
         }
     }
 }

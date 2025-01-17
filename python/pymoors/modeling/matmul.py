@@ -11,8 +11,10 @@ from pymoors.helpers import cast_other_to_expression
 
 # pylint: disable=C0415
 
+
 class Indentity:
     pass
+
 
 class NullMatrix:
     pass

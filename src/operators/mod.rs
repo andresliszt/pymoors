@@ -6,10 +6,10 @@ use std::fmt::Debug;
 pub mod crossover;
 pub mod evolve;
 pub mod mutation;
+pub mod py_operators;
 pub mod sampling;
 pub mod selection;
 pub mod survival;
-pub mod py_operators;
 
 /// Keep these traits as object safe because python implementation needs dyn
 
@@ -145,10 +145,7 @@ pub trait CrossoverOperator: GeneticOperator {
 
         // Create PopulationGenes directly from the flat vectors
         let offspring_population = PopulationGenes::from_shape_vec(
-            (
-                self.n_offsprings_per_crossover() * pop_size,
-                num_genes,
-            ),
+            (self.n_offsprings_per_crossover() * pop_size, num_genes),
             flat_offspring,
         )
         .expect("Failed to create offspring_population_a");

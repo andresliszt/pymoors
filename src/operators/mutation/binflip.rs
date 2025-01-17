@@ -1,6 +1,6 @@
 use crate::operators::{Genes, GeneticOperator, MutationOperator};
-use rand::{Rng, RngCore};
 use pyo3::prelude::*;
+use rand::{Rng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct BitFlipMutation {
@@ -36,10 +36,9 @@ impl MutationOperator for BitFlipMutation {
     }
 }
 
-
 /// A Python class that encapsulates our Rust `BitFlipMutation`.
 #[pyclass]
-#[derive(Clone)]  // So we can clone when converting to Box<dyn MutationOperator>
+#[derive(Clone)] // So we can clone when converting to Box<dyn MutationOperator>
 pub struct PyBitFlipMutation {
     // The actual Rust struct
     pub inner: BitFlipMutation,
@@ -64,7 +63,6 @@ impl PyBitFlipMutation {
         self.inner.gene_mutation_rate = value;
     }
 }
-
 
 // Tests module
 #[cfg(test)]

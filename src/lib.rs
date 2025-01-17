@@ -1,3 +1,5 @@
+// lib.rs
+
 extern crate core;
 
 pub mod evaluator;
@@ -9,21 +11,27 @@ mod helpers;
 mod non_dominated_sorting;
 mod operators;
 
-// use pyo3::{prelude::*, wrap_pymodule};
+use pyo3::prelude::*;
 
-// pub use non_dominated_sorting::crowding_distance::crodwing_distance_py;
-// pub use non_dominated_sorting::dominator::fast_non_dominated_sorting_py;
+pub use algorithms::nsga2::PyNsga2;
+pub use operators::py_operators::{
+    PyBitFlipMutation, PyRandomSamplingBinary, PyRandomSamplingFloat, PyRandomSamplingInt,
+    PySinglePointBinaryCrossover, PyUniformBinaryCrossover,
+};
 
-// /// dominator module implemented in Rust
-// #[pymodule]
-// fn dominance(_py: Python<'_>, m: &PyModule) -> PyResult<()> {
-//     m.add_wrapped(wrap_pyfunction!(fast_non_dominated_sorting_py))?;
-//     m.add_wrapped(wrap_pyfunction!(crodwing_distance_py))?;
-//     Ok(())
-// }
+/// Root module `pymoors` that includes all classes.
+#[pymodule]
+fn _pymoors(_py: Python, m: &PyModule) -> PyResult<()> {
+    // Add classes from algorithms
+    m.add_class::<PyNsga2>()?;
 
-// #[pymodule]
-// fn pymoors(_py: Python, m: &PyModule) -> PyResult<()> {
-//     m.add_wrapped(wrap_pymodule!(dominance))?;
-//     Ok(())
-// }
+    // Add classes from operators
+    m.add_class::<PyBitFlipMutation>()?;
+    m.add_class::<PyRandomSamplingBinary>()?;
+    m.add_class::<PyRandomSamplingFloat>()?;
+    m.add_class::<PyRandomSamplingInt>()?;
+    m.add_class::<PySinglePointBinaryCrossover>()?;
+    m.add_class::<PyUniformBinaryCrossover>()?;
+
+    Ok(())
+}
