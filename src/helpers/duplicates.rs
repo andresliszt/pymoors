@@ -6,12 +6,9 @@ use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
 use rayon::prelude::*;
 
-// -----------------------------------------------------------------------------
-// 0. TYPE ALIASES & TRAIT
-// -----------------------------------------------------------------------------
-/// Assume `PopulationGenes` is your Array2<f64> for storing population rows.
-/// In your actual code, you might `use crate::genetic::PopulationGenes;`
-pub type PopulationGenes = Array2<f64>;
+use crate::genetic::PopulationGenes;
+
+
 
 /// A trait for removing duplicates (exact or close) from a population.
 pub trait PopulationCleaner: Debug {
@@ -19,7 +16,7 @@ pub trait PopulationCleaner: Debug {
 }
 
 // -----------------------------------------------------------------------------
-// 1. EXACT DUPLICATES CLEANER (PARALLEL)
+// EXACT DUPLICATES CLEANER (PARALLEL)
 // -----------------------------------------------------------------------------
 #[derive(Clone, Debug)]
 pub struct ExactDuplicatesCleaner;
@@ -87,7 +84,7 @@ impl PopulationCleaner for ExactDuplicatesCleaner {
 }
 
 // -----------------------------------------------------------------------------
-// 2. CLOSE DUPLICATES CLEANER (PARALLEL DISTANCE)
+//  CLOSE DUPLICATES CLEANER (PARALLEL DISTANCE)
 // -----------------------------------------------------------------------------
 #[derive(Clone, Debug)]
 pub struct CloseDuplicatesCleaner {
@@ -205,7 +202,7 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
 }
 
 // -----------------------------------------------------------------------------
-// 3. PYTHON-EXPOSED CLASSES, KEEPING NAMES
+// PYTHON-EXPOSED CLASSES, KEEPING NAMES
 // -----------------------------------------------------------------------------
 
 /// A Python class that encapsulates our parallel `ExactDuplicatesCleaner`.
