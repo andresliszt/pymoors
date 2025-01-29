@@ -85,7 +85,7 @@ best: list[Individual] = final_population.best
 Individual(genes=array([0., 0., 0., 1., 0.]), fitness=array([-5.,  4.]), rank=0, constraints=array([-11.]))
 ```
 
-## Constaint handling
+## Constraints handling
 
 
 In **pymoors**, constraints are provided as a **Python function** that operates at the **population level**—i.e., it takes a 2D NumPy array (`(N, d)` shape, where each row corresponds to one individual) and returns a 2D array (`(N, k)`) of constraint evaluations. Each individual is considered **feasible** if **all** its constraint values are **strictly less than 0**.
@@ -110,7 +110,7 @@ def constraints_fn(population_genes: TwoDArray) -> TwoDArray:
 
 To handle approximate equality constraints, one common trick is to transform them into inequality constraints. For example, if you have an equality ($g(x) = 0$) and you want  tolerance, define: $g_{\text{ineq}}(x) = |g(x)| - \epsilon < 0.$
 
-#### Example: Enforcing $( x_1 + 2x_2 = 5 )$ with \(\epsilon = 0.1\)
+#### Example: Enforcing $( x_1 + 2x_2 = 5 )$ with ($\epsilon = 0.1$)
 
 ```python
 import numpy as np
