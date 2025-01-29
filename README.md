@@ -1,12 +1,11 @@
 # pymoors
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![License](https://img.shields.io/badge/License-MIT-blue.svg)
+![Python 3.10](https://img.shields.io/badge/Python-3.10-blue.svg)
+![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)
+![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
+![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)
+![Black](https://img.shields.io/badge/Code%20Style-Black-000000.svg)
 
-[![Python 3.10](https://img.shields.io/badge/Python-3.10-blue.svg)](https://www.python.org/downloads/release/python-3100/)
-[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/downloads/release/python-3110/)
-[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
-[![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)](https://www.python.org/downloads/release/python-3130/)
-
-[![Black](https://img.shields.io/badge/code_style-Black-000000.svg)](https://github.com/psf/black)
 ## Overview
 
 This project aims to solve multi-objective optimization problems using genetic algorithms. It is a hybrid implementation combining Python and Rust, leveraging the power of [PyO3](https://github.com/PyO3/pyo3) to bridge the two languages. This project was inspired in the amazing python project [pymoo](https://github.com/anyoptimization/pymoo).
