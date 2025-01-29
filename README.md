@@ -18,7 +18,7 @@ This project aims to solve multi-objective optimization problems using genetic a
 - **Constraint Handling**: Ability to handle constraints in optimization problems.
 
 
-## Installation
+## Installation (NOT AVAILABLE YET)
 
 To install the package you simply can do
 
