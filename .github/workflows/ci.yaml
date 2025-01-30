@@ -1,53 +1,51 @@
-# # This workflow will install Python dependencies, run tests and lint with a variety of Python versions
-# # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+# This workflow will install Python dependencies, run tests and lint with a variety of Python versions
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
-# name: Python package
+name: Python package
 
-# on:
-#   push:
-#     branches: [main]
-#   pull_request:
-#     branches: [main]
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
-# jobs:
-#   build:
+env:
+  COLUMNS: 150
+  DEFAULT_PYTHON: 3.13
 
-#     runs-on: ubuntu-latest
-#     strategy:
-#       fail-fast: false
-#       matrix:
-#         python-version: ["3.10", "3.11", "3.12"]
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
 
-#     steps:
-#     - uses: actions/checkout@v4
-#     - name: Set up Python ${{ matrix.python-version }}
-#       uses: actions/setup-python@v3
-#       with:
-#         python-version: ${{ matrix.python-version }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python ${{ env.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ env.python-version }}
 
-#     - name: Install cargo-llvm-cov
-#       uses: taiki-e/install-action@cargo-llvm-cov
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
 
-#     - name: Install dependencies
-#       run: |
-#         python -m venv .venv
-#         .venv/bin/python -m pip install --upgrade pip
-#         .venv/bin/pip install .
-#         .venv/bin/pip install pytest-cov
-#     - name: Install Pymoors
-#       run: |
-#         source <(cargo llvm-cov show-env --export-prefix)
-#         .venv/bin/maturin develop
-#     - name: Test with pytest
-#       run: |
-#         source <(cargo llvm-cov show-env --export-prefix)
-#         .venv/bin/pytest --cov --cov-report=xml
-#     - name: Get rust coverage report
-#       run: |
-#         source <(cargo llvm-cov show-env --export-prefix)
-#         cargo llvm-cov report --codecov --output-path codecov.json
-#     - name: Upload to codecov
-#       uses: codecov/codecov-action@v5
-#       with:
-#         files: coverage.xml, codecov.json
-#         fail_ci_if_error: true
+    - name: Install dependencies
+      run: |
+        python -m venv .venv
+        .venv/bin/python -m pip install .[dev] --upgrade pip
+        .venv/bin/pip install .
+    - name: Install Pymoors
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/bin/maturin develop
+    - name: Test with pytest
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        .venv/bin/pytest --cov --cov-report=xml
+    - name: Get rust coverage report
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov report --codecov --output-path codecov.json
+    - name: Upload to codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: coverage.xml, codecov.json
+        fail_ci_if_error: true
