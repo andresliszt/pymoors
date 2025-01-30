@@ -5,6 +5,7 @@
 ![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
 ![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)
 ![Black](https://img.shields.io/badge/Code%20Style-Black-000000.svg)
+[![codecov](https://codecov.io/gh/andresliszt/pymoors/graph/badge.svg)](https://codecov.io/gh/andresliszt/pymoors)
 
 ## Overview
 
