@@ -138,7 +138,14 @@ def get_real_pareto_front() -> list[Individual]:
             Nsga3,
             {
                 "reference_points": np.array(
-                    [[0.0, 1.0], [0.2, 0.8], [0.4, 0.6], [0.6, 0.4], [0.8, 0.2], [1.0, 0.0]]
+                    [
+                        [0.0, 1.0],
+                        [0.2, 0.8],
+                        [0.4, 0.6],
+                        [0.6, 0.4],
+                        [0.8, 0.2],
+                        [1.0, 0.0],
+                    ]
                 )
             },
         ),
@@ -164,7 +171,7 @@ def test_knapsack_nsga2(algorithm_class, extra_kw, compare_exact_front):
         mutation_rate=0.9,
         crossover_rate=0.9,
         keep_infeasible=False,
-        **extra_kw
+        **extra_kw,
     )
 
     algorithm.run()

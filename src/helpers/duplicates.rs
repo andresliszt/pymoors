@@ -8,8 +8,6 @@ use rayon::prelude::*;
 
 use crate::genetic::PopulationGenes;
 
-
-
 /// A trait for removing duplicates (exact or close) from a population.
 pub trait PopulationCleaner: Debug {
     fn remove(&self, population: &PopulationGenes) -> PopulationGenes;

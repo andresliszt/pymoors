@@ -22,7 +22,7 @@ class Individual(BaseModel):
     def is_feasible(self) -> bool:
         if self.constraints is None:
             return True
-        return np.all(np.array(self.constraints) <= 0)
+        return bool(np.all(np.array(self.constraints) <= 0))
 
 
 class Population(BaseModel):
@@ -31,25 +31,27 @@ class Population(BaseModel):
     rank: OneDArray
     constraints: Optional[TwoDArray]
 
-    _best: List[Individual] = PrivateAttr(default=None)
+    _best: List[Individual] | None = PrivateAttr(default=None)
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
     @overload
-    def __getitem__(self, index: int) -> Individual:
-        ...
+    def __getitem__(self, index: int) -> Individual: ...
 
     @overload
-    def __getitem__(self, index: slice) -> List[Individual]:
-        ...
+    def __getitem__(self, index: slice) -> List[Individual]: ...
 
-    def __getitem__(self, index: Union[int, slice]) -> Union[Individual, List[Individual]]:
+    def __getitem__(
+        self, index: Union[int, slice]
+    ) -> Union[Individual, List[Individual]]:
         if isinstance(index, int):
             return Individual(
                 genes=self.genes[index],
                 fitness=self.fitness[index],
                 rank=self.rank[index],
-                constraints=self.constraints[index] if self.constraints is not None else None,
+                constraints=self.constraints[index]
+                if self.constraints is not None
+                else None,
             )
         if isinstance(index, slice):
             return [
@@ -57,18 +59,20 @@ class Population(BaseModel):
                     genes=self.genes[i],
                     fitness=self.fitness[i],
                     rank=self.rank[i],
-                    constraints=self.constraints[i] if self.constraints is not None else None,
+                    constraints=self.constraints[i]
+                    if self.constraints is not None
+                    else None,
                 )
                 for i in range(*index.indices(len(self.genes)))
             ]
         raise TypeError(f"indices must be integers or slices, not {type(index)}")
 
-    def __iter__(self) -> Iterator[Individual]:
+    def iter(self) -> Iterator[Individual]:
         for i in range(len(self.genes)):
             yield self[i]
 
     @property
     def best(self) -> List[Individual]:
         if self._best is None:
-            self._best = [i for i in self if i.rank == 0]
+            self._best = [i for i in self.iter() if i.rank == 0]
         return self._best

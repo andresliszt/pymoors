@@ -41,9 +41,10 @@ dynamic = [
 dev = [
     "maturin",
     "pytest",
-    "black",
-    "isort",
+    "ruff",
+    "pyright",
     "pytest-cov",
+    "pre-commit"
 ]
 
 [tool.maturin]

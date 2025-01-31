@@ -1,7 +1,11 @@
 from typing import Optional, TypedDict, Unpack
 
 from pymoors.schemas import Population
-from pymoors.typing import FitnessPopulationCallable, ConstraintsPopulationCallable, TwoDArray
+from pymoors.typing import (
+    FitnessPopulationCallable,
+    ConstraintsPopulationCallable,
+    TwoDArray,
+)
 
 # pylint: disable=W0622, W0231
 
@@ -149,6 +153,9 @@ class SinglePointBinaryCrossover(CrossoverOperator):
 
     def __init__(self) -> None: ...
 
+class UniformBinaryCrossover(CrossoverOperator):
+    def __init__(self) -> None: ...
+
 class ExponentialCrossover(CrossoverOperator):
     """
     Crossover operator that combines parent genes based on an exponential distribution.
@@ -221,9 +228,9 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     num_iterations: int
     mutation_rate: float
     crossover_rate: float
-    keep_infeasible: bool = False
-    duplicates_cleaner: Optional[DuplicatesCleaner] = None
-    constraints_fn: Optional[ConstraintsPopulationCallable] = None
+    keep_infeasible: bool
+    duplicates_cleaner: Optional[DuplicatesCleaner]
+    constraints_fn: Optional[ConstraintsPopulationCallable]
 
 class Nsga2:
     """
@@ -246,6 +253,8 @@ class Nsga2:
         Returns:
             Population: The current population of individuals.
         """
+
+    def run(self) -> None: ...
 
 class _Nsga3Kwargs(_MooAlgorithmKwargs, total=False):
     reference_points: TwoDArray
@@ -271,3 +280,5 @@ class Nsga3:
         Returns:
             Population: The current population of individuals.
         """
+
+    def run(self) -> None: ...

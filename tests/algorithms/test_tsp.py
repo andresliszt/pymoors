@@ -16,11 +16,18 @@ from pymoors.typing import TwoDArray
 
 
 CITIES = np.array(
-    [[0.0, 0.0], [0.0, 1.0], [1.0, 1.0], [1.0, 0.0]]  # city 0  # city 1  # city 2  # city 3
+    [
+        [0.0, 0.0],
+        [0.0, 1.0],
+        [1.0, 1.0],
+        [1.0, 0.0],
+    ]  # city 0  # city 1  # city 2  # city 3
 )
 
 # Toll costs (4x4); TOLL[i,j] is the toll from city i to city j.
-TOLL = np.array([[0, 2, 10, 2], [2, 0, 2, 10], [10, 2, 0, 2], [2, 10, 2, 0]], dtype=float)
+TOLL = np.array(
+    [[0, 2, 10, 2], [2, 0, 2, 10], [10, 2, 0, 2], [2, 10, 2, 0]], dtype=float
+)
 
 
 def compute_distance(i, j):
@@ -45,7 +52,7 @@ def route_distance(route):
     return total_dist
 
 
-def route_toll(route) -> TwoDArray:
+def route_toll(route):
     """
     Sum of TOLL costs for a route, returning to start city.
     """
@@ -130,7 +137,14 @@ def get_real_pareto_front() -> list[Individual]:
             Nsga3,
             {
                 "reference_points": np.array(
-                    [[0.0, 1.0], [0.2, 0.8], [0.4, 0.6], [0.6, 0.4], [0.8, 0.2], [1.0, 0.0]]
+                    [
+                        [0.0, 1.0],
+                        [0.2, 0.8],
+                        [0.4, 0.6],
+                        [0.6, 0.4],
+                        [0.8, 0.2],
+                        [1.0, 0.0],
+                    ]
                 )
             },
         ),
@@ -155,7 +169,7 @@ def test_small_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front
         crossover_rate=0.9,
         duplicates_cleaner=ExactDuplicatesCleaner(),
         keep_infeasible=False,
-        **extra_kw
+        **extra_kw,
     )
 
     algorithm.run()
