@@ -18,7 +18,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: install uv
+
+    - uses: actions/checkout@v4
+
+    - name: Install uv
       uses: astral-sh/setup-uv@v5
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
@@ -26,18 +29,17 @@ jobs:
     - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
 
-    - name: install deps
-      run: uv sync --group testing
-
     - name: Install Pymoors
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
+        uv sync --group testing
         uv pip install -e .
 
     - name: Test with pytest
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
         uv run pytest --cov --cov-report=xml
+
     - name: Get rust coverage report
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
