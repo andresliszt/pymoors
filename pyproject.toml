@@ -1,43 +1,41 @@
 [build-system]
 requires = [
-    'maturin>=1,<2',
+    "maturin>=1,<2",
 ]
-build-backend = 'maturin'
+build-backend = "maturin"
 
 [project]
-name = 'pymoors'
-requires-python = '>=3.10'
+name = "pymoors"
+requires-python = ">=3.10"
 authors = [
-    {name = 'Andrés Sandoval', email = 'andres.sndbrca@gmail.com'}
+    {name = "Andrés Sandoval", email = "andres.sndbrca@gmail.com"}
 ]
 classifiers = [
-    'Programming Language :: Python',
-    'Programming Language :: Python :: 3',
-    'Programming Language :: Python :: 3 :: Only',
-    'Programming Language :: Python :: 3.10',
-    'Programming Language :: Python :: 3.11',
-    'Programming Language :: Python :: 3.12',
-    'Programming Language :: Python :: 3.13',
-    'Programming Language :: Rust',
-    'Intended Audience :: Developers',
-    'Intended Audience :: Information Technology',
-    'License :: OSI Approved :: MIT License',
-    'Typing :: Typed',
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Rust",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Typing :: Typed",
 ]
 
 dependencies = [
-    'pydantic >=2.0.0',
-    'numpy>=2.0.0',
+    "pydantic >=2.0.0",
+    "numpy>=2.0.0",
 ]
 
 dynamic = [
-    'description',
-    'license',
-    'readme',
-    'version'
+    "description",
+    "license",
+    "readme",
+    "version"
 ]
-
-
 
 [dependency-groups]
 testing = [
@@ -47,13 +45,14 @@ testing = [
     "pre-commit"
 ]
 linting = [
-    'pyright',
-    'ruff'
+    "pyright",
+    "ruff",
+    "pytest"
 ]
 
 all = [
-  { include-group = 'testing' },
-  { include-group = 'linting' }
+  { include-group = "testing" },
+  { include-group = "linting" }
 ]
 
 [tool.maturin]
@@ -62,8 +61,6 @@ bindings = "pyo3"
 python-source = "python"
 features = ["pyo3/extension-module"]
 
-[tool.black]
-color = true
-line-length = 95
-skip-string-normalization = true
-skip-magic-trailing-comma = true
+[tool.ruff.format]
+# Like Black, use double quotes for strings.
+quote-style = "double"

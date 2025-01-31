@@ -383,6 +383,7 @@ all = [
 ]
 linting = [
     { name = "pyright" },
+    { name = "pytest" },
     { name = "ruff" },
 ]
 testing = [
@@ -409,6 +410,7 @@ all = [
 ]
 linting = [
     { name = "pyright" },
+    { name = "pytest" },
     { name = "ruff" },
 ]
 testing = [

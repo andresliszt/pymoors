@@ -33,7 +33,7 @@ jobs:
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
         uv sync --group testing
-        uv pip install -e .
+        make build-dev
 
     - name: Test with pytest
       run: |
