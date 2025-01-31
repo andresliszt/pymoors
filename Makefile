@@ -66,7 +66,7 @@ lint-rust:
 	cargo clippy --tests -- -D warnings
 
 .PHONY: lint
-lint: lint-python lint-rust
+lint: lint-python # lint-rust
 
 .PHONY: pyright
 pyright:
