@@ -22,7 +22,7 @@ USE_MATURIN = $(shell [ "$$VIRTUAL_ENV" != "" ] && (which maturin))
 install: .uv .pre-commit
 	uv pip install -U wheel
 	uv sync --frozen --group all
-	uv pip install -v -e .[dev]
+	uv pip install -v -e .
 	pre-commit install
 
 .PHONY: rebuild-lockfiles  ## Rebuild lockfiles from scratch, updating all dependencies

@@ -372,8 +372,8 @@ dependencies = [
     { name = "pydantic" },
 ]
 
-[package.optional-dependencies]
-dev = [
+[package.dev-dependencies]
+all = [
     { name = "maturin" },
     { name = "pre-commit" },
     { name = "pyright" },
@@ -381,17 +381,41 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
 ]
+linting = [
+    { name = "pyright" },
+    { name = "ruff" },
+]
+testing = [
+    { name = "maturin" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+]
 
 [package.metadata]
 requires-dist = [
-    { name = "maturin", marker = "extra == 'dev'" },
     { name = "numpy", specifier = ">=2.0.0" },
-    { name = "pre-commit", marker = "extra == 'dev'" },
     { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pyright", marker = "extra == 'dev'" },
-    { name = "pytest", marker = "extra == 'dev'" },
-    { name = "pytest-cov", marker = "extra == 'dev'" },
-    { name = "ruff", marker = "extra == 'dev'" },
+]
+
+[package.metadata.requires-dev]
+all = [
+    { name = "maturin" },
+    { name = "pre-commit" },
+    { name = "pyright" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+linting = [
+    { name = "pyright" },
+    { name = "ruff" },
+]
+testing = [
+    { name = "maturin" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
 ]
 
 [[package]]

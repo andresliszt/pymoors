@@ -18,28 +18,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ env.python-version }}
-      uses: actions/setup-python@v3
+    - name: install uv
+      uses: astral-sh/setup-uv@v5
       with:
-        python-version: ${{ env.python-version }}
+        python-version: ${{ env.DEFAULT_PYTHON }}
 
     - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
 
-    - name: Install dependencies
-      run: |
-        python -m venv .venv
-        .venv/bin/python -m pip install .[dev] --upgrade pip
-        .venv/bin/pip install .
+    - name: install deps
+      run: uv sync --group testing
+
     - name: Install Pymoors
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        .venv/bin/maturin develop
+        uv pip install -e .
+
     - name: Test with pytest
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        .venv/bin/pytest --cov --cov-report=xml
+        uv run pytest --cov --cov-report=xml
     - name: Get rust coverage report
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
@@ -51,3 +49,70 @@ jobs:
         files: coverage.xml, codecov.json
         fail_ci_if_error: true
         token: ${{ secrets.CODECOV_TOKEN }}
+
+  test-python:
+    name: test ${{ matrix.python-version }}
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version:
+          - '3.10'
+          - '3.11'
+          - '3.12'
+          - '3.13'
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install Pymoors
+        env:
+          RUST_BACKTRACE: 1
+        run: |
+          uv sync --group testing
+          uv pip install -e .
+
+      - name: Test with pytest
+        run: uv run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Install pymoors
+        run: |
+          uv sync --group linting
+          make build-dev
+
+      - run: make lint
+      - run: make pyright
+
+  check:
+    if: always()
+    needs: [coverage, test-python, lint]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Decide whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@release/v1
+        with:
+          jobs: ${{ toJSON(needs) }}
+          allowed-failures: coverage

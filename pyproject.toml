@@ -37,14 +37,23 @@ dynamic = [
     'version'
 ]
 
-[project.optional-dependencies]
-dev = [
+
+
+[dependency-groups]
+testing = [
     "maturin",
     "pytest",
-    "ruff",
-    "pyright",
     "pytest-cov",
     "pre-commit"
+]
+linting = [
+    'pyright',
+    'ruff'
+]
+
+all = [
+  { include-group = 'testing' },
+  { include-group = 'linting' }
 ]
 
 [tool.maturin]
