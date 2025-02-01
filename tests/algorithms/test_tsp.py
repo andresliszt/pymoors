@@ -150,7 +150,7 @@ def get_real_pareto_front() -> list[Individual]:
         ),
     ],
 )
-def test_small_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
+def test_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
     """
     Test a 4-city TSP with 2 objectives: distance and toll.
     We'll see if the final pareto front is equal to the real one
@@ -175,8 +175,8 @@ def test_small_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front
     algorithm.run()
 
     # Retrieve final population of solutions
-    output_pareto_front = algorithm.population.best
+    best = algorithm.population.best
     # Enumerate the exact Pareto front for the 5-item knapsack
     real_pareto_front = get_real_pareto_front()
 
-    compare_exact_front(output_pareto_front, real_pareto_front)
+    compare_exact_front(best, real_pareto_front)

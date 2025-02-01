@@ -1,21 +1,25 @@
-from typing import Optional, Union, List, overload, Iterator
+from typing import Union, List, overload, Iterator
 
 import numpy as np
-from pydantic import BaseModel, ConfigDict, PrivateAttr
 
 from pymoors.typing import OneDArray, TwoDArray
 
 
-class Individual(BaseModel):
-    genes: OneDArray
-    fitness: OneDArray
-    rank: int
-    constraints: Optional[OneDArray]
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+class Individual:
+    def __init__(
+        self,
+        genes: OneDArray,
+        fitness: OneDArray,
+        rank: int,
+        constraints: OneDArray | None,
+    ):
+        self.genes = genes
+        self.fitness = fitness
+        self.rank = rank
+        self.constraints = constraints
 
     @property
-    def belongs_to_pareto_front(self) -> bool:
+    def is_best(self) -> bool:
         return self.rank == 0
 
     @property
@@ -25,15 +29,25 @@ class Individual(BaseModel):
         return bool(np.all(np.array(self.constraints) <= 0))
 
 
-class Population(BaseModel):
-    genes: TwoDArray
-    fitness: TwoDArray
-    rank: OneDArray
-    constraints: Optional[TwoDArray]
+class Population:
+    def __init__(
+        self,
+        genes: TwoDArray,
+        fitness: TwoDArray,
+        rank: OneDArray,
+        constraints: TwoDArray | None,
+    ):
+        if len(genes) != len(fitness) != len(rank):
+            raise ValueError("genes, fitness and rank arrays must have the same lenght")
+        if constraints is not None and len(constraints) != len(genes):
+            raise ValueError("constraints must have the same length as genes")
 
-    _best: List[Individual] | None = PrivateAttr(default=None)
-
-    model_config = ConfigDict(arbitrary_types_allowed=True)
+        self.genes = genes
+        self.fitness = fitness
+        self.rank = rank
+        self.constraints = constraints
+        # Set private attribute for whose individuals with rank = 0
+        self._best = None
 
     @overload
     def __getitem__(self, index: int) -> Individual: ...
@@ -67,12 +81,15 @@ class Population(BaseModel):
             ]
         raise TypeError(f"indices must be integers or slices, not {type(index)}")
 
-    def iter(self) -> Iterator[Individual]:
+    def __iter__(self) -> Iterator[Individual]:
         for i in range(len(self.genes)):
             yield self[i]
+
+    def __len__(self) -> int:
+        return len(self.genes)
 
     @property
     def best(self) -> List[Individual]:
         if self._best is None:
-            self._best = [i for i in self.iter() if i.rank == 0]
+            self._best = [i for i in self if i.is_best]
         return self._best

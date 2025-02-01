@@ -151,12 +151,12 @@ def get_real_pareto_front() -> list[Individual]:
         ),
     ],
 )
-def test_knapsack_nsga2(algorithm_class, extra_kw, compare_exact_front):
+def test_knapsack(algorithm_class, extra_kw, compare_exact_front):
     """
     Test that algorithms can find the known Pareto front
     for a small 5-item knapsack problem.
     """
-    # 2. Build the algorithm with small problem settings
+    # Build the algorithm with small problem settings
     algorithm = algorithm_class(
         sampler=RandomSamplingBinary(),
         crossover=SinglePointBinaryCrossover(),
@@ -165,8 +165,8 @@ def test_knapsack_nsga2(algorithm_class, extra_kw, compare_exact_front):
         constraints_fn=constraints_knapsack,
         duplicates_cleaner=ExactDuplicatesCleaner(),
         n_vars=5,  # 5 items
-        pop_size=5000,  # population size
-        n_offsprings=1000,  # offsprings per generation
+        pop_size=200,  # population size
+        n_offsprings=200,  # offsprings per generation
         num_iterations=100,  # generation count
         mutation_rate=0.9,
         crossover_rate=0.9,
@@ -176,8 +176,8 @@ def test_knapsack_nsga2(algorithm_class, extra_kw, compare_exact_front):
 
     algorithm.run()
 
-    output_pareto_front = algorithm.population.best
+    best = algorithm.population.best
 
     real_pareto_front = get_real_pareto_front()
 
-    compare_exact_front(output_pareto_front, real_pareto_front)
+    compare_exact_front(best, real_pareto_front)

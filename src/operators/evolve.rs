@@ -81,15 +81,36 @@ impl Evolve {
         while all_offsprings.len() < n_offsprings && iterations < max_iter {
             let remaining = n_offsprings - all_offsprings.len();
 
-            // 1) Select parents in a batch (size = `remaining` or some multiple)
+            // Select parents in a batch (size = `remaining` or some multiple)
             let (parents_a, parents_b) = self.selection.operate(population, remaining, rng);
 
-            // 2) Create offspring from these parents
+            // Create offspring from these parents
             let new_offsprings = self.mating_batch(&parents_a.genes, &parents_b.genes, rng);
 
-            // 3) Extend our accumulator with the new rows
+            // Extend our accumulator with the new rows
             for row in new_offsprings.outer_iter() {
                 all_offsprings.push(row.to_vec());
+            }
+
+            // Clean duplicates if a cleaner is provided
+            if let Some(ref cleaner) = self.duplicates_cleaner {
+                // Convert Vec<Vec<f64>> into a single Array2
+                let offspring_data: Vec<f64> =
+                    all_offsprings.clone().into_iter().flatten().collect();
+                let mut offspring_array = PopulationGenes::from_shape_vec(
+                    (all_offsprings.len(), num_genes),
+                    offspring_data,
+                )
+                .expect("Failed to create offspring array from the accumulated data");
+
+                // Clean duplicates
+                offspring_array = cleaner.remove(&offspring_array);
+
+                // Update all_offsprings with the cleaned data
+                all_offsprings = offspring_array
+                    .outer_iter()
+                    .map(|row| row.to_vec())
+                    .collect();
             }
 
             iterations += 1;
@@ -109,17 +130,12 @@ impl Evolve {
         let offspring_data: Vec<f64> = all_offsprings.into_iter().flatten().collect();
 
         // Build the final matrix
-        let mut offspring_array =
+        let offspring_array =
             PopulationGenes::from_shape_vec((all_offsprings_len, num_genes), offspring_data)
                 .expect("Failed to create offspring array from the accumulated data");
 
-        if let Some(ref cleaner) = self.duplicates_cleaner {
-            offspring_array = cleaner.remove(&offspring_array);
-        }
-        let achieved_offsprings = offspring_array.nrows(); // number of resulting rows
-
         // If we still have nothing after cleaning, return an error
-        if achieved_offsprings == 0 {
+        if offspring_array.nrows() == 0 {
             return Err(EvolveError::EmptyMatingResult {
                 message: "No offspring were generated after removing duplicates.".to_string(),
                 current_offspring_count: 0,
@@ -128,10 +144,11 @@ impl Evolve {
         }
 
         // Warn if we didn't achieve the desired number
-        if achieved_offsprings < n_offsprings {
+        if offspring_array.nrows() < n_offsprings {
             println!(
                 "Warning: Only {} offspring were generated out of the desired {}.",
-                achieved_offsprings, n_offsprings
+                offspring_array.nrows(),
+                n_offsprings
             );
         }
 

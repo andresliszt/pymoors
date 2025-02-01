@@ -47,7 +47,6 @@ impl MultiObjectiveAlgorithm {
         // build the initial population from its genes
         let mut rng = thread_rng();
         let genes = sampler.operate(pop_size, n_vars, &mut rng);
-        let pop_size = genes.len();
         let evolve = Evolve::new(
             selector,
             crossover,

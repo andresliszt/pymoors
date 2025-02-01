@@ -1,6 +1,4 @@
 use numpy::ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
-use numpy::{IntoPyArray, PyArray1, PyArray2};
-use pyo3::prelude::*;
 
 /// Represents an individual in the population.
 /// Each `Genes` is an `Array1<f64>`.
@@ -141,44 +139,6 @@ impl Population {
     /// Returns the number of individuals in this population.
     pub fn len(&self) -> usize {
         self.genes.nrows()
-    }
-}
-
-#[pyclass]
-pub struct PyPopulation {
-    #[pyo3(get)]
-    pub genes: Py<PyArray2<f64>>,
-
-    #[pyo3(get)]
-    pub fitness: Py<PyArray2<f64>>,
-
-    #[pyo3(get)]
-    pub constraints: Option<Py<PyArray2<f64>>>,
-
-    #[pyo3(get)]
-    pub rank: Py<PyArray1<usize>>,
-
-    #[pyo3(get)]
-    pub crowding_distance: Py<PyArray1<f64>>,
-}
-
-impl From<Population> for PyPopulation {
-    fn from(pop: Population) -> Self {
-        Python::with_gil(|py| {
-            let genes = pop.genes.into_pyarray(py).to_owned();
-            let fitness = pop.fitness.into_pyarray(py).to_owned();
-            let constraints = pop.constraints.map(|c| c.into_pyarray(py).to_owned());
-            let rank = pop.rank.into_pyarray(py).to_owned();
-            let crowding_distance = pop.crowding_distance.into_pyarray(py).to_owned();
-
-            PyPopulation {
-                genes: genes.into(),
-                fitness: fitness.into(),
-                constraints: constraints.map(|c| c.into()),
-                rank: rank.into(),
-                crowding_distance: crowding_distance.into(),
-            }
-        })
     }
 }
 
