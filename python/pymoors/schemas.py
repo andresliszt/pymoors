@@ -62,7 +62,7 @@ class Population:
             return Individual(
                 genes=self.genes[index],
                 fitness=self.fitness[index],
-                rank=self.rank[index],
+                rank=int(self.rank[index]),
                 constraints=self.constraints[index]
                 if self.constraints is not None
                 else None,
@@ -72,7 +72,7 @@ class Population:
                 Individual(
                     genes=self.genes[i],
                     fitness=self.fitness[i],
-                    rank=self.rank[i],
+                    rank=int(self.rank[i]),
                     constraints=self.constraints[i]
                     if self.constraints is not None
                     else None,
