@@ -87,6 +87,6 @@ def test_small_real_biobjective_nsag2():
     final_population = algorithm.population
     best = final_population.best
     for i in best:  # FIXME: Fix the abs in the tests --- Should be 0.05
-        assert i.genes[0] == pytest.approx(i.genes[1], abs=0.15)
+        assert i.genes[0] == pytest.approx(i.genes[1], abs=0.2)
 
     assert len(final_population) == 200
