@@ -240,101 +240,101 @@ impl PyCloseDuplicatesCleaner {
     }
 }
 
-// #[cfg(test)]
-// mod tests {
-//     use super::*;
-//     use crate::genetic::PopulationGenes;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::genetic::PopulationGenes;
 
-//     #[test]
-//     fn test_exact_duplicates_cleaner_removes_duplicates() {
-//         // Create a PopulationGenes with some repeated rows:
-//         //
-//         //  row 0: [1.0, 2.0, 3.0]
-//         //  row 1: [4.0, 5.0, 6.0]
-//         //  row 2: [1.0, 2.0, 3.0]   (duplicate of row 0)
-//         //  row 3: [7.0, 8.0, 9.0]
-//         //  row 4: [4.0, 5.0, 6.0]   (duplicate of row 1)
+    #[test]
+    fn test_exact_duplicates_cleaner_removes_duplicates() {
+        // Create a PopulationGenes with some repeated rows:
+        //
+        //  row 0: [1.0, 2.0, 3.0]
+        //  row 1: [4.0, 5.0, 6.0]
+        //  row 2: [1.0, 2.0, 3.0]   (duplicate of row 0)
+        //  row 3: [7.0, 8.0, 9.0]
+        //  row 4: [4.0, 5.0, 6.0]   (duplicate of row 1)
 
-//         let raw_data = vec![
-//             1.0, 2.0, 3.0, // row 0
-//             4.0, 5.0, 6.0, // row 1
-//             1.0, 2.0, 3.0, // row 2
-//             7.0, 8.0, 9.0, // row 3
-//             4.0, 5.0, 6.0, // row 4
-//         ];
+        let raw_data = vec![
+            1.0, 2.0, 3.0, // row 0
+            4.0, 5.0, 6.0, // row 1
+            1.0, 2.0, 3.0, // row 2
+            7.0, 8.0, 9.0, // row 3
+            4.0, 5.0, 6.0, // row 4
+        ];
 
-//         let population =
-//             PopulationGenes::from_shape_vec((5, 3), raw_data).expect("Failed to create test array");
+        let population =
+            PopulationGenes::from_shape_vec((5, 3), raw_data).expect("Failed to create test array");
 
-//         let cleaner = ExactDuplicatesCleaner::new();
-//         let cleaned = cleaner.remove(&population);
+        let cleaner = ExactDuplicatesCleaner::new();
+        let cleaned = cleaner.remove(&population);
 
-//         // We should end up with rows 0, 1, 3 as unique ones.
-//         // => 3 rows total.
-//         assert_eq!(cleaned.nrows(), 3);
-//         assert_eq!(cleaned.ncols(), 3);
+        // We should end up with rows 0, 1, 3 as unique ones.
+        // => 3 rows total.
+        assert_eq!(cleaned.nrows(), 3);
+        assert_eq!(cleaned.ncols(), 3);
 
-//         // Check that each row matches the expected values (and in the order of appearance)
-//         assert_eq!(cleaned.row(0).to_vec(), vec![1.0, 2.0, 3.0]);
-//         assert_eq!(cleaned.row(1).to_vec(), vec![4.0, 5.0, 6.0]);
-//         assert_eq!(cleaned.row(2).to_vec(), vec![7.0, 8.0, 9.0]);
-//     }
+        // Check that each row matches the expected values (and in the order of appearance)
+        assert_eq!(cleaned.row(0).to_vec(), vec![1.0, 2.0, 3.0]);
+        assert_eq!(cleaned.row(1).to_vec(), vec![4.0, 5.0, 6.0]);
+        assert_eq!(cleaned.row(2).to_vec(), vec![7.0, 8.0, 9.0]);
+    }
 
-//     #[test]
-//     fn test_exact_duplicates_cleaner_no_duplicates() {
-//         // Case where there are no duplicates at all
-//         let raw_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
-//         let population =
-//             PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
+    #[test]
+    fn test_exact_duplicates_cleaner_no_duplicates() {
+        // Case where there are no duplicates at all
+        let raw_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
+        let population =
+            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
 
-//         let cleaner = ExactDuplicatesCleaner::new();
-//         let cleaned = cleaner.remove(&population);
+        let cleaner = ExactDuplicatesCleaner::new();
+        let cleaned = cleaner.remove(&population);
 
-//         // Everything should remain the same
-//         assert_eq!(cleaned.nrows(), 3);
-//         assert_eq!(cleaned.ncols(), 3);
-//         assert_eq!(cleaned, population);
-//     }
+        // Everything should remain the same
+        assert_eq!(cleaned.nrows(), 3);
+        assert_eq!(cleaned.ncols(), 3);
+        assert_eq!(cleaned, population);
+    }
 
-//     #[test]
-//     fn test_close_duplicates_cleaner_small_epsilon() {
-//         // Create rows that differ by a small amount
-//         //
-//         // With epsilon = 0.01, these rows may be close but not close enough
-//         // so likely won't be merged.
+    #[test]
+    fn test_close_duplicates_cleaner_small_epsilon() {
+        // Create rows that differ by a small amount
+        //
+        // With epsilon = 0.01, these rows may be close but not close enough
+        // so likely won't be merged.
 
-//         let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.0, 3.0, 1.0, 2.02, 3.0];
+        let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.0, 3.0, 1.0, 2.02, 3.0];
 
-//         let population =
-//             PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
+        let population =
+            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
 
-//         // Very small epsilon
-//         let cleaner = CloseDuplicatesCleaner::new(0.01);
-//         let cleaned = cleaner.remove(&population);
+        // Very small epsilon
+        let cleaner = CloseDuplicatesCleaner::new(0.01);
+        let cleaned = cleaner.remove(&population);
 
-//         // Each row differs by at least ~0.01 or more,
-//         // so presumably they won't merge.
-//         assert_eq!(cleaned.nrows(), 3);
-//     }
+        // Each row differs by at least ~0.01 or more,
+        // so presumably they won't merge.
+        assert_eq!(cleaned.nrows(), 3);
+    }
 
-//     #[test]
-//     fn test_close_duplicates_cleaner_larger_epsilon() {
-//         // Similar rows but with epsilon = 0.05
-//         // and differences of about 0.02 => they should be considered "close duplicates."
+    #[test]
+    fn test_close_duplicates_cleaner_larger_epsilon() {
+        // Similar rows but with epsilon = 0.05
+        // and differences of about 0.02 => they should be considered "close duplicates."
 
-//         let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.02, 3.0, 10.0, 10.0, 10.0];
+        let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.02, 3.0, 10.0, 10.0, 10.0];
 
-//         let population =
-//             PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
+        let population =
+            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
 
-//         let cleaner = CloseDuplicatesCleaner::new(0.05);
-//         let cleaned = cleaner.remove(&population);
+        let cleaner = CloseDuplicatesCleaner::new(0.05);
+        let cleaned = cleaner.remove(&population);
 
-//         // Rows 0 and 1 should be within ~0.022... of each other, which is < 0.05,
-//         // => they will merge, leaving only one representative among them
-//         // => total 2 rows remain
-//         assert_eq!(cleaned.nrows(), 2);
+        // Rows 0 and 1 should be within ~0.022... of each other, which is < 0.05,
+        // => they will merge, leaving only one representative among them
+        // => total 2 rows remain
+        assert_eq!(cleaned.nrows(), 2);
 
-//         // The third row (10,10,10) is far from (1,2,3), so it remains as well.
-//     }
-// }
+        // The third row (10,10,10) is far from (1,2,3), so it remains as well.
+    }
+}

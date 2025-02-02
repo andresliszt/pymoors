@@ -23,6 +23,7 @@ unwrap_operator!(
         crate::operators::py_operators::PyUniformBinaryCrossover,
         crate::operators::py_operators::PyOrderCrossover,
         crate::operators::py_operators::PyExponentialCrossover,
+        crate::operators::py_operators::PySimulatedBinaryCrossover,
     ]
 );
 

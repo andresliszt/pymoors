@@ -11,6 +11,7 @@ from ._pymoors import (
     SinglePointBinaryCrossover,
     OrderCrossover,
     UniformBinaryCrossover,
+    SimulatedBinaryCrossover,
     ExponentialCrossover,
     ExactDuplicatesCleaner,
     CloseDuplicatesCleaner,
@@ -31,6 +32,7 @@ __all__ = (
     "OrderCrossover",
     "UniformBinaryCrossover",
     "ExponentialCrossover",
+    "SimulatedBinaryCrossover",
     "ExactDuplicatesCleaner",
     "CloseDuplicatesCleaner",
 )

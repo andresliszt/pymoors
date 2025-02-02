@@ -5,8 +5,8 @@ from pymoors import (
     Nsga2,
     RandomSamplingFloat,
     GaussianMutation,
-    ExponentialCrossover,
     CloseDuplicatesCleaner,
+    SimulatedBinaryCrossover,
 )
 from pymoors.typing import TwoDArray
 
@@ -69,14 +69,14 @@ def test_small_real_biobjective_nsag2():
 
     algorithm = Nsga2(
         sampler=RandomSamplingFloat(min=0.0, max=1.0),
-        crossover=ExponentialCrossover(exponential_crossover_rate=0.5),
+        crossover=SimulatedBinaryCrossover(distribution_index=2),
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
         constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
         pop_size=200,
         n_offsprings=200,
-        num_iterations=200,
+        num_iterations=400,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-16),
@@ -85,10 +85,8 @@ def test_small_real_biobjective_nsag2():
     algorithm.run()
 
     final_population = algorithm.population
-
     best = final_population.best
-
-    for i in best:  # FIXME: Fix the abs in the tests
-        assert i.genes[0] == pytest.approx(i.genes[1], abs=0.5)
+    for i in best:  # FIXME: Fix the abs in the tests --- Should be 0.05
+        assert i.genes[0] == pytest.approx(i.genes[1], abs=0.15)
 
     assert len(final_population) == 200

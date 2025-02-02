@@ -168,6 +168,33 @@ class ExponentialCrossover(CrossoverOperator):
 
     def __init__(self, exponential_crossover_rate: float) -> None: ...
 
+class SimulatedBinaryCrossover(CrossoverOperator):
+    """
+    Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
+
+    SBX is a widely used crossover mechanism for continuous variables, inspired
+    by the behavior of single-point crossover in binary-coded GAs. Instead of
+    slicing bit strings, SBX generates offspring by interpolating (and potentially
+    extrapolating) between two parent solutions (p1 and p2).
+
+    The key parameter `distribution_index` (often called "eta") controls how far
+    the offspring can deviate from the parents. A higher distribution index results
+    in offspring closer to the parents (exploitation), whereas a lower value
+    produces offspring that can be further away (exploration).
+
+    In each crossover event, SBX computes a factor `beta_q`, based on a random
+    number in [0,1) and the distribution index `eta`. This factor dictates where
+    each child solution lies relative to the parent solutions. If the parent genes
+    (p1 and p2) differ minimally, no crossover is performed (i.e., the children
+    inherit the parents' values directly).
+
+    Reference:
+        - Deb, Kalyanmoy, and R. B. Agrawal. "Simulated binary crossover for
+          continuous search space." Complex Systems 9.2 (1995): 115-148.
+
+    """
+    def __init__(self, distribution_index: float): ...
+
 class DuplicatesCleaner:
     """
     Base class for cleaning duplicate individuals in the population.

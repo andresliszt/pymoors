@@ -19,7 +19,8 @@ pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner
 pub use operators::py_operators::{
     PyBitFlipMutation, PyExponentialCrossover, PyGaussianMutation, PyOrderCrossover,
     PyPermutationSampling, PyRandomSamplingBinary, PyRandomSamplingFloat, PyRandomSamplingInt,
-    PySinglePointBinaryCrossover, PySwapMutation, PyUniformBinaryCrossover,
+    PySimulatedBinaryCrossover, PySinglePointBinaryCrossover, PySwapMutation,
+    PyUniformBinaryCrossover,
 };
 
 /// Root module `pymoors` that includes all classes.
@@ -43,6 +44,7 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyExponentialCrossover>()?;
     m.add_class::<PyExactDuplicatesCleaner>()?;
     m.add_class::<PyCloseDuplicatesCleaner>()?;
+    m.add_class::<PySimulatedBinaryCrossover>()?;
 
     Ok(())
 }
