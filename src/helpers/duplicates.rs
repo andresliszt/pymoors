@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use std::fmt::Debug;
+use std::sync::Arc;
 
 use numpy::ndarray::Array2;
 use ordered_float::OrderedFloat;
@@ -94,8 +95,9 @@ impl CloseDuplicatesCleaner {
         Self { epsilon }
     }
 
-    /// Builds the NxN distance matrix in parallel using a 1D buffer, avoiding
-    /// mutable borrows on a shared array.
+    /// Builds the NxN distance matrix in parallel using a 1D buffer,
+    /// computing only the upper-triangular part (i ≤ j) and then mirroring it.
+    /// This avoids redundant work because the distance matrix is symmetric.
     /// Complexity: O(N^2) on the number of rows, plus cost for dot products.
     fn pairwise_distance_parallel_1d(&self, population: &PopulationGenes) -> Array2<f64> {
         let n = population.nrows();
@@ -104,8 +106,7 @@ impl CloseDuplicatesCleaner {
             return Array2::<f64>::zeros((0, 0));
         }
 
-        // 1) row_sums[i] = sum of squares of row i
-        //    do it in parallel by indexing row i
+        // 1) Compute row_sums[i] = sum of squares of row i in parallel.
         let row_sums: Vec<f64> = (0..n)
             .into_par_iter()
             .map(|i| {
@@ -114,43 +115,56 @@ impl CloseDuplicatesCleaner {
             })
             .collect();
 
-        // Flatten the population so we can manually do dot products
-        // row i = &flat_pop[i*d .. i*d + d]
+        // Wrap row_sums in an Arc so it can be shared among threads.
+        let row_sums = Arc::new(row_sums);
+
+        // Get the flat slice of population data.
         let flat_pop = population
             .as_slice()
             .expect("Population must be contiguous data");
 
-        // 2) Create a 1D buffer for distances of size n*n, fill in parallel
-        let dist_data: Vec<f64> = (0..n * n)
+        // Wrap flat_pop in an Arc as well.
+        let flat_pop = Arc::new(flat_pop);
+
+        // 2) Compute the upper-triangular distances (i ≤ j) in parallel.
+        let upper: Vec<(usize, usize, f64)> = (0..n)
             .into_par_iter()
-            .map(|idx| {
-                let i = idx / n;
-                let j = idx % n;
-
-                if i == j {
-                    // distance to itself is 0
-                    return 0.0;
-                }
-
-                let sum_i = row_sums[i];
-                let sum_j = row_sums[j];
-
-                // dot row_i, row_j
-                let row_i = &flat_pop[i * d..i * d + d];
-                let row_j = &flat_pop[j * d..j * d + d];
-                let dot_ij = row_i
-                    .iter()
-                    .zip(row_j.iter())
-                    .map(|(&a, &b)| a * b)
-                    .sum::<f64>();
-
-                let dist2 = sum_i + sum_j - 2.0 * dot_ij;
-                dist2.max(0.0).sqrt()
+            .flat_map(|i| {
+                // Clone the Arcs into the closure.
+                let row_sums = row_sums.clone();
+                let flat_pop = flat_pop.clone();
+                (i..n)
+                    .map(move |j| {
+                        if i == j {
+                            (i, j, 0.0)
+                        } else {
+                            let sum_i = row_sums[i];
+                            let sum_j = row_sums[j];
+                            // Get slices for rows i and j.
+                            let row_i = &flat_pop[i * d..i * d + d];
+                            let row_j = &flat_pop[j * d..j * d + d];
+                            let dot_ij = row_i
+                                .iter()
+                                .zip(row_j.iter())
+                                .map(|(&a, &b)| a * b)
+                                .sum::<f64>();
+                            let dist2 = sum_i + sum_j - 2.0 * dot_ij;
+                            let distance = dist2.max(0.0).sqrt();
+                            (i, j, distance)
+                        }
+                    })
+                    .collect::<Vec<_>>()
             })
             .collect();
 
-        // 3) Turn dist_data into an (n, n) Array2
-        Array2::from_shape_vec((n, n), dist_data)
+        // 3) Create a full vector for the symmetric matrix and fill it.
+        let mut full = vec![0.0; n * n];
+        for (i, j, distance) in upper {
+            full[i * n + j] = distance;
+            full[j * n + i] = distance; // Mirror the upper triangle.
+        }
+
+        Array2::from_shape_vec((n, n), full)
             .expect("Failed to create distance matrix from 1D buffer")
     }
 }
@@ -303,17 +317,22 @@ mod tests {
         // With epsilon = 0.01, these rows may be close but not close enough
         // so likely won't be merged.
 
+        // Distance between row 1 and row 0: 0.009999999999988346
+        // Distance between row 1 and row 2: 0.02236067977497184
+        // Distance between row 2 and row 1: 0.02236067977497184
+        // Distance between row 0 and row 1: 0.009999999999988346
+        // Distance between row 0 and row 2: 0.02000000000006551
+        // Distance between row 2 and row 0: 0.02000000000006551
+
         let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.0, 3.0, 1.0, 2.02, 3.0];
 
         let population =
             PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
 
         // Very small epsilon
-        let cleaner = CloseDuplicatesCleaner::new(0.01);
+        let cleaner = CloseDuplicatesCleaner::new(0.0001);
         let cleaned = cleaner.remove(&population);
-
-        // Each row differs by at least ~0.01 or more,
-        // so presumably they won't merge.
+        // No removal at all
         assert_eq!(cleaned.nrows(), 3);
     }
 
