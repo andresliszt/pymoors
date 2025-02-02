@@ -43,7 +43,7 @@ jobs:
     - name: Get rust coverage report
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        cargo llvm-cov report --codecov --output-path codecov.json
+        cargo llvm-cov report --codecov --output-path codecov.json --ignore-filename-regex ".*/tests?/.*
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
