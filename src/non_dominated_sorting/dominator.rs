@@ -70,7 +70,7 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
     });
 
     // Convert to normal Vec<Vec<usize>>
-    let mut dominated_sets_vec: Vec<Vec<usize>> = dominated_sets
+    let dominated_sets_vec: Vec<Vec<usize>> = dominated_sets
         .into_iter()
         .map(|m| m.into_inner().unwrap())
         .collect();
