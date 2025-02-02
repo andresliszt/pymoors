@@ -52,7 +52,7 @@ impl Evaluator {
                     .outer_iter()
                     .enumerate()
                     .filter_map(|(i, row)| {
-                        if row.iter().all(|&val| val < 0.0) {
+                        if row.iter().all(|&val| val <= 0.0) {
                             Some(i)
                         } else {
                             None

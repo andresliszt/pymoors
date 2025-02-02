@@ -165,10 +165,10 @@ def test_knapsack(algorithm_class, extra_kw, compare_exact_front):
         constraints_fn=constraints_knapsack,
         duplicates_cleaner=ExactDuplicatesCleaner(),
         n_vars=5,  # 5 items
-        pop_size=200,  # population size
-        n_offsprings=200,  # offsprings per generation
+        pop_size=100,  # population size
+        n_offsprings=32,  # offsprings per generation
         num_iterations=100,  # generation count
-        mutation_rate=0.9,
+        mutation_rate=0.1,
         crossover_rate=0.9,
         keep_infeasible=False,
         **extra_kw,

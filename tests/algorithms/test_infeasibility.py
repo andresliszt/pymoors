@@ -42,9 +42,9 @@ def infeasible_constraints(genes: TwoDArray) -> TwoDArray:
         np.ndarray: Array of shape (n_individuals,) containing the constraint values.
     """
     n_genes = genes.shape[1]
-    return (n_genes - np.sum(genes, axis=1)).reshape(
+    return (n_genes - np.sum(genes, axis=1) + 1).reshape(
         -1, 1
-    )  # Sum of genes - n_genes > 0
+    )  # Sum of genes - n_genes + 1 > 0
 
 
 def test_keep_infeasible():
