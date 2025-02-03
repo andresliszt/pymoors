@@ -1,5 +1,6 @@
 use rand::RngCore;
 use std::fmt::Debug;
+use std::time::Instant;
 
 use crate::{
     genetic::{Population, PopulationGenes},
@@ -92,8 +93,18 @@ impl Evolve {
                 all_offsprings.push(row.to_vec());
             }
 
+            // Print the number of offspring generated in this iteration
+            println!(
+                "Iteration {}: Generated {} offspring",
+                iterations + 1,
+                new_offsprings.nrows()
+            );
+
             // Clean duplicates if a cleaner is provided
             if let Some(ref cleaner) = self.duplicates_cleaner {
+                // Mide el tiempo del duplicates_cleaner
+                let cleaner_start = Instant::now();
+
                 // Convert Vec<Vec<f64>> into a single Array2
                 let offspring_data: Vec<f64> =
                     all_offsprings.clone().into_iter().flatten().collect();
@@ -111,10 +122,15 @@ impl Evolve {
                     .outer_iter()
                     .map(|row| row.to_vec())
                     .collect();
+
+                let cleaner_duration = cleaner_start.elapsed();
+                println!("Duplicates cleaner took: {:?}", cleaner_duration);
             }
 
             iterations += 1;
         }
+
+        println!("Total iterations: {}", iterations);
 
         if all_offsprings.is_empty() {
             // We never generated anything

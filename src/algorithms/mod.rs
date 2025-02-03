@@ -79,7 +79,6 @@ impl MultiObjectiveAlgorithm {
                 return;
             }
         };
-
         let fronts = self.evaluator.build_fronts(genes);
         self.population = self.survivor.operate(&fronts, self.pop_size);
     }

@@ -1,11 +1,9 @@
 use std::collections::HashSet;
 use std::fmt::Debug;
-use std::sync::Arc;
 
-use numpy::ndarray::Array2;
+use numpy::ndarray::Axis;
 use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
-use rayon::prelude::*;
 
 use crate::genetic::PopulationGenes;
 
@@ -27,56 +25,26 @@ impl ExactDuplicatesCleaner {
 }
 
 impl PopulationCleaner for ExactDuplicatesCleaner {
-    /// Parallel approach to remove exact duplicate rows:
-    /// 1) Convert each row to `Vec<f64>`.
-    /// 2) Split rows into chunks, remove duplicates locally in each chunk (thread-local).
-    /// 3) Merge results to ensure global uniqueness.
     fn remove(&self, population: &PopulationGenes) -> PopulationGenes {
-        let nrows = population.nrows();
-        if nrows == 0 {
-            // empty population
+        if population.is_empty() {
             return population.clone();
         }
+
         let ncols = population.ncols();
+        let mut global_set: HashSet<Vec<OrderedFloat<f64>>> = HashSet::new();
+        let mut deduped_rows = Vec::new();
 
-        // Extract all rows as Vec<Vec<f64>>
-        let all_rows: Vec<Vec<f64>> = population.outer_iter().map(|row| row.to_vec()).collect();
-
-        let chunk_size = 100;
-
-        // 1) In parallel, remove duplicates locally in each chunk
-        //    Return a Vec of "locally deduplicated" rows per chunk
-        let local_deduped: Vec<Vec<Vec<f64>>> = all_rows
-            .par_chunks(chunk_size)
-            .map(|chunk| {
-                let mut local_set = HashSet::new();
-                let mut local_vec = Vec::new();
-                for row in chunk {
-                    let row_hash: Vec<OrderedFloat<f64>> =
-                        row.iter().map(|&val| OrderedFloat(val)).collect();
-                    if local_set.insert(row_hash) {
-                        local_vec.push(row.clone());
-                    }
-                }
-                local_vec
-            })
-            .collect();
-
-        // 2) Merge results into a global set
-        let mut global_set = HashSet::new();
-        let mut final_rows = Vec::new();
-        for chunk_rows in local_deduped {
-            for row in chunk_rows {
-                let row_hash: Vec<OrderedFloat<f64>> =
-                    row.iter().map(|&val| OrderedFloat(val)).collect();
-                if global_set.insert(row_hash) {
-                    final_rows.push(row);
-                }
+        // Iterate through each row of the matrix
+        for row in population.outer_iter() {
+            // Convert the row into a vector of OrderedFloat to allow for proper hashing/comparison
+            let row_hash: Vec<OrderedFloat<f64>> = row.iter().map(|&x| OrderedFloat(x)).collect();
+            if global_set.insert(row_hash) {
+                deduped_rows.push(row.to_vec());
             }
         }
 
-        // 3) Build final deduplicated matrix
-        let data_flat: Vec<f64> = final_rows.into_iter().flatten().collect();
+        // Flatten the deduplicated rows into a single vector and rebuild the matrix
+        let data_flat: Vec<f64> = deduped_rows.into_iter().flatten().collect();
         PopulationGenes::from_shape_vec((data_flat.len() / ncols, ncols), data_flat)
             .expect("Failed to create deduplicated Array2")
     }
@@ -95,124 +63,71 @@ impl CloseDuplicatesCleaner {
         Self { epsilon }
     }
 
-    /// Builds the NxN distance matrix in parallel using a 1D buffer,
-    /// computing only the upper-triangular part (i ≤ j) and then mirroring it.
-    /// This avoids redundant work because the distance matrix is symmetric.
-    /// Complexity: O(N^2) on the number of rows, plus cost for dot products.
-    fn pairwise_distance_parallel_1d(&self, population: &PopulationGenes) -> Array2<f64> {
-        let n = population.nrows();
-        let d = population.ncols();
-        if n == 0 {
-            return Array2::<f64>::zeros((0, 0));
-        }
+    /// Computes the full pairwise Euclidean distance matrix among the rows of `data`.
+    ///
+    /// For a dataset of shape (n, d) (n points in d dimensions), this function returns
+    /// an (n x n) matrix where the (i,j) element is the Euclidean distance between row i and row j.
+    fn pairwise_distances(&self, data: &PopulationGenes) -> PopulationGenes {
+        // Compute the squared L2 norm for each row.
+        let norms = data.map_axis(Axis(1), |row| row.dot(&row));
 
-        // 1) Compute row_sums[i] = sum of squares of row i in parallel.
-        let row_sums: Vec<f64> = (0..n)
-            .into_par_iter()
-            .map(|i| {
-                let row_i = population.row(i);
-                row_i.iter().map(|&x| x * x).sum::<f64>()
-            })
-            .collect();
+        // Reshape norms into a column vector (n x 1) and a row vector (1 x n)
+        let norms_col = norms.clone().insert_axis(Axis(1)); // shape (n, 1)
+        let norms_row = norms.insert_axis(Axis(0)); // shape (1, n)
 
-        // Wrap row_sums in an Arc so it can be shared among threads.
-        let row_sums = Arc::new(row_sums);
+        // Compute the dot product matrix: data.dot(data.T) yields an (n x n) matrix.
+        let dot = data.dot(&data.t());
 
-        // Get the flat slice of population data.
-        let flat_pop = population
-            .as_slice()
-            .expect("Population must be contiguous data");
+        // Using broadcasting, compute the squared distances:
+        // d^2(i,j) = norms_col[i] + norms_row[j] - 2 * dot(i,j)
+        let mut dists_sq = &norms_col + &norms_row - 2.0 * dot;
 
-        // Wrap flat_pop in an Arc as well.
-        let flat_pop = Arc::new(flat_pop);
+        // Due to numerical precision, some entries might be slightly negative; clamp them to zero.
+        dists_sq.mapv_inplace(|x| if x < 0.0 { 0.0 } else { x });
 
-        // 2) Compute the upper-triangular distances (i ≤ j) in parallel.
-        let upper: Vec<(usize, usize, f64)> = (0..n)
-            .into_par_iter()
-            .flat_map(|i| {
-                // Clone the Arcs into the closure.
-                let row_sums = row_sums.clone();
-                let flat_pop = flat_pop.clone();
-                (i..n)
-                    .map(move |j| {
-                        if i == j {
-                            (i, j, 0.0)
-                        } else {
-                            let sum_i = row_sums[i];
-                            let sum_j = row_sums[j];
-                            // Get slices for rows i and j.
-                            let row_i = &flat_pop[i * d..i * d + d];
-                            let row_j = &flat_pop[j * d..j * d + d];
-                            let dot_ij = row_i
-                                .iter()
-                                .zip(row_j.iter())
-                                .map(|(&a, &b)| a * b)
-                                .sum::<f64>();
-                            let dist2 = sum_i + sum_j - 2.0 * dot_ij;
-                            let distance = dist2.max(0.0).sqrt();
-                            (i, j, distance)
-                        }
-                    })
-                    .collect::<Vec<_>>()
-            })
-            .collect();
-
-        // 3) Create a full vector for the symmetric matrix and fill it.
-        let mut full = vec![0.0; n * n];
-        for (i, j, distance) in upper {
-            full[i * n + j] = distance;
-            full[j * n + i] = distance; // Mirror the upper triangle.
-        }
-
-        Array2::from_shape_vec((n, n), full)
-            .expect("Failed to create distance matrix from 1D buffer")
+        // Take the square root of every element to obtain the Euclidean distances.
+        dists_sq.mapv(|x| x.sqrt())
     }
 }
 
 impl PopulationCleaner for CloseDuplicatesCleaner {
-    /// Removes rows within `epsilon` distance of each other, keeping one representative.
-    /// 1) Compute NxN distance matrix in parallel with the 1D approach.
-    /// 2) Mark all points near the chosen row as visited, BFS-like in single thread.
     fn remove(&self, population: &PopulationGenes) -> PopulationGenes {
         let n = population.nrows();
-        if n == 0 {
-            return population.clone();
-        }
-        let ncols = population.ncols();
+        // Compute the full pairwise distance matrix.
+        let dists = self.pairwise_distances(population);
+        // Create a boolean vector to mark rows to keep (true means keep)
+        let mut keep = vec![true; n];
 
-        // 1) Build distance matrix in parallel
-        let dist_matrix = self.pairwise_distance_parallel_1d(population);
-
-        // 2) BFS-like pass: for each row i not visited, keep it and mark neighbors within epsilon
-        let mut visited = vec![false; n];
-        let mut retained_indices = Vec::new();
-
+        // For each row, if it is marked to be kept, mark all later rows
+        // that are within the epsilon distance as duplicates (i.e. not kept).
         for i in 0..n {
-            if visited[i] {
+            if !keep[i] {
                 continue;
             }
-            retained_indices.push(i);
-
-            // Mark neighbors
-            for j in 0..n {
-                if dist_matrix[[i, j]] < self.epsilon {
-                    visited[j] = true;
+            // Only check subsequent rows to avoid duplicate comparisons.
+            for j in (i + 1)..n {
+                if dists[(i, j)] < self.epsilon {
+                    keep[j] = false;
                 }
             }
         }
-
-        // 3) Build final array from retained rows
-        let retained_rows: Vec<_> = retained_indices
-            .iter()
-            .map(|&idx| population.row(idx).to_vec())
+        // Collect rows that are marked to be kept.
+        let kept_rows: Vec<_> = population
+            .outer_iter()
+            .enumerate()
+            .filter_map(|(i, row)| if keep[i] { Some(row.to_owned()) } else { None })
             .collect();
 
-        let data: Vec<f64> = retained_rows.into_iter().flatten().collect();
-        PopulationGenes::from_shape_vec((data.len() / ncols, ncols), data)
-            .expect("Failed to create final close-duplicates Array2")
+        // Build a new Array2 from the kept rows.
+        let num_kept = kept_rows.len();
+        let num_cols = population.ncols();
+        let mut result = PopulationGenes::zeros((num_kept, num_cols));
+        for (i, row) in kept_rows.into_iter().enumerate() {
+            result.row_mut(i).assign(&row);
+        }
+        result
     }
 }
-
 // -----------------------------------------------------------------------------
 // PYTHON-EXPOSED CLASSES, KEEPING NAMES
 // -----------------------------------------------------------------------------
