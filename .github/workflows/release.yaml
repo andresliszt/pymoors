@@ -4,9 +4,6 @@ on:
   release:
     types: [published]
 
-env:
-  COLUMNS: 150
-  UV_PYTHON: 3.13
 
 jobs:
   build:
@@ -79,3 +76,9 @@ jobs:
         with:
           name: pypi_files_${{ matrix.os }}_${{ matrix.target }}_${{ matrix.interpreter || 'all' }}_${{ matrix.manylinux }}
           path: dist
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload dist/*
