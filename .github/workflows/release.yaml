@@ -22,14 +22,6 @@ jobs:
           - os: linux
             manylinux: auto
             target: aarch64
-          - os: linux
-            manylinux: auto
-            target: armv7
-            interpreter: [ "3.10", "3.11", "3.12", "3.13" ]
-          - os: linux
-            manylinux: auto
-            target: ppc64le
-            interpreter: [ "3.10", "3.11", "3.12", "3.13" ]
           # macOS variants
           - os: macos
             target: x86_64
