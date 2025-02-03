@@ -1,0 +1,81 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+
+env:
+  COLUMNS: 150
+  UV_PYTHON: 3.13
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }} (${{ matrix.target }} - ${{ matrix.interpreter || 'all' }}${{ matrix.os == 'linux' && format(' - {0}', matrix.manylinux == 'auto' && 'manylinux' || matrix.manylinux) || '' }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, macos, windows]
+        target: [x86_64, aarch64]
+        manylinux: [auto]
+        include:
+          # Linux variants
+          - os: linux
+            manylinux: auto
+            target: i686
+          - os: linux
+            manylinux: auto
+            target: aarch64
+          - os: linux
+            manylinux: auto
+            target: armv7
+            interpreter: [ "3.10", "3.11", "3.12", "3.13" ]
+          - os: linux
+            manylinux: auto
+            target: ppc64le
+            interpreter: [ "3.10", "3.11", "3.12", "3.13" ]
+          # macOS variants
+          - os: macos
+            target: x86_64
+
+          - os: windows
+            target: i686
+            python-architecture: x86
+
+        exclude:
+          - os: windows
+            target: aarch64
+
+    runs-on: ${{ (matrix.os == 'linux' && 'ubuntu') || matrix.os }}-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          architecture: ${{ matrix.python-architecture || 'x64' }}
+
+      - name: Install dependencies
+        run: pip install -U twine ruff==0.5.0 typing_extensions
+
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.target }}
+          manylinux: ${{ matrix.manylinux }}
+          args: --release --out dist --interpreter ${{ matrix.interpreter || '3.10 3.11 3.12 3.13' }}
+          rust-toolchain: stable
+          docker-options: -e CI
+
+      - name: List built wheels
+        run: ${{ (matrix.os == 'windows' && 'dir') || 'ls -lh' }} dist/
+
+      - name: Check built wheels with Twine
+        run: twine check --strict dist/*
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: pypi_files_${{ matrix.os }}_${{ matrix.target }}_${{ matrix.interpreter || 'all' }}_${{ matrix.manylinux }}
+          path: dist
