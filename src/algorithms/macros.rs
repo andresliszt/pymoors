@@ -38,6 +38,10 @@ macro_rules! define_multiobj_pyclass {
                 crossover_rate: f64,
                 keep_infeasible: bool,
                 constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
+                // Optional lower bound for each gene.
+                lower_bound: Option<f64>,
+                // Optional upper bound for each gene.
+                upper_bound: Option<f64>,
             ) -> Self {
                 // Build the shared MultiObjectiveAlgorithm
                 let algorithm = MultiObjectiveAlgorithm::new(
@@ -56,6 +60,8 @@ macro_rules! define_multiobj_pyclass {
                     crossover_rate,
                     keep_infeasible,
                     constraints_fn,
+                    lower_bound,
+                    upper_bound,
                 );
 
                 Self { algorithm }

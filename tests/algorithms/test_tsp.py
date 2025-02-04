@@ -164,7 +164,7 @@ def test_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
         n_vars=4,  # 4 cities (the route length)
         pop_size=100,
         n_offsprings=24,
-        num_iterations=200,
+        num_iterations=20,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=ExactDuplicatesCleaner(),

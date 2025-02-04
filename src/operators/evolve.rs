@@ -1,6 +1,5 @@
 use rand::RngCore;
 use std::fmt::Debug;
-use std::time::Instant;
 
 use crate::{
     genetic::{Population, PopulationGenes},
@@ -63,6 +62,15 @@ impl Evolve {
         offsprings
     }
 
+    pub fn clean_duplicates(&self, genes: PopulationGenes) -> PopulationGenes {
+        if let Some(ref cleaner) = self.duplicates_cleaner {
+            // Clean duplicates
+            cleaner.remove(&genes)
+        } else {
+            genes
+        }
+    }
+
     /// Generates up to `n_offsprings` in multiple iterations (up to `max_iter`).
     /// We accumulate offspring in a buffer and only remove duplicates once at the end.
     /// Prints separate durations for mating and duplicates cleaning, plus iteration count.
@@ -88,43 +96,12 @@ impl Evolve {
             // Create offspring from these parents
             let new_offsprings = self.mating_batch(&parents_a.genes, &parents_b.genes, rng);
 
+            // Clean duplicates if a cleaner is provided
+            let new_offsprings = self.clean_duplicates(new_offsprings);
+
             // Extend our accumulator with the new rows
             for row in new_offsprings.outer_iter() {
                 all_offsprings.push(row.to_vec());
-            }
-
-            // Print the number of offspring generated in this iteration
-            println!(
-                "Iteration {}: Generated {} offspring",
-                iterations + 1,
-                new_offsprings.nrows()
-            );
-
-            // Clean duplicates if a cleaner is provided
-            if let Some(ref cleaner) = self.duplicates_cleaner {
-                // Mide el tiempo del duplicates_cleaner
-                let cleaner_start = Instant::now();
-
-                // Convert Vec<Vec<f64>> into a single Array2
-                let offspring_data: Vec<f64> =
-                    all_offsprings.clone().into_iter().flatten().collect();
-                let mut offspring_array = PopulationGenes::from_shape_vec(
-                    (all_offsprings.len(), num_genes),
-                    offspring_data,
-                )
-                .expect("Failed to create offspring array from the accumulated data");
-
-                // Clean duplicates
-                offspring_array = cleaner.remove(&offspring_array);
-
-                // Update all_offsprings with the cleaned data
-                all_offsprings = offspring_array
-                    .outer_iter()
-                    .map(|row| row.to_vec())
-                    .collect();
-
-                let cleaner_duration = cleaner_start.elapsed();
-                println!("Duplicates cleaner took: {:?}", cleaner_duration);
             }
 
             iterations += 1;

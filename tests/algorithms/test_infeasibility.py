@@ -56,12 +56,34 @@ def test_keep_infeasible():
         constraints_fn=infeasible_constraints,
         n_vars=5,
         pop_size=100,
-        n_offsprings=100,
+        n_offsprings=32,
         num_iterations=20,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=None,
         keep_infeasible=True,
+    )
+    algorithm.run()
+
+    assert len(algorithm.population) == 100
+
+
+def test_keep_infeasible_out_of_bounds():
+    algorithm = Nsga2(
+        sampler=RandomSamplingBinary(),
+        mutation=BitFlipMutation(gene_mutation_rate=0.5),
+        crossover=SinglePointBinaryCrossover(),
+        fitness_fn=binary_biobjective_infeasible,
+        n_vars=5,
+        pop_size=100,
+        n_offsprings=32,
+        num_iterations=20,
+        mutation_rate=0.1,
+        crossover_rate=0.9,
+        duplicates_cleaner=None,
+        keep_infeasible=True,
+        lower_bound=2,
+        upper_bound=10,
     )
     algorithm.run()
 

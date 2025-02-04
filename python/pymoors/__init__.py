@@ -17,7 +17,6 @@ from ._pymoors import (
     CloseDuplicatesCleaner,
 )
 
-
 __all__ = (
     "Nsga2",
     "Nsga3",

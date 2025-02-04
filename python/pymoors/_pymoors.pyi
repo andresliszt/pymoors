@@ -258,6 +258,8 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     keep_infeasible: bool
     duplicates_cleaner: Optional[DuplicatesCleaner]
     constraints_fn: Optional[ConstraintsPopulationCallable]
+    lower_bound: Optional[float]
+    upper_bound: Optional[float]
 
 class Nsga2:
     """

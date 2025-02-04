@@ -2,7 +2,7 @@
 
 use crate::genetic::{Fronts, FrontsExt, Population};
 use crate::operators::{GeneticOperator, SurvivalOperator};
-use numpy::ndarray::{s, Array2, ArrayView1};
+use ndarray::{s, Array2, ArrayView1};
 use std::collections::HashMap;
 
 /// Structure representing the NSGA-III survival operator.
@@ -26,7 +26,7 @@ impl ReferencePointsSurvival {
 
 impl SurvivalOperator for ReferencePointsSurvival {
     fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population {
-        // Initialize variables to store selected fronts
+        // Initialize a vector to store selected fronts (populations)
         let mut chosen_fronts: Vec<Population> = Vec::new();
         let mut n_survivors = 0;
 
@@ -34,26 +34,30 @@ impl SurvivalOperator for ReferencePointsSurvival {
         for front in fronts.iter() {
             let front_size = front.len();
 
-            // If the entire front fits within the survival limit
+            // If the entire front fits within the survival limit, take the whole front.
             if n_survivors + front_size <= n_survive {
                 chosen_fronts.push(front.clone());
                 n_survivors += front_size;
             } else {
-                // Only a portion of this front can survive
+                // Only a portion of this front can survive.
                 let remaining = n_survive - n_survivors;
                 if remaining > 0 {
-                    // Normalize the current front
+                    // Create a temporary normalized copy of the front (for selection purposes only)
                     let normalized_front = normalize_front(front);
-
-                    // Assign individuals to reference points
+                    // Assign individuals to reference points using the normalized fitness values
                     let assignments =
                         assign_to_reference_points(&normalized_front, &self.reference_points);
-
-                    // Perform niching selection based on assignments
-                    let selected = niching_selection(&normalized_front, &assignments, remaining);
-                    chosen_fronts.push(selected);
+                    // Perform niching selection on the normalized front to obtain the indices
+                    let selected_indices = niching_selection(
+                        &normalized_front,
+                        &assignments,
+                        remaining,
+                        &self.reference_points,
+                    );
+                    // Use the indices to select individuals from the original (non‐normalized) front
+                    chosen_fronts.push(front.selected(&selected_indices));
                 }
-                // No more slots available after this front
+                // No more slots available after processing this front.
                 break;
             }
         }
@@ -64,6 +68,7 @@ impl SurvivalOperator for ReferencePointsSurvival {
 }
 
 /// Normalizes the objectives of a front to the [0, 1] range.
+/// This function returns a copy of the population with normalized fitness values.
 fn normalize_front(front: &Population) -> Population {
     let n_objectives = front.fitness.ncols();
     let mut normalized = front.clone();
@@ -73,13 +78,11 @@ fn normalize_front(front: &Population) -> Population {
         let min = col.iter().cloned().fold(f64::INFINITY, f64::min);
         let max = col.iter().cloned().fold(f64::NEG_INFINITY, f64::max);
 
-        // Avoid division by zero
+        // Avoid division by zero: if max equals min, set the column to zeros.
         if max > min {
-            // Obtain a mutable slice of the m-th column
             let mut col_mut = normalized.fitness.slice_mut(s![.., m]);
             col_mut.mapv_inplace(|x| (x - min) / (max - min));
         } else {
-            // If max == min, set the entire column to 0.0
             let mut col_mut = normalized.fitness.slice_mut(s![.., m]);
             col_mut.mapv_inplace(|_| 0.0);
         }
@@ -88,7 +91,8 @@ fn normalize_front(front: &Population) -> Population {
     normalized
 }
 
-/// Assigns each individual in the front to the nearest reference point based on perpendicular distance.
+/// Assigns each individual in the front to the nearest reference point (using perpendicular distance)
+/// based on the normalized objectives.
 fn assign_to_reference_points(
     front: &Population,
     reference_points: &Array2<f64>,
@@ -134,31 +138,41 @@ fn perpendicular_distance(individual: &ArrayView1<f64>, ref_point: &ArrayView1<f
         .sum();
     let projection = ref_point.mapv(|x| (dot_product / ref_norm.powi(2)) * x);
 
-    // Calculate the perpendicular distance
+    // Calculate and return the perpendicular distance
     let diff = individual - &projection;
     diff.mapv(|x| x.powi(2)).sum().sqrt()
 }
 
-/// Performs niching selection based on assignments to reference points.
+/// Performs niching selection based on the assignments to reference points.
+/// It returns the indices (with respect to the normalized front) of the individuals to be selected.
+/// The final population will use these indices to extract individuals from the original (non-normalized) front.
 fn niching_selection(
     normalized_front: &Population,
     assignments: &HashMap<usize, Vec<usize>>,
     remaining: usize,
-) -> Population {
+    reference_points: &Array2<f64>,
+) -> Vec<usize> {
     let mut selected_indices: Vec<usize> = Vec::new();
 
-    // Iterate over each reference point
-    for (ref_idx, inds) in assignments.iter() {
+    // To ensure deterministic behavior, iterate over reference point keys in sorted order.
+    let mut ref_keys: Vec<&usize> = assignments.keys().collect();
+    ref_keys.sort();
+
+    for &ref_idx in ref_keys.iter() {
         if selected_indices.len() >= remaining {
             break;
         }
 
-        // Sort the individuals assigned to this reference point by their perpendicular distance
+        // Get the individuals assigned to this reference point.
+        let inds = &assignments[ref_idx];
+
+        // Sort the individuals by their perpendicular distance to the corresponding reference point.
         let mut sorted_inds = inds.clone();
         sorted_inds.sort_by(|&i, &j| {
             let individual_i = normalized_front.fitness.row(i);
             let individual_j = normalized_front.fitness.row(j);
-            let ref_point = normalized_front.fitness.row(*ref_idx);
+            // Use the actual reference point (from the operator’s reference points) for the distance
+            let ref_point = reference_points.row(*ref_idx);
 
             let dist_i = perpendicular_distance(&individual_i, &ref_point);
             let dist_j = perpendicular_distance(&individual_j, &ref_point);
@@ -168,18 +182,18 @@ fn niching_selection(
                 .unwrap_or(std::cmp::Ordering::Equal)
         });
 
-        // Select the closest individual to the reference point
+        // Select the closest individual (if available)
         if let Some(&best_ind) = sorted_inds.first() {
             selected_indices.push(best_ind);
         }
     }
 
-    // If there are still slots remaining, select additional individuals
+    // If there are still slots remaining, select additional individuals from those not yet selected.
     if selected_indices.len() < remaining {
         let mut remaining_inds: Vec<usize> = (0..normalized_front.len()).collect();
         remaining_inds.retain(|&i| !selected_indices.contains(&i));
 
-        // Select the first needed individuals (can be improved with a better selection strategy)
+        // Simply take the first needed individuals (this strategy can be improved)
         let additional: Vec<usize> = remaining_inds
             .into_iter()
             .take(remaining - selected_indices.len())
@@ -187,25 +201,24 @@ fn niching_selection(
         selected_indices.extend(additional);
     }
 
-    // Create a new population with the selected individuals
-    normalized_front.selected(&selected_indices)
+    selected_indices
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use numpy::ndarray::{array, Array1, Array2};
+    use crate::genetic::Population;
+    use crate::operators::SurvivalOperator;
+    use ndarray::{array, Array1, Array2};
     use rand::Rng;
+    use std::collections::HashMap;
 
     /// Helper function: Checks if two 2D arrays are approximately equal within a given epsilon.
     fn arrays_approx_eq(a: &Array2<f64>, b: &Array2<f64>, epsilon: f64) -> bool {
-        // First, check if the shapes are the same
         if a.shape() != b.shape() {
             println!("Shape mismatch: {:?} vs {:?}", a.shape(), b.shape());
             return false;
         }
-
-        // Iterate over all elements and compare
         for ((&a_elem, &b_elem), idx) in a.iter().zip(b.iter()).zip(a.indexed_iter()) {
             if (a_elem - b_elem).abs() > epsilon {
                 println!(
@@ -215,14 +228,12 @@ mod tests {
                 return false;
             }
         }
-
         true
     }
 
     /// Helper function to generate uniformly distributed reference points on the simplex.
     fn generate_reference_points(n_points: usize, n_objectives: usize) -> Array2<f64> {
-        // Simple grid-based generation for demonstration purposes
-        // For more uniform distribution, consider using advanced algorithms
+        // A simple grid-based generation for demonstration purposes.
         let mut points = Vec::new();
         let mut rng = rand::thread_rng();
 
@@ -234,12 +245,10 @@ mod tests {
                 point.push(val);
                 sum += val;
             }
-            // Normalize to lie on the simplex
             if sum > 0.0 {
                 let normalized_point: Vec<f64> = point.iter().map(|&x| x / sum).collect();
                 points.extend(normalized_point);
             } else {
-                // If sum is zero, distribute equally
                 let normalized_point: Vec<f64> = vec![1.0 / n_objectives as f64; n_objectives];
                 points.extend(normalized_point);
             }
@@ -251,7 +260,7 @@ mod tests {
 
     #[test]
     fn test_nsgaiii_survival() {
-        // Create a simple population with 6 individuals and 3 objectives
+        // Create a simple population with 6 individuals and 3 objectives.
         let genes = array![
             [1.0, 2.0, 3.0],
             [1.5, 1.8, 2.5],
@@ -279,20 +288,27 @@ mod tests {
         // Define fronts (for simplicity, all individuals are in the first front)
         let fronts = vec![population.clone()];
 
-        // Generate reference points
+        // Generate reference points.
         let n_ref_points = 3;
         let n_objectives = 3;
         let reference_points = generate_reference_points(n_ref_points, n_objectives);
 
-        // Create ReferencePointsSurvival operator
+        // Create a ReferencePointsSurvival operator.
         let nsga3_survival = ReferencePointsSurvival::new(reference_points.clone());
 
-        // Perform survival operation to select 4 individuals
+        // Perform survival operation to select 4 individuals.
         let n_survive = 4;
         let new_population = nsga3_survival.operate(&fronts, n_survive);
 
-        // Assert that the new population has 4 individuals
+        // Assert that the new population has 4 individuals.
         assert_eq!(new_population.len(), n_survive);
+
+        // Also verify that the fitness values are the original ones (not normalized).
+        // (Here we simply check that none of the fitness values are in [0, 1] range due to normalization.)
+        // This test may be adapted depending on your data.
+        for val in new_population.fitness.iter() {
+            assert!(val > &1.0);
+        }
     }
 
     #[test]
@@ -326,8 +342,7 @@ mod tests {
         let ref_point = array![1.0, 0.0];
         let distance = perpendicular_distance(&individual.view(), &ref_point.view());
 
-        // The perpendicular distance from (1,1) to the line defined by (1,0)
-        // is 1.0
+        // The perpendicular distance from (1,1) to the line defined by (1,0) is 1.0.
         assert!((distance - 1.0).abs() < 1e-6);
     }
 
@@ -346,7 +361,7 @@ mod tests {
 
         let assignments = assign_to_reference_points(&population, &reference_points);
 
-        // Each individual should be assigned to the corresponding reference point
+        // Each individual should be assigned to the corresponding reference point.
         assert_eq!(assignments.len(), 3);
         assert_eq!(assignments.get(&0).unwrap(), &vec![0]);
         assert_eq!(assignments.get(&1).unwrap(), &vec![1]);
@@ -355,7 +370,7 @@ mod tests {
 
     #[test]
     fn test_niching_selection() {
-        // Define fitness for 4 individuals
+        // Define fitness for 4 individuals.
         let fitness = array![
             [0.0, 0.0], // Individual 0
             [0.1, 0.1], // Individual 1
@@ -363,7 +378,7 @@ mod tests {
             [0.3, 0.3]  // Individual 3
         ];
 
-        // Create a population with these fitness values
+        // Create a population with these fitness values.
         let population = Population::new(
             array![
                 [1.0, 2.0], // Genes for Individual 0
@@ -377,28 +392,41 @@ mod tests {
             Array1::from(vec![0.5, 0.6, 0.7, 0.8]),
         );
 
-        // Define assignments of individuals to reference points
+        // Define assignments of individuals to reference points.
+        // For this test, we create a dummy assignment.
         let assignments: HashMap<usize, Vec<usize>> = HashMap::from([
             (0, vec![0, 1]), // Reference Point 0: Individuals 0 and 1
             (1, vec![2]),    // Reference Point 1: Individual 2
             (2, vec![3]),    // Reference Point 2: Individual 3
         ]);
 
-        // Perform niching selection to select 2 individuals
-        let selected = niching_selection(&population, &assignments, 2);
+        // For testing, create dummy reference points.
+        // Here we set all reference points to [0.0, 0.0] so that the perpendicular distance is just the Euclidean norm.
+        let reference_points = array![[0.0, 0.0], [0.0, 0.0], [0.0, 0.0]];
 
-        // Expected selected individuals: Individual 0 ([0.0, 0.0]) and Individual 2 ([0.2, 0.2])
+        // Perform niching selection to select 2 individuals.
+        let selected_indices = niching_selection(&population, &assignments, 2, &reference_points);
+
+        // The expected selected individuals are:
+        // - From reference point 0: Individual 0 (distance 0.0 < distance of Individual 1: ~0.141)
+        // - From reference point 1: Individual 2 (only candidate)
+        // Note: Since we iterate over keys in sorted order, the order is deterministic.
+        let expected_indices = vec![0, 2];
+
+        assert_eq!(
+            selected_indices, expected_indices,
+            "Niching selection indices do not match expected indices"
+        );
+
+        // Additionally, we can create a new population from these indices and verify its fitness.
+        let selected_population = population.selected(&selected_indices);
         let expected_fitness = array![
             [0.0, 0.0], // Individual 0
             [0.2, 0.2]  // Individual 2
         ];
-
-        let selected_fitness = selected.fitness.clone();
-
-        // Assert that the selected fitness matches the expected fitness within epsilon
         assert!(
-            arrays_approx_eq(&selected_fitness, &expected_fitness, 1e-6),
-            "Niching selection failed"
+            arrays_approx_eq(&selected_population.fitness, &expected_fitness, 1e-6),
+            "Selected population fitness does not match expected values"
         );
     }
 }

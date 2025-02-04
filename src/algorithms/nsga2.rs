@@ -18,6 +18,23 @@ define_multiobj_pyclass!(Nsga2, PyNsga2, "Nsga2");
 #[pymethods]
 impl PyNsga2 {
     #[new]
+    #[pyo3(signature = (
+        sampler,
+        crossover,
+        mutation,
+        fitness_fn,
+        n_vars,
+        pop_size,
+        n_offsprings,
+        num_iterations,
+        mutation_rate=0.1,
+        crossover_rate=0.9,
+        keep_infeasible=false,
+        duplicates_cleaner=None,
+        constraints_fn=None,
+        lower_bound=None,
+        upper_bound=None
+    ))]
     pub fn py_new(
         sampler: PyObject,
         crossover: PyObject,
@@ -32,6 +49,10 @@ impl PyNsga2 {
         keep_infeasible: bool,
         duplicates_cleaner: Option<PyObject>,
         constraints_fn: Option<PyObject>,
+        // Optional lower bound for each gene.
+        lower_bound: Option<f64>,
+        // Optional upper bound for each gene.
+        upper_bound: Option<f64>,
     ) -> PyResult<Self> {
         // Unwrap the genetic operators
         let sampler_box = unwrap_sampling_operator(sampler)?;
@@ -74,6 +95,8 @@ impl PyNsga2 {
             crossover_rate,
             keep_infeasible,
             constraints_closure,
+            lower_bound,
+            upper_bound,
         );
 
         Ok(Self { inner: rs_obj })

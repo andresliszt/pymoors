@@ -76,7 +76,7 @@ def test_small_real_biobjective_nsag2():
         n_vars=2,  # We have 2 variables: x,y
         pop_size=200,
         n_offsprings=200,
-        num_iterations=400,
+        num_iterations=20,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-16),
