@@ -140,6 +140,16 @@ impl Population {
     pub fn len(&self) -> usize {
         self.genes.nrows()
     }
+    /// Returns a new `Population` containing only the individuals with rank = 0.
+    pub fn best(&self) -> Population {
+        let indices: Vec<usize> = self
+            .rank
+            .iter()
+            .enumerate()
+            .filter_map(|(i, &rank)| if rank == 0 { Some(i) } else { None })
+            .collect();
+        self.selected(&indices)
+    }
 }
 
 pub type Fronts = Vec<Population>;

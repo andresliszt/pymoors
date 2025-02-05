@@ -37,6 +37,7 @@ macro_rules! define_multiobj_pyclass {
                 mutation_rate: f64,
                 crossover_rate: f64,
                 keep_infeasible: bool,
+                verbose: bool,
                 constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
                 // Optional lower bound for each gene.
                 lower_bound: Option<f64>,
@@ -59,6 +60,7 @@ macro_rules! define_multiobj_pyclass {
                     mutation_rate,
                     crossover_rate,
                     keep_infeasible,
+                    verbose,
                     constraints_fn,
                     lower_bound,
                     upper_bound,

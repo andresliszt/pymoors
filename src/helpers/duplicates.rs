@@ -1,20 +1,26 @@
-use std::collections::HashSet;
-use std::fmt::Debug;
-
-use numpy::ndarray::Axis;
+use ndarray::linalg::general_mat_mul;
+use ndarray::Axis;
 use ordered_float::OrderedFloat;
 use pyo3::prelude::*;
+use std::collections::HashSet;
+use std::fmt::Debug;
 
 use crate::genetic::PopulationGenes;
 
 /// A trait for removing duplicates (exact or close) from a population.
+///
+/// The `remove` method accepts an optional reference population.
+/// If `None`, duplicates are computed within the population;
+/// if provided, duplicates are determined by comparing each row in the population to all rows in the reference.
 pub trait PopulationCleaner: Debug {
-    fn remove(&self, population: &PopulationGenes) -> PopulationGenes;
+    fn remove(
+        &self,
+        population: &PopulationGenes,
+        reference: Option<&PopulationGenes>,
+    ) -> PopulationGenes;
 }
 
-// -----------------------------------------------------------------------------
-// EXACT DUPLICATES CLEANER (PARALLEL)
-// -----------------------------------------------------------------------------
+/// EXACT DUPLICATES CLEANER
 #[derive(Clone, Debug)]
 pub struct ExactDuplicatesCleaner;
 
@@ -25,33 +31,43 @@ impl ExactDuplicatesCleaner {
 }
 
 impl PopulationCleaner for ExactDuplicatesCleaner {
-    fn remove(&self, population: &PopulationGenes) -> PopulationGenes {
-        if population.is_empty() {
-            return population.clone();
-        }
-
+    fn remove(
+        &self,
+        population: &PopulationGenes,
+        reference: Option<&PopulationGenes>,
+    ) -> PopulationGenes {
         let ncols = population.ncols();
-        let mut global_set: HashSet<Vec<OrderedFloat<f64>>> = HashSet::new();
-        let mut deduped_rows = Vec::new();
+        let mut unique_rows: Vec<Vec<f64>> = Vec::new();
+        // A HashSet to hold the hashable representation of rows.
+        let mut seen: HashSet<Vec<OrderedFloat<f64>>> = HashSet::new();
 
-        // Iterate through each row of the matrix
-        for row in population.outer_iter() {
-            // Convert the row into a vector of OrderedFloat to allow for proper hashing/comparison
-            let row_hash: Vec<OrderedFloat<f64>> = row.iter().map(|&x| OrderedFloat(x)).collect();
-            if global_set.insert(row_hash) {
-                deduped_rows.push(row.to_vec());
+        // If a reference is provided, first add its rows into the set.
+        if let Some(ref_pop) = reference {
+            for row in ref_pop.outer_iter() {
+                let hash_row: Vec<OrderedFloat<f64>> =
+                    row.iter().map(|&x| OrderedFloat(x)).collect();
+                seen.insert(hash_row);
             }
         }
 
-        // Flatten the deduplicated rows into a single vector and rebuild the matrix
-        let data_flat: Vec<f64> = deduped_rows.into_iter().flatten().collect();
+        // Iterate over the population rows.
+        for row in population.outer_iter() {
+            let hash_row: Vec<OrderedFloat<f64>> = row.iter().map(|&x| OrderedFloat(x)).collect();
+            // Insert returns true if the row was not in the set.
+            if seen.insert(hash_row) {
+                unique_rows.push(row.to_vec());
+            }
+        }
+
+        // Flatten the unique rows into a single vector.
+        let data_flat: Vec<f64> = unique_rows.into_iter().flatten().collect();
         PopulationGenes::from_shape_vec((data_flat.len() / ncols, ncols), data_flat)
             .expect("Failed to create deduplicated Array2")
     }
 }
 
 // -----------------------------------------------------------------------------
-//  CLOSE DUPLICATES CLEANER (PARALLEL DISTANCE)
+// CLOSE DUPLICATES CLEANER (PARALLEL, DISTANCE-BASED)
 // -----------------------------------------------------------------------------
 #[derive(Clone, Debug)]
 pub struct CloseDuplicatesCleaner {
@@ -62,77 +78,87 @@ impl CloseDuplicatesCleaner {
     pub fn new(epsilon: f64) -> Self {
         Self { epsilon }
     }
-
-    /// Computes the full pairwise Euclidean distance matrix among the rows of `data`.
+    /// Computes the cross squared Euclidean distance matrix between `data` and `reference`
+    /// using matrix algebra.
     ///
-    /// For a dataset of shape (n, d) (n points in d dimensions), this function returns
-    /// an (n x n) matrix where the (i,j) element is the Euclidean distance between row i and row j.
-    fn pairwise_distances(&self, data: &PopulationGenes) -> PopulationGenes {
-        // Compute the squared L2 norm for each row.
-        let norms = data.map_axis(Axis(1), |row| row.dot(&row));
+    /// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
+    /// where the (i,j) element is the squared Euclidean distance between the i-th row of data
+    /// and the j-th row of reference.
+    fn cross_squared_distances(
+        &self,
+        data: &PopulationGenes,
+        reference: &PopulationGenes,
+    ) -> PopulationGenes {
+        let n = data.nrows();
+        let m = reference.nrows();
+        // Compute the squared norms for data and reference.
+        let data_norms = data.map_axis(Axis(1), |row| row.dot(&row));
+        let ref_norms = reference.map_axis(Axis(1), |row| row.dot(&row));
 
-        // Reshape norms into a column vector (n x 1) and a row vector (1 x n)
-        let norms_col = norms.clone().insert_axis(Axis(1)); // shape (n, 1)
-        let norms_row = norms.insert_axis(Axis(0)); // shape (1, n)
+        let data_norms_col = data_norms.insert_axis(Axis(1)); // shape (n, 1)
+        let ref_norms_row = ref_norms.insert_axis(Axis(0)); // shape (1, m)
 
-        // Compute the dot product matrix: data.dot(data.T) yields an (n x n) matrix.
-        let dot = data.dot(&data.t());
+        let mut dot: PopulationGenes = PopulationGenes::zeros((n, m));
+        general_mat_mul(1.0, data, &reference.t(), 0.0, &mut dot);
 
-        // Using broadcasting, compute the squared distances:
-        // d^2(i,j) = norms_col[i] + norms_row[j] - 2 * dot(i,j)
-        let mut dists_sq = &norms_col + &norms_row - 2.0 * dot;
-
-        // Due to numerical precision, some entries might be slightly negative; clamp them to zero.
-        dists_sq.mapv_inplace(|x| if x < 0.0 { 0.0 } else { x });
-
-        // Take the square root of every element to obtain the Euclidean distances.
-        dists_sq.mapv(|x| x.sqrt())
+        // Use the formula: d² = ||x||² + ||y||² - 2 * (x dot y)
+        let dists_sq = &data_norms_col + &ref_norms_row - 2.0 * dot;
+        dists_sq
     }
 }
 
 impl PopulationCleaner for CloseDuplicatesCleaner {
-    fn remove(&self, population: &PopulationGenes) -> PopulationGenes {
+    fn remove(
+        &self,
+        population: &PopulationGenes,
+        reference: Option<&PopulationGenes>,
+    ) -> PopulationGenes {
+        let ref_array = reference.unwrap_or(population);
         let n = population.nrows();
-        // Compute the full pairwise distance matrix.
-        let dists = self.pairwise_distances(population);
-        // Create a boolean vector to mark rows to keep (true means keep)
+        let num_cols = population.ncols();
+        let dists_sq = self.cross_squared_distances(population, ref_array);
+        let eps_sq = self.epsilon * self.epsilon;
         let mut keep = vec![true; n];
-
-        // For each row, if it is marked to be kept, mark all later rows
-        // that are within the epsilon distance as duplicates (i.e. not kept).
-        for i in 0..n {
-            if !keep[i] {
-                continue;
+        // Note: when reference_array = population there is no need to loop through the full
+        // array, just use the upper triangle matrix logic
+        if let Some(ref_pop) = reference {
+            // Mark each row in the population as duplicate if its distance to any row in reference is below eps_sq.
+            for i in 0..n {
+                for j in 0..ref_pop.nrows() {
+                    if dists_sq[(i, j)] < eps_sq {
+                        keep[i] = false;
+                        break;
+                    }
+                }
             }
-            // Only check subsequent rows to avoid duplicate comparisons.
-            for j in (i + 1)..n {
-                if dists[(i, j)] < self.epsilon {
-                    keep[j] = false;
+        } else {
+            for i in 0..n {
+                if !keep[i] {
+                    continue;
+                }
+                for j in (i + 1)..n {
+                    if dists_sq[(i, j)] < eps_sq {
+                        keep[j] = false;
+                    }
                 }
             }
         }
-        // Collect rows that are marked to be kept.
         let kept_rows: Vec<_> = population
             .outer_iter()
             .enumerate()
             .filter_map(|(i, row)| if keep[i] { Some(row.to_owned()) } else { None })
             .collect();
-
-        // Build a new Array2 from the kept rows.
-        let num_kept = kept_rows.len();
-        let num_cols = population.ncols();
-        let mut result = PopulationGenes::zeros((num_kept, num_cols));
-        for (i, row) in kept_rows.into_iter().enumerate() {
-            result.row_mut(i).assign(&row);
-        }
-        result
+        let data_flat: Vec<f64> = kept_rows.into_iter().flatten().collect();
+        PopulationGenes::from_shape_vec((data_flat.len() / num_cols, num_cols), data_flat)
+            .expect("Failed to create deduplicated Array2")
     }
 }
+
 // -----------------------------------------------------------------------------
 // PYTHON-EXPOSED CLASSES, KEEPING NAMES
 // -----------------------------------------------------------------------------
 
-/// A Python class that encapsulates our parallel `ExactDuplicatesCleaner`.
+/// A Python class that encapsulates`ExactDuplicatesCleaner`.
 #[pyclass(name = "ExactDuplicatesCleaner")]
 #[derive(Clone, Debug)]
 pub struct PyExactDuplicatesCleaner {
@@ -143,8 +169,9 @@ pub struct PyExactDuplicatesCleaner {
 impl PyExactDuplicatesCleaner {
     #[new]
     fn new() -> Self {
-        let dup_cleaner = ExactDuplicatesCleaner::new();
-        Self { inner: dup_cleaner }
+        Self {
+            inner: ExactDuplicatesCleaner::new(),
+        }
     }
 }
 
@@ -159,8 +186,9 @@ pub struct PyCloseDuplicatesCleaner {
 impl PyCloseDuplicatesCleaner {
     #[new]
     fn new(epsilon: f64) -> Self {
-        let dup_cleaner = CloseDuplicatesCleaner::new(epsilon);
-        Self { inner: dup_cleaner }
+        Self {
+            inner: CloseDuplicatesCleaner::new(epsilon),
+        }
     }
 
     #[getter]
@@ -173,102 +201,62 @@ impl PyCloseDuplicatesCleaner {
 mod tests {
     use super::*;
     use crate::genetic::PopulationGenes;
+    use ndarray::array;
 
     #[test]
-    fn test_exact_duplicates_cleaner_removes_duplicates() {
-        // Create a PopulationGenes with some repeated rows:
-        //
-        //  row 0: [1.0, 2.0, 3.0]
-        //  row 1: [4.0, 5.0, 6.0]
-        //  row 2: [1.0, 2.0, 3.0]   (duplicate of row 0)
-        //  row 3: [7.0, 8.0, 9.0]
-        //  row 4: [4.0, 5.0, 6.0]   (duplicate of row 1)
-
+    fn test_exact_duplicates_cleaner_removes_duplicates_without_reference() {
         let raw_data = vec![
             1.0, 2.0, 3.0, // row 0
             4.0, 5.0, 6.0, // row 1
-            1.0, 2.0, 3.0, // row 2
+            1.0, 2.0, 3.0, // row 2 (duplicate of row 0)
             7.0, 8.0, 9.0, // row 3
-            4.0, 5.0, 6.0, // row 4
+            4.0, 5.0, 6.0, // row 4 (duplicate of row 1)
         ];
-
         let population =
             PopulationGenes::from_shape_vec((5, 3), raw_data).expect("Failed to create test array");
-
         let cleaner = ExactDuplicatesCleaner::new();
-        let cleaned = cleaner.remove(&population);
-
-        // We should end up with rows 0, 1, 3 as unique ones.
-        // => 3 rows total.
+        let cleaned = cleaner.remove(&population, None);
         assert_eq!(cleaned.nrows(), 3);
-        assert_eq!(cleaned.ncols(), 3);
-
-        // Check that each row matches the expected values (and in the order of appearance)
         assert_eq!(cleaned.row(0).to_vec(), vec![1.0, 2.0, 3.0]);
         assert_eq!(cleaned.row(1).to_vec(), vec![4.0, 5.0, 6.0]);
         assert_eq!(cleaned.row(2).to_vec(), vec![7.0, 8.0, 9.0]);
     }
 
     #[test]
-    fn test_exact_duplicates_cleaner_no_duplicates() {
-        // Case where there are no duplicates at all
-        let raw_data = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
-        let population =
-            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
-
+    fn test_exact_duplicates_cleaner_with_reference() {
+        let population = array![[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];
+        let reference = array![[1.0, 2.0, 3.0]]; // row 0 is in reference
         let cleaner = ExactDuplicatesCleaner::new();
-        let cleaned = cleaner.remove(&population);
-
-        // Everything should remain the same
-        assert_eq!(cleaned.nrows(), 3);
-        assert_eq!(cleaned.ncols(), 3);
-        assert_eq!(cleaned, population);
+        let cleaned = cleaner.remove(&population, Some(&reference));
+        assert_eq!(cleaned.nrows(), 1);
+        assert_eq!(cleaned.row(0).to_vec(), vec![4.0, 5.0, 6.0]);
     }
 
     #[test]
-    fn test_close_duplicates_cleaner_small_epsilon() {
-        // Create rows that differ by a small amount
-        //
-        // With epsilon = 0.01, these rows may be close but not close enough
-        // so likely won't be merged.
-
-        // Distance between row 1 and row 0: 0.009999999999988346
-        // Distance between row 1 and row 2: 0.02236067977497184
-        // Distance between row 2 and row 1: 0.02236067977497184
-        // Distance between row 0 and row 1: 0.009999999999988346
-        // Distance between row 0 and row 2: 0.02000000000006551
-        // Distance between row 2 and row 0: 0.02000000000006551
-
-        let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.0, 3.0, 1.0, 2.02, 3.0];
-
-        let population =
-            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
-
-        // Very small epsilon
-        let cleaner = CloseDuplicatesCleaner::new(0.0001);
-        let cleaned = cleaner.remove(&population);
-        // No removal at all
-        assert_eq!(cleaned.nrows(), 3);
-    }
-
-    #[test]
-    fn test_close_duplicates_cleaner_larger_epsilon() {
-        // Similar rows but with epsilon = 0.05
-        // and differences of about 0.02 => they should be considered "close duplicates."
-
-        let raw_data = vec![1.0, 2.0, 3.0, 1.01, 2.02, 3.0, 10.0, 10.0, 10.0];
-
-        let population =
-            PopulationGenes::from_shape_vec((3, 3), raw_data).expect("Failed to create test array");
-
-        let cleaner = CloseDuplicatesCleaner::new(0.05);
-        let cleaned = cleaner.remove(&population);
-
-        // Rows 0 and 1 should be within ~0.022... of each other, which is < 0.05,
-        // => they will merge, leaving only one representative among them
-        // => total 2 rows remain
+    fn test_close_duplicates_cleaner_without_reference() {
+        let population = array![
+            [1.0, 2.0, 3.0],
+            [1.05, 2.05, 3.05], // very similar to row 0
+            [4.0, 5.0, 6.0]
+        ];
+        let epsilon = 0.1;
+        let cleaner = CloseDuplicatesCleaner::new(epsilon);
+        let cleaned = cleaner.remove(&population, None);
+        // Expect rows 0 and 2 remain.
         assert_eq!(cleaned.nrows(), 2);
+    }
 
-        // The third row (10,10,10) is far from (1,2,3), so it remains as well.
+    #[test]
+    fn test_close_duplicates_cleaner_with_reference() {
+        let population = array![[1.0, 2.0, 3.0], [10.0, 10.0, 10.0]];
+        let reference = array![
+            [1.01, 2.01, 3.01] // close to row 0 of population
+        ];
+        let epsilon = 0.05;
+        let cleaner = CloseDuplicatesCleaner::new(epsilon);
+        let cleaned = cleaner.remove(&population, Some(&reference));
+        // Row 0 should be removed.
+        assert_eq!(cleaned.nrows(), 1);
+        assert_eq!(cleaned.row(0).to_vec(), vec![10.0, 10.0, 10.0]);
     }
 }

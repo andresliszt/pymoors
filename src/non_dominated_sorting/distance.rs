@@ -80,7 +80,7 @@ mod tests {
         // Expected distances: corner individuals have INFINITY
         let expected = array![INFINITY, INFINITY, 0.5, INFINITY];
 
-        // assert_eq!(distances.as_slice().unwrap(), expected.as_slice().unwrap());
+        assert_eq!(distances.as_slice().unwrap(), expected.as_slice().unwrap());
     }
 
     #[test]

@@ -1,4 +1,5 @@
 use rand::RngCore;
+use std::fmt;
 use std::fmt::Debug;
 
 use crate::{
@@ -24,6 +25,24 @@ pub enum EvolveError {
         current_offspring_count: usize,
         required_offsprings: usize,
     },
+}
+
+impl fmt::Display for EvolveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EvolveError::EmptyMatingResult {
+                message,
+                current_offspring_count,
+                required_offsprings,
+            } => {
+                write!(
+                    f,
+                    "{} (generated offsprings: {}, required: {})",
+                    message, current_offspring_count, required_offsprings
+                )
+            }
+        }
+    }
 }
 
 impl Evolve {
@@ -52,28 +71,39 @@ impl Evolve {
         parents_b: &PopulationGenes,
         rng: &mut dyn RngCore,
     ) -> PopulationGenes {
-        // 1) Perform crossover in one batch
+        // 1) Perform crossover in one batch.
         let offsprings = self
             .crossover
             .operate(parents_a, parents_b, self.crossover_rate, rng);
-        // 2) Perform mutation in one batch (often in-place)
-        let offsprings = self.mutation.operate(&offsprings, self.mutation_rate, rng);
-
-        offsprings
+        // 2) Perform mutation in one batch (often in-place).
+        self.mutation.operate(&offsprings, self.mutation_rate, rng)
     }
 
-    pub fn clean_duplicates(&self, genes: PopulationGenes) -> PopulationGenes {
+    /// Cleans duplicates in `genes` optionally comparing against a reference population.
+    /// If no duplicates_cleaner is provided, returns the genes unchanged.
+    pub fn clean_duplicates(
+        &self,
+        genes: PopulationGenes,
+        reference: Option<&PopulationGenes>,
+    ) -> PopulationGenes {
         if let Some(ref cleaner) = self.duplicates_cleaner {
-            // Clean duplicates
-            cleaner.remove(&genes)
+            cleaner.remove(&genes, reference)
         } else {
             genes
         }
     }
 
-    /// Generates up to `n_offsprings` in multiple iterations (up to `max_iter`).
-    /// We accumulate offspring in a buffer and only remove duplicates once at the end.
-    /// Prints separate durations for mating and duplicates cleaning, plus iteration count.
+    /// Generates up to `n_offsprings` unique offspring in multiple iterations (up to `max_iter`).
+    ///
+    /// The logic is as follows:
+    /// 1) Accumulate offspring in a Vec<Vec<f64>>.
+    /// 2) On each iteration, generate a new batch of offspring via mating.
+    /// 3) Clean duplicates within the new offspring.
+    /// 4) Clean duplicates between the new offspring and the current population.
+    /// 5) **Clean duplicates between the new offspring and the already accumulated offspring.**
+    /// 6) Append the new (unique) offspring to the accumulator.
+    /// 7) (Opcional) Si se desea, limpiar duplicados en todo el acumulado.
+    /// 8) Repeat until the desired number is reached.
     pub fn evolve(
         &self,
         population: &Population,
@@ -86,31 +116,39 @@ impl Evolve {
         let num_genes = population.genes.ncols();
         let mut iterations = 0;
 
-        // Repeatedly create batches until we reach n_offsprings or exhaust max_iter
         while all_offsprings.len() < n_offsprings && iterations < max_iter {
             let remaining = n_offsprings - all_offsprings.len();
+            // NOTE: pymoors is currently a 2-parents 2-children crossover.
+            let crossover_needed = remaining / 2 + 1;
+            let (parents_a, parents_b) = self.selection.operate(population, crossover_needed, rng);
 
-            // Select parents in a batch (size = `remaining` or some multiple)
-            let (parents_a, parents_b) = self.selection.operate(population, remaining, rng);
-
-            // Create offspring from these parents
-            let new_offsprings = self.mating_batch(&parents_a.genes, &parents_b.genes, rng);
-
-            // Clean duplicates if a cleaner is provided
-            let new_offsprings = self.clean_duplicates(new_offsprings);
-
-            // Extend our accumulator with the new rows
-            for row in new_offsprings.outer_iter() {
-                all_offsprings.push(row.to_vec());
+            // Create offspring from these parents (crossover + mutation)
+            let mut new_offsprings = self.mating_batch(&parents_a.genes, &parents_b.genes, rng);
+            // 1) Clean duplicates within the new offspring (internal cleaning)
+            new_offsprings = self.clean_duplicates(new_offsprings, None);
+            // 2) Clean duplicates between new offspring and the current population
+            new_offsprings = self.clean_duplicates(new_offsprings, Some(&population.genes));
+            // 3) If we already have accumulated offspring, clean new offspring against them.
+            if !all_offsprings.is_empty() {
+                let acc_array = PopulationGenes::from_shape_vec(
+                    (all_offsprings.len(), num_genes),
+                    all_offsprings.iter().flatten().cloned().collect(),
+                )
+                .expect("Failed to create accumulator array");
+                new_offsprings = self.clean_duplicates(new_offsprings, Some(&acc_array));
             }
 
+            // Append the new unique offspring to the accumulator.
+            for row in new_offsprings.outer_iter() {
+                if all_offsprings.len() >= n_offsprings {
+                    break;
+                }
+                all_offsprings.push(row.to_vec());
+            }
             iterations += 1;
         }
 
-        println!("Total iterations: {}", iterations);
-
         if all_offsprings.is_empty() {
-            // We never generated anything
             return Err(EvolveError::EmptyMatingResult {
                 message: "No offspring were generated.".to_string(),
                 current_offspring_count: 0,
@@ -121,13 +159,10 @@ impl Evolve {
         // Convert Vec<Vec<f64>> into a single Array2
         let all_offsprings_len = all_offsprings.len();
         let offspring_data: Vec<f64> = all_offsprings.into_iter().flatten().collect();
-
-        // Build the final matrix
         let offspring_array =
             PopulationGenes::from_shape_vec((all_offsprings_len, num_genes), offspring_data)
                 .expect("Failed to create offspring array from the accumulated data");
 
-        // If we still have nothing after cleaning, return an error
         if offspring_array.nrows() == 0 {
             return Err(EvolveError::EmptyMatingResult {
                 message: "No offspring were generated after removing duplicates.".to_string(),
@@ -136,7 +171,6 @@ impl Evolve {
             });
         }
 
-        // Warn if we didn't achieve the desired number
         if offspring_array.nrows() < n_offsprings {
             println!(
                 "Warning: Only {} offspring were generated out of the desired {}.",

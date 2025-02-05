@@ -30,6 +30,7 @@ impl PyNsga2 {
         mutation_rate=0.1,
         crossover_rate=0.9,
         keep_infeasible=false,
+        verbose=true,
         duplicates_cleaner=None,
         constraints_fn=None,
         lower_bound=None,
@@ -47,6 +48,7 @@ impl PyNsga2 {
         mutation_rate: f64,
         crossover_rate: f64,
         keep_infeasible: bool,
+        verbose: bool,
         duplicates_cleaner: Option<PyObject>,
         constraints_fn: Option<PyObject>,
         // Optional lower bound for each gene.
@@ -94,6 +96,7 @@ impl PyNsga2 {
             mutation_rate,
             crossover_rate,
             keep_infeasible,
+            verbose,
             constraints_closure,
             lower_bound,
             upper_bound,

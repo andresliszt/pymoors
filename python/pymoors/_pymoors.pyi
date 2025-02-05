@@ -241,8 +241,11 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
         mutation_rate (float): Probability of mutation.
         crossover_rate (float): Probability of crossover.
         keep_infeasible (bool, optional): Whether to keep infeasible solutions. Defaults to False.
+        verbose (bool, optional): Whether to print detailed information during the run. Defaults to True.
         duplicates_cleaner (Optional[DuplicatesCleaner], optional): Cleaner to remove duplicates. Defaults to None.
         constraints_fn (Optional[ConstraintsPopulationCallable], optional): Function to handle constraints. Defaults to None.
+        lower_bound (Optional[float], optional): Optional lower bound for each gene. Defaults to None.
+        upper_bound (Optional[float], optional): Optional upper bound for each gene. Defaults to None.
     """
 
     sampler: SamplingOperator
@@ -256,6 +259,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     mutation_rate: float
     crossover_rate: float
     keep_infeasible: bool
+    verbose: bool
     duplicates_cleaner: Optional[DuplicatesCleaner]
     constraints_fn: Optional[ConstraintsPopulationCallable]
     lower_bound: Optional[float]

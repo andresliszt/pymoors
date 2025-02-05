@@ -25,9 +25,12 @@ pub struct MultiObjectiveAlgorithm {
     pop_size: usize,
     n_offsprings: usize,
     num_iterations: usize,
+    verbose: bool,
+    n_vars: usize,
 }
 
 impl MultiObjectiveAlgorithm {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         sampler: Box<dyn SamplingOperator>,
         selector: Box<dyn SelectionOperator>,
@@ -43,16 +46,16 @@ impl MultiObjectiveAlgorithm {
         mutation_rate: f64,
         crossover_rate: f64,
         keep_infeasible: bool,
+        verbose: bool,
         constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
-        // Optional lower bound for each gene.
+        // Optional lower and upper bounds for each gene.
         lower_bound: Option<f64>,
-        // Optional upper bound for each gene.
         upper_bound: Option<f64>,
     ) -> Self {
-        // build the initial population from its genes
         let mut rng = thread_rng();
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
-        // Create the evolve operator
+
+        // Create the evolution operator.
         let evolve = Evolve::new(
             selector,
             crossover,
@@ -61,8 +64,9 @@ impl MultiObjectiveAlgorithm {
             mutation_rate,
             crossover_rate,
         );
-        // Clean duplicates if cleaner is enabled, otherwhise genes will be untouched
-        genes = evolve.clean_duplicates(genes);
+
+        // Clean duplicates if the cleaner is enabled.
+        genes = evolve.clean_duplicates(genes, None);
 
         let evaluator = Evaluator::new(
             fitness_fn,
@@ -72,7 +76,6 @@ impl MultiObjectiveAlgorithm {
             upper_bound,
         );
         let population = evaluator.build_fronts(genes).flatten_fronts();
-        println!("Population At init : {}", population.len());
         Self {
             population,
             survivor,
@@ -81,11 +84,13 @@ impl MultiObjectiveAlgorithm {
             pop_size,
             n_offsprings,
             num_iterations,
+            verbose,
+            n_vars,
         }
     }
 
     fn next<R: Rng>(&mut self, rng: &mut R) {
-        // Get offspring genes
+        // Obtain offspring genes.
         let offspring_genes =
             match self
                 .evolve
@@ -97,20 +102,25 @@ impl MultiObjectiveAlgorithm {
                     return;
                 }
             };
-        // Combine them with the actual population
-        let mut combined_genes = concatenate(
+
+        // Validate that the number of columns in offspring_genes matches n_vars.
+        assert_eq!(
+            offspring_genes.ncols(),
+            self.n_vars,
+            "Number of columns in offspring_genes ({}) does not match n_vars ({})",
+            offspring_genes.ncols(),
+            self.n_vars
+        );
+
+        // Combine the current population with the offspring.
+        let combined_genes = concatenate(
             Axis(0),
             &[self.population.genes.view(), offspring_genes.view()],
         )
         .expect("Failed to concatenate current population genes with offspring genes");
-
-        // TODO: Remove this clean duplicates --- Once terminator https://github.com/andresliszt/pymoors/issues/13
-        // is implemented there is no need to remove duplicates here
-
-        combined_genes = self.evolve.clean_duplicates(combined_genes);
-
+        // Build fronts from the combined genes.
         let fronts = self.evaluator.build_fronts(combined_genes);
-        // Select new population from fronts
+        // Select the new population from the fronts.
         self.population = self.survivor.operate(&fronts, self.pop_size);
     }
 
@@ -120,7 +130,9 @@ impl MultiObjectiveAlgorithm {
         while current_iter < self.num_iterations {
             self.next(&mut rng);
             current_iter += 1;
-            print_minimum_objectives(&self.population, current_iter);
+            if self.verbose {
+                print_minimum_objectives(&self.population, current_iter);
+            }
         }
     }
 }
