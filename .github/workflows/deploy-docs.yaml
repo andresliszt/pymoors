@@ -3,7 +3,7 @@ name: Deploy MkDocs to GitHub Pages
 on:
   push:
     branches:
-      - main
+      - fix/docs-wf
 
 jobs:
   build-and-deploy:
