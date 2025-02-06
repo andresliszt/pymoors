@@ -29,7 +29,7 @@ pip install pymoors
 
 ## Small Example
 
-Here is an example of how to use the `pymoors` package to solve a small knapsack problem using the NSGA-II algorithm:
+Here is an example of how to use the `pymoors` package to solve a small problem using the NSGA-II algorithm:
 
 ```python
 import numpy as np
@@ -304,7 +304,7 @@ for n in [1000, 2000, 3000, 4000, 5000, 6000]:
         n_vars=50,
         pop_size=n,
         n_offsprings=n,
-        num_iterations=5,
+        num_iterations=10,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
