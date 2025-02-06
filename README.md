@@ -169,9 +169,7 @@ In both, `pymoo` and `pymoors`, the duplicate elimination process involves compu
 
 Below we present the performance comparison between **pymoo** and **pymoors** for the DTLZ2 problem. In this test, the population size is set equal to the number of offsprings. The table below shows the results for **pymoo** using different values for `pop_size = n_offsprings` along with their corresponding execution times (in seconds):
 
-## Comparison of pymoo vs. pymoors for the DTLZ2 Problem
-
-In our experiments, we used the same DTLZ2 problem, numpy-based fitness function, identical genetic operators, and the same duplicate remover for both libraries. The default duplicate remover in pymoo is based on Euclidean distance closeness rather than exact duplicate elimination. This approach, while ensuring that nearly identical individuals (which do not contribute significantly to diversity) are not retained, becomes computationally expensive when both the population size and number of offspring per generation are high (since computing the full distance matrix is \(O(n^2)\)).
+In our experiments, we used the same DTLZ2 problem, numpy-based fitness function, identical genetic operators, and the same duplicate remover for both libraries. The default duplicate remover in `pymoo` is based on Euclidean distance closeness rather than exact duplicate elimination. This approach, while ensuring that nearly identical individuals (which do not contribute significantly to diversity) are not retained, becomes computationally expensive when both the population size and number of offspring per generation are high (since computing the full distance matrix is $O(n^2)$.
 
 ### `pymoo` implementation of DTLZ2 problem
 
