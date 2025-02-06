@@ -27,7 +27,7 @@ To install the package you simply can do
 pip install pymoors
 ```
 
-## Solving a Small Knapsack Problem with NSGA-II
+## Small Example
 
 Here is an example of how to use the `pymoors` package to solve a small knapsack problem using the NSGA-II algorithm:
 
@@ -155,7 +155,7 @@ In our performance evaluation, we compare **pymoo** and **pymoors** using an ide
   The duplicate remover used in both libraries is based on Euclidean distance closeness. Specifically, duplicates are eliminated by first computing the full pairwise Euclidean distance matrix among the new offspring and then between the offspring and the current population.
 
   > **Note:**
-  The default duplicate remover in pymoo is based on this Euclidean distance criterion using scipy [cdist](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html) function . When both the population size and the number of offspring per generation are high, eliminating duplicates using this logic becomes costly because calculating the distance matrix is an \(O(n^2)\) operation. Consequently, the computational cost of duplicate elimination grows quadratically with the number of individuals.
+  The default duplicate remover in pymoo is based on this Euclidean distance criterion using scipy [cdist](https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.cdist.html) function . When both the population size and the number of offspring per generation are high, eliminating duplicates using this logic becomes costly because calculating the distance matrix is an $O(n^2)$ operation. Consequently, the computational cost of duplicate elimination grows quadratically with the number of individuals.
 
   > **Note:**
    In real-valued optimization problems, using a Euclidean distance criterion for duplicate elimination is often preferred over exact duplicate detection. This is because individuals that are **almost identical** (nearly duplicates) do not contribute significantly to the diversity of the population, and a duplicates cleaner based solely on exact equality may fail to detect these near-duplicates.
