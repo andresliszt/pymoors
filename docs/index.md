@@ -52,3 +52,13 @@ Unlike single-objective optimization, here we seek to optimize *all* objectives 
 1. **Natural Handling of Multiple Objectives**: By operating on a population of solutions, GAs can maintain an approximation to the **Pareto front** during execution.
 2. **Flexibility**: They can be easily adapted to different kinds of problems (discrete, continuous, constrained, etc.).
 3. **Robustness**: They tend to perform well in the presence of *noise* or uncertainty in the problem, offering acceptable performance under less-than-ideal conditions.
+
+## Beauty and Misbehavior Optimization Problem
+
+In this unique optimization problem, there is only one individual who optimizes both beauty and misbehavior at the same time: my little dog Arya!
+
+<div style="text-align: center;">
+  <img src="images/arya.png" alt="Arya" width="500" />
+</div>
+
+Arya not only captivates with her beauty, but she also misbehaves in the most adorable way possible. This problem serves as a reminder that sometimes the optimal solution is as heartwarming as it is delightfully mischievous.

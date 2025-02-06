@@ -1,13 +1,26 @@
 site_name: pymoors
 theme:
   name: material
+  palette:
+    scheme: default
+  highlightjs: true
 nav:
   - Home: index.md
   - Getting Started: getting_started.md
-  - Devlopment: development.md
+  - Development: development.md
+  - User Guide:
+      - Fitness and Constraints: user_guide/fitness_and_constraints.md
+      - Genetic Operators: user_guide/operators.md
+      - Duplicates Cleaner: user_guide/duplicates.md
+      - Algorithms: user_guide/algorithms.md
+
 markdown_extensions:
+  - codehilite:
+      guess_lang: false
   - pymdownx.arithmatex:
       generic: true
+  - pymdownx.superfences
+  - pymdownx.highlight
 extra_javascript:
   - javascripts/mathjax.js
   - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js

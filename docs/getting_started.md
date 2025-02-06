@@ -30,7 +30,7 @@ $$
 
 ## Solving it with `pymoors`
 
-```python
+```py
 import numpy as np
 
 from pymoors import (
@@ -276,4 +276,4 @@ This simple problem has a known Pareto Optimal
 
 Each point on that curve represents a different trade-off between minimizing the distance to \((0,0)\) and to \((1,0)\).
 
-![pymoo best front](/images/pymoors_moo_real_pf.png)
+![pymoo best front](images/pymoors_moo_real_pf.png)
