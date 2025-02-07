@@ -56,7 +56,7 @@ def knapsack_fitness(genes: TwoDArray) -> TwoDArray:
     quality_sum = np.sum(QUALITIES * genes, axis=1, keepdims=True)
 
     # We want to maximize profit and quality,
-    # so in pymoo we minimize the negative values
+    # so in pymoors we minimize the negative values
     f1 = -profit_sum
     f2 = -quality_sum
     return np.column_stack([f1, f2])
@@ -276,4 +276,4 @@ This simple problem has a known Pareto Optimal
 
 Each point on that curve represents a different trade-off between minimizing the distance to \((0,0)\) and to \((1,0)\).
 
-![pymoo best front](images/pymoors_moo_real_pf.png)
+![pymoors best front](images/pymoors_moo_real_pf.png)

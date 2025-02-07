@@ -1,11 +1,8 @@
 # pymoors
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
-![Python 3.10](https://img.shields.io/badge/Python-3.10-blue.svg)
-![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)
-![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)
-![Python 3.13](https://img.shields.io/badge/Python-3.13-blue.svg)
-![Black](https://img.shields.io/badge/Code%20Style-Black-000000.svg)
+![Python Versions](https://img.shields.io/badge/Python-3.10%20%7C%203.11%20%7C%203.12%20%7C%203.13-blue)
 [![codecov](https://codecov.io/gh/andresliszt/pymoors/graph/badge.svg)](https://codecov.io/gh/andresliszt/pymoors)
+[![Docs](https://img.shields.io/website?label=Docs&style=flat&url=https%3A%2F%2Fandresliszt.github.io%2Fpymoors%2F)](https://andresliszt.github.io/pymoors/)
 
 ## Overview
 
@@ -57,7 +54,7 @@ def knapsack_fitness(genes: TwoDArray) -> TwoDArray:
     quality_sum = np.sum(QUALITIES * genes, axis=1, keepdims=True)
 
     # We want to maximize profit and quality,
-    # so in pymoo we minimize the negative values
+    # so in pymoors we minimize the negative values
     f1 = -profit_sum
     f2 = -quality_sum
     return np.column_stack([f1, f2])

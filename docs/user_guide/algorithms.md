@@ -51,22 +51,6 @@ Thus, the Pareto front is given by:
 This continuous set of solutions along the boundary represents the trade-off between minimizing \( f_1 \) and \( f_2 \) within the given constraints.
 
 
-
-```python
-
-# Formulation in pymoors for a Constrained Multi-Objective Problem
-
-Consider the following mathematical formulation:
-
-\[
-\begin{aligned}
-\min_{x_1, x_2} \quad & f_1(x_1,x_2) = x_1^2 + x_2^2 \\
-\min_{x_1, x_2} \quad & f_2(x_1,x_2) = (x_1-1)^2 + x_2^2 \\
-\text{subject to} \quad & x_1 + x_2 \leq 1, \\
-& x_1 \geq 0,\quad x_2 \geq 0.
-\end{aligned}
-\]
-
 Below is how you can formulate and solve this problem in pymoors:
 
 ```python

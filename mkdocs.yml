@@ -4,6 +4,9 @@ theme:
   palette:
     scheme: default
   highlightjs: true
+repo_url: https://github.com/andresliszt/pymoors
+repo_name: "GitHub"
+
 nav:
   - Home: index.md
   - Getting Started: getting_started.md
