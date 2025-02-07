@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+env:
+  DEFAULT_PYTHON: 3.12
+
 permissions:
   contents: write
 
@@ -18,11 +21,17 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.12"
+          python-version: ${{ env.DEFAULT_PYTHON }}
 
-      - name: Install dependencies
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: Install pymoors
         run: |
-          pip install mkdocs pymdown-extensions mkdocs-material
+          uv sync --group docs
+          make build-dev
 
       - name: Deploy to GitHub Pages
         run: |

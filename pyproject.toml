@@ -49,7 +49,11 @@ linting = [
     "pytest"
 ]
 docs = [
-    "mkdocs-material==9.5.25"
+    "mkdocs",
+    "mkdocs-material",
+    "pymdown-extensions",
+    "neoteroi-mkdocs"
+
 ]
 
 all = [

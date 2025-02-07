@@ -3,7 +3,7 @@ site_author: Andrés Sandoval
 site_description: A Python library for multi-objective optimization using genetic algorithms.
 theme:
   language: en
-  logo: images/book.png
+  logo: images/logo2.png
   favicon: images/logo2.png
   name: material
   palette:
