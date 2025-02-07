@@ -1,0 +1,9 @@
+.md-header {
+    min-height: 80px !important;
+    align-items: center;
+  }
+  .md-header__button.md-logo img {
+    max-height: none !important;
+    height: 60px !important;
+    width: auto !important;
+  }
