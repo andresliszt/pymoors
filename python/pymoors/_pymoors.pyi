@@ -154,6 +154,15 @@ class SinglePointBinaryCrossover(CrossoverOperator):
     def __init__(self) -> None: ...
 
 class UniformBinaryCrossover(CrossoverOperator):
+    """
+    Uniform binary crossover operator for genetic algorithms.
+
+    This operator performs uniform crossover on binary representations.
+    Given two parent solutions, each gene of the offspring is independently
+    selected at random from one of the parents with equal probability.
+    This approach facilitates a balanced mix of the genetic material from both
+    parents, enhancing the diversity of the resulting population.
+    """
     def __init__(self) -> None: ...
 
 class ExponentialCrossover(CrossoverOperator):

@@ -79,6 +79,7 @@ impl CrossoverOperator for OrderCrossover {
     }
 }
 
+/// Crossover operator for permutation-based individuals using Order Crossover (OX)
 #[pyclass(name = "OrderCrossover")]
 #[derive(Clone)]
 pub struct PyOrderCrossover {

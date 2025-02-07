@@ -36,7 +36,7 @@ impl MutationOperator for BitFlipMutation {
     }
 }
 
-/// A Python class that encapsulates our Rust `BitFlipMutation`.
+/// Mutation operator that flips bits in a binary individual with a specified mutation rate.
 #[pyclass(name = "BitFlipMutation")]
 #[derive(Clone)] // So we can clone when converting to Box<dyn MutationOperator>
 pub struct PyBitFlipMutation {

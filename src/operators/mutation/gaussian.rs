@@ -46,7 +46,7 @@ impl MutationOperator for GaussianMutation {
     }
 }
 
-/// A Python class that encapsulates our Rust `GaussianMutation`.
+/// Mutation operator that adds Gaussian noise to float variables.
 #[pyclass(name = "GaussianMutation")]
 #[derive(Clone)]
 pub struct PyGaussianMutation {

@@ -78,6 +78,7 @@ impl CrossoverOperator for ExponentialCrossover {
     }
 }
 
+/// Crossover operator that combines parent genes based on an exponential distribution.
 #[pyclass(name = "ExponentialCrossover")]
 #[derive(Clone)]
 pub struct PyExponentialCrossover {

@@ -43,7 +43,7 @@ impl MutationOperator for SwapMutation {
     }
 }
 
-/// A Python class that encapsulates our Rust `SwapMutation`.
+/// Mutation operator that swaps two genes in a permutation-based individual.
 #[pyclass(name = "SwapMutation")]
 #[derive(Clone)]
 pub struct PySwapMutation {

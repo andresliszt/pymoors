@@ -56,7 +56,7 @@ impl CrossoverOperator for UniformBinaryCrossover {
     }
 }
 
-/// A Python-exposed class that wraps the Rust `UniformBinaryCrossover`.
+/// Uniform binary crossover operator for genetic algorithms.
 #[pyclass(name = "UniformBinaryCrossover")]
 #[derive(Clone)]
 pub struct PyUniformBinaryCrossover {

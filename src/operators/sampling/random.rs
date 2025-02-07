@@ -61,7 +61,7 @@ impl SamplingOperator for RandomSamplingBinary {
     }
 }
 
-// A Python-exposed class that wraps the Rust `RandomSamplingFloat`.
+// Sampling operator for floating-point variables using uniform random distribution.
 #[pyclass(name = "RandomSamplingFloat")]
 #[derive(Clone)]
 pub struct PyRandomSamplingFloat {
@@ -99,6 +99,7 @@ impl PyRandomSamplingFloat {
     }
 }
 
+/// Sampling operator for integer variables using uniform random distribution.
 #[pyclass(name = "RandomSamplingInt")]
 #[derive(Clone)]
 pub struct PyRandomSamplingInt {
@@ -136,6 +137,7 @@ impl PyRandomSamplingInt {
     }
 }
 
+/// Sampling operator for binary variables.
 #[pyclass(name = "RandomSamplingBinary")]
 #[derive(Clone)]
 pub struct PyRandomSamplingBinary {

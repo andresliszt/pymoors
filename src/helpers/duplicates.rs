@@ -158,7 +158,7 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
 // PYTHON-EXPOSED CLASSES, KEEPING NAMES
 // -----------------------------------------------------------------------------
 
-/// A Python class that encapsulates`ExactDuplicatesCleaner`.
+/// Cleaner that removes exact duplicate individuals from the population.
 #[pyclass(name = "ExactDuplicatesCleaner")]
 #[derive(Clone, Debug)]
 pub struct PyExactDuplicatesCleaner {
@@ -175,7 +175,7 @@ impl PyExactDuplicatesCleaner {
     }
 }
 
-/// A Python class that encapsulates our parallel `CloseDuplicatesCleaner`.
+/// Cleaner that removes individuals that are close to each other based on a specified epsilon.
 #[pyclass(name = "CloseDuplicatesCleaner")]
 #[derive(Clone, Debug)]
 pub struct PyCloseDuplicatesCleaner {

@@ -28,7 +28,7 @@ impl SamplingOperator for PermutationSampling {
     }
 }
 
-/// A Python class that wraps our Rust `PermutationSampling`.
+/// Sampling operator for permutation-based variables.
 #[pyclass(name = "PermutationSampling")]
 #[derive(Clone)]
 pub struct PyPermutationSampling {

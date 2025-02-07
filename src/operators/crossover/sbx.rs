@@ -100,6 +100,7 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
     }
 }
 
+/// Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
 #[pyclass(name = "SimulatedBinaryCrossover")]
 #[derive(Clone)]
 pub struct PySimulatedBinaryCrossover {

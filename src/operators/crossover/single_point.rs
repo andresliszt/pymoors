@@ -58,7 +58,7 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
     }
 }
 
-/// A Python-exposed class that wraps the Rust `SinglePointBinaryCrossover`.
+/// Single-point crossover operator for binary-encoded individuals.
 #[pyclass(name = "SinglePointBinaryCrossover")]
 #[derive(Clone)]
 pub struct PySinglePointBinaryCrossover {
