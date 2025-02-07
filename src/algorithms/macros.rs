@@ -9,7 +9,7 @@ macro_rules! define_multiobj_pyclass {
         use pyo3::exceptions::PyRuntimeError;
         use pyo3::types::PyDict;
 
-        use crate::algorithms::{MultiObjectiveAlgorithm, MultiObjectiveError};
+        use crate::algorithms::{MultiObjectiveAlgorithm, MultiObjectiveAlgorithmError};
         use crate::genetic::{PopulationConstraints, PopulationFitness, PopulationGenes};
         use crate::helpers::duplicates::PopulationCleaner;
         use crate::operators::{
@@ -44,7 +44,7 @@ macro_rules! define_multiobj_pyclass {
                 lower_bound: Option<f64>,
                 // Optional upper bound for each gene.
                 upper_bound: Option<f64>,
-            ) -> Result<Self, MultiObjectiveError> {
+            ) -> Result<Self, MultiObjectiveAlgorithmError> {
                 // Build the shared MultiObjectiveAlgorithm
                 let algorithm = MultiObjectiveAlgorithm::new(
                     sampler,
@@ -70,7 +70,7 @@ macro_rules! define_multiobj_pyclass {
                 Ok(Self { algorithm })
             }
 
-            pub fn run(&mut self) -> Result<(), MultiObjectiveError> {
+            pub fn run(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
                 self.algorithm.run()
             }
         }
@@ -86,7 +86,7 @@ macro_rules! define_multiobj_pyclass {
         impl $PyStructName {
             pub fn run(&mut self) -> PyResult<()> {
                 // Call the inner run() method and convert any error into a PyRuntimeError.
-                // TODO: Create custom errors in the python side to map errors from MultiObjectiveError
+                // TODO: Create custom errors in the python side to map errors from MultiObjectiveAlgorithmError
                 self.inner
                     .run()
                     .map_err(|e| PyRuntimeError::new_err(e.to_string()))
