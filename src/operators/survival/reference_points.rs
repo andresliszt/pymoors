@@ -63,7 +63,7 @@ impl SurvivalOperator for ReferencePointsSurvival {
         }
 
         // Combine the chosen fronts into a single population
-        FrontsExt::flatten_fronts(&chosen_fronts)
+        FrontsExt::to_population(&chosen_fronts)
     }
 }
 

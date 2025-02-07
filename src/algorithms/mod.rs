@@ -1,6 +1,8 @@
 use numpy::ndarray::{concatenate, Axis};
 use rand::thread_rng;
 use rand::Rng;
+use std::error::Error;
+use std::fmt;
 
 use crate::{
     evaluator::Evaluator,
@@ -16,6 +18,25 @@ use crate::{
 mod macros;
 pub mod nsga2;
 pub mod nsga3;
+
+#[derive(Debug)]
+pub enum MultiObjectiveError {
+    Evolve(String),
+    NoFeasibleIndividuals,
+}
+
+impl fmt::Display for MultiObjectiveError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MultiObjectiveError::Evolve(msg) => write!(f, "Error during evolution: {}", msg),
+            MultiObjectiveError::NoFeasibleIndividuals => {
+                write!(f, "No feasible individuals found")
+            }
+        }
+    }
+}
+
+impl Error for MultiObjectiveError {}
 
 pub struct MultiObjectiveAlgorithm {
     population: Population,
@@ -51,7 +72,7 @@ impl MultiObjectiveAlgorithm {
         // Optional lower and upper bounds for each gene.
         lower_bound: Option<f64>,
         upper_bound: Option<f64>,
-    ) -> Self {
+    ) -> Result<Self, MultiObjectiveError> {
         let mut rng = thread_rng();
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
 
@@ -75,8 +96,16 @@ impl MultiObjectiveAlgorithm {
             lower_bound,
             upper_bound,
         );
-        let population = evaluator.build_fronts(genes).flatten_fronts();
-        Self {
+
+        let fronts = evaluator.build_fronts(genes);
+
+        if fronts.is_empty() {
+            return Err(MultiObjectiveError::NoFeasibleIndividuals);
+        }
+
+        let population = fronts.to_population();
+
+        Ok(Self {
             population,
             survivor,
             evolve,
@@ -86,22 +115,16 @@ impl MultiObjectiveAlgorithm {
             num_iterations,
             verbose,
             n_vars,
-        }
+        })
     }
 
-    fn next<R: Rng>(&mut self, rng: &mut R) {
+    fn next<R: Rng>(&mut self, rng: &mut R) -> Result<(), MultiObjectiveError> {
         // Obtain offspring genes.
-        let offspring_genes =
-            match self
-                .evolve
-                .evolve(&self.population, self.n_offsprings as usize, 200, rng)
-            {
-                Ok(genes) => genes,
-                Err(e) => {
-                    eprintln!("Error during evolution: {:?}", e);
-                    return;
-                }
-            };
+        let offspring_genes = self
+            .evolve
+            .evolve(&self.population, self.n_offsprings, 200, rng)
+            // Use map_err to convert the error to our enum
+            .map_err(|e| MultiObjectiveError::Evolve(format!("{:?}", e)))?;
 
         // Validate that the number of columns in offspring_genes matches n_vars.
         assert_eq!(
@@ -120,19 +143,37 @@ impl MultiObjectiveAlgorithm {
         .expect("Failed to concatenate current population genes with offspring genes");
         // Build fronts from the combined genes.
         let fronts = self.evaluator.build_fronts(combined_genes);
-        // Select the new population from the fronts.
+
+        // Check if there are no feasible individuals
+        if fronts.is_empty() {
+            return Err(MultiObjectiveError::NoFeasibleIndividuals);
+        }
+
+        // Select the new population
         self.population = self.survivor.operate(&fronts, self.pop_size);
+        Ok(())
     }
 
-    pub fn run(&mut self) {
+    pub fn run(&mut self) -> Result<(), MultiObjectiveError> {
         let mut rng = thread_rng();
-        let mut current_iter = 0;
-        while current_iter < self.num_iterations {
-            self.next(&mut rng);
-            current_iter += 1;
-            if self.verbose {
-                print_minimum_objectives(&self.population, current_iter);
+
+        for current_iter in 0..self.num_iterations {
+            match self.next(&mut rng) {
+                Ok(_) => {
+                    if self.verbose {
+                        print_minimum_objectives(&self.population, current_iter + 1);
+                    }
+                }
+                Err(MultiObjectiveError::NoFeasibleIndividuals) => {
+                    eprintln!("No feasible individuals found. Terminating the loop early.");
+                    break;
+                }
+                // Cualquier otro error lo propagamos hacia arriba.
+                Err(e) => {
+                    return Err(e);
+                }
             }
         }
+        Ok(())
     }
 }

@@ -54,7 +54,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
         }
 
         // Finally, combine the chosen fronts into a single population
-        chosen_fronts.flatten_fronts()
+        chosen_fronts.to_population()
     }
 }
 

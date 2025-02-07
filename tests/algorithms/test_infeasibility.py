@@ -90,23 +90,22 @@ def test_keep_infeasible_out_of_bounds():
     assert len(algorithm.population) == 100
 
 
-@pytest.mark.xfail(reason="Known bug https://github.com/andresliszt/pymoors/issues/9.")
 def test_remove_infeasible():
-    algorithm = Nsga2(
-        sampler=RandomSamplingBinary(),
-        mutation=BitFlipMutation(gene_mutation_rate=0.5),
-        crossover=SinglePointBinaryCrossover(),
-        fitness_fn=binary_biobjective_infeasible,
-        constraints_fn=infeasible_constraints,
-        n_vars=5,
-        pop_size=100,
-        n_offsprings=100,
-        num_iterations=20,
-        mutation_rate=0.1,
-        crossover_rate=0.9,
-        duplicates_cleaner=None,
-        keep_infeasible=False,
-    )
-    algorithm.run()
+    with pytest.raises(RuntimeError, match="No feasible individuals found"):
+        algorithm = Nsga2(
+            sampler=RandomSamplingBinary(),
+            mutation=BitFlipMutation(gene_mutation_rate=0.5),
+            crossover=SinglePointBinaryCrossover(),
+            fitness_fn=binary_biobjective_infeasible,
+            constraints_fn=infeasible_constraints,
+            n_vars=5,
+            pop_size=100,
+            n_offsprings=100,
+            num_iterations=20,
+            mutation_rate=0.1,
+            crossover_rate=0.9,
+            duplicates_cleaner=None,
+            keep_infeasible=False,
+        )
 
-    assert len(algorithm.population) == 0
+        algorithm.run()

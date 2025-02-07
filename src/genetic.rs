@@ -157,11 +157,11 @@ pub type Fronts = Vec<Population>;
 /// An extension trait for the `Fronts` type to add a `.flatten()` method
 /// that combines multiple fronts into a single `Population`.
 pub trait FrontsExt {
-    fn flatten_fronts(&self) -> Population;
+    fn to_population(&self) -> Population;
 }
 
 impl FrontsExt for Vec<Population> {
-    fn flatten_fronts(&self) -> Population {
+    fn to_population(&self) -> Population {
         if self.is_empty() {
             panic!("Cannot flatten empty fronts!");
         }

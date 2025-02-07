@@ -94,6 +94,11 @@ impl Evaluator {
             constraints = constraints.map(|c_array| c_array.select(Axis(0), &feasible_indices));
         }
 
+        // Return an empty Vec if no feasible individuals remain after filtering
+        if genes.nrows() == 0 {
+            return Vec::new(); // Possible empty result due to constraints
+        }
+
         let sorted_fronts = fast_non_dominated_sorting(&fitness);
         let mut results: Fronts = Vec::new();
 

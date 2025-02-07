@@ -6,9 +6,10 @@ macro_rules! define_multiobj_pyclass {
         $PyClassName:literal
     ) => {
         use numpy::ToPyArray;
+        use pyo3::exceptions::PyRuntimeError;
         use pyo3::types::PyDict;
 
-        use crate::algorithms::MultiObjectiveAlgorithm;
+        use crate::algorithms::{MultiObjectiveAlgorithm, MultiObjectiveError};
         use crate::genetic::{PopulationConstraints, PopulationFitness, PopulationGenes};
         use crate::helpers::duplicates::PopulationCleaner;
         use crate::operators::{
@@ -43,7 +44,7 @@ macro_rules! define_multiobj_pyclass {
                 lower_bound: Option<f64>,
                 // Optional upper bound for each gene.
                 upper_bound: Option<f64>,
-            ) -> Self {
+            ) -> Result<Self, MultiObjectiveError> {
                 // Build the shared MultiObjectiveAlgorithm
                 let algorithm = MultiObjectiveAlgorithm::new(
                     sampler,
@@ -64,13 +65,13 @@ macro_rules! define_multiobj_pyclass {
                     constraints_fn,
                     lower_bound,
                     upper_bound,
-                );
+                )?;
 
-                Self { algorithm }
+                Ok(Self { algorithm })
             }
 
-            pub fn run(&mut self) {
-                self.algorithm.run();
+            pub fn run(&mut self) -> Result<(), MultiObjectiveError> {
+                self.algorithm.run()
             }
         }
 
@@ -83,10 +84,13 @@ macro_rules! define_multiobj_pyclass {
         // Implement PyO3 methods
         #[pymethods]
         impl $PyStructName {
-            pub fn run(&mut self) {
-                self.inner.run();
+            pub fn run(&mut self) -> PyResult<()> {
+                // Call the inner run() method and convert any error into a PyRuntimeError.
+                // TODO: Create custom errors in the python side to map errors from MultiObjectiveError
+                self.inner
+                    .run()
+                    .map_err(|e| PyRuntimeError::new_err(e.to_string()))
             }
-
             // The population getter
             #[getter]
             pub fn population(&self, py: Python) -> PyResult<PyObject> {
