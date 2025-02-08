@@ -18,6 +18,7 @@ from ._pymoors import (
     ExponentialCrossover,
     ExactDuplicatesCleaner,
     CloseDuplicatesCleaner,
+    NoFeasibleIndividualsError,
 )
 
 
@@ -122,5 +123,6 @@ __all__ = (
     "SimulatedBinaryCrossover",
     "ExactDuplicatesCleaner",
     "CloseDuplicatesCleaner",
+    "NoFeasibleIndividualsError",
     "available_operators",
 )

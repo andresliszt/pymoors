@@ -105,3 +105,9 @@ algorithm = Nsga2(
 algorithm.run()
 
 ```
+
+## Early Stopping and Termination Conditions
+
+We're currently developing early stopping criteria – see [this open issue](https://github.com/andresliszt/pymoors/issues/13) – to terminate the algorithm when, under certain logic, it is considered finished and will no longer find better individuals to optimize.
+
+There are also other conditions that will cause the algorithm to terminate with an error. For example, if `keep_infeasible` is set to `False` and at some point the population becomes completely infeasible (i.e., there is no individual that satisfies the defined constraints), then pymoo will throw a `NoFeasibleIndividualsError`.

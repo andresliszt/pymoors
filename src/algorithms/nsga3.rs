@@ -106,8 +106,7 @@ impl PyNsga3 {
             constraints_closure,
             lower_bound,
             upper_bound,
-        )
-        .map_err(|e| PyRuntimeError::new_err(e.to_string()))?;
+        )?;
 
         Ok(Self { inner: rs_obj })
     }

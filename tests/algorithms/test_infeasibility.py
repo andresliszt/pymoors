@@ -7,6 +7,7 @@ from pymoors import (
     BitFlipMutation,
     SinglePointBinaryCrossover,
     RandomSamplingBinary,
+    NoFeasibleIndividualsError,
 )
 from pymoors.typing import TwoDArray
 
@@ -91,7 +92,9 @@ def test_keep_infeasible_out_of_bounds():
 
 
 def test_remove_infeasible():
-    with pytest.raises(RuntimeError, match="No feasible individuals found"):
+    with pytest.raises(
+        NoFeasibleIndividualsError, match="No feasible individuals found"
+    ):
         algorithm = Nsga2(
             sampler=RandomSamplingBinary(),
             mutation=BitFlipMutation(gene_mutation_rate=0.5),

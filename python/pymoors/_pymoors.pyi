@@ -324,3 +324,8 @@ class Nsga3:
         """
 
     def run(self) -> None: ...
+
+# Custom Errors
+
+class NoFeasibleIndividualsError(BaseException):
+    """Raise this error when no feasible individuals are found"""

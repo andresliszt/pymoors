@@ -15,6 +15,7 @@ use pyo3::prelude::*;
 
 pub use algorithms::nsga2::PyNsga2;
 pub use algorithms::nsga3::PyNsga3;
+pub use algorithms::py_errors::NoFeasibleIndividualsError;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
     PyBitFlipMutation, PyExponentialCrossover, PyGaussianMutation, PyOrderCrossover,
@@ -45,6 +46,11 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyExactDuplicatesCleaner>()?;
     m.add_class::<PyCloseDuplicatesCleaner>()?;
     m.add_class::<PySimulatedBinaryCrossover>()?;
+    // Py Errors
+    m.add(
+        "NoFeasibleIndividualsError",
+        _py.get_type::<NoFeasibleIndividualsError>(),
+    )?;
 
     Ok(())
 }

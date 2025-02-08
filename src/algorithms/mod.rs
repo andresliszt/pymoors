@@ -4,6 +4,10 @@ use rand::Rng;
 use std::error::Error;
 use std::fmt;
 
+use pyo3::exceptions::PyRuntimeError;
+use pyo3::PyErr;
+
+use crate::algorithms::py_errors::NoFeasibleIndividualsError;
 use crate::{
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
@@ -18,6 +22,7 @@ use crate::{
 mod macros;
 pub mod nsga2;
 pub mod nsga3;
+pub mod py_errors;
 
 #[derive(Debug)]
 pub enum MultiObjectiveAlgorithmError {
@@ -43,6 +48,20 @@ impl From<EvolveError> for MultiObjectiveAlgorithmError {
         MultiObjectiveAlgorithmError::Evolve(e)
     }
 }
+
+/// Once a new error is created to be exposed to the python side
+/// the match must be updatetd
+impl From<MultiObjectiveAlgorithmError> for PyErr {
+    fn from(err: MultiObjectiveAlgorithmError) -> PyErr {
+        match err {
+            MultiObjectiveAlgorithmError::NoFeasibleIndividuals => {
+                NoFeasibleIndividualsError::new_err(err.to_string())
+            }
+            _ => PyRuntimeError::new_err(err.to_string()),
+        }
+    }
+}
+
 impl Error for MultiObjectiveAlgorithmError {}
 
 pub struct MultiObjectiveAlgorithm {
