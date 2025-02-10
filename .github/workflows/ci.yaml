@@ -140,7 +140,7 @@ jobs:
 
   check:
     if: always()
-    needs: [coverage, test-python, lint]
+    needs: [coverage-python, coverage-rust, test-python, lint]
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
