@@ -23,6 +23,7 @@ mod macros;
 pub mod nsga2;
 pub mod nsga3;
 pub mod py_errors;
+pub mod rnsga2;
 
 #[derive(Debug)]
 pub enum MultiObjectiveAlgorithmError {
@@ -167,7 +168,7 @@ impl MultiObjectiveAlgorithm {
         )
         .expect("Failed to concatenate current population genes with offspring genes");
         // Build fronts from the combined genes.
-        let fronts = self.evaluator.build_fronts(combined_genes);
+        let mut fronts = self.evaluator.build_fronts(combined_genes);
 
         // Check if there are no feasible individuals
         if fronts.is_empty() {
@@ -175,7 +176,7 @@ impl MultiObjectiveAlgorithm {
         }
 
         // Select the new population
-        self.population = self.survivor.operate(&fronts, self.pop_size);
+        self.population = self.survivor.operate(&mut fronts, self.pop_size);
         Ok(())
     }
 

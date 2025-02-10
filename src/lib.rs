@@ -7,6 +7,7 @@ pub mod genetic;
 pub mod prelude;
 
 mod algorithms;
+pub mod diversity_metrics;
 mod helpers;
 pub mod non_dominated_sorting;
 mod operators;
@@ -15,6 +16,7 @@ use pyo3::prelude::*;
 
 pub use algorithms::nsga2::PyNsga2;
 pub use algorithms::nsga3::PyNsga3;
+pub use algorithms::rnsga2::PyRNsga2;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
@@ -30,6 +32,7 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add classes from algorithms
     m.add_class::<PyNsga2>()?;
     m.add_class::<PyNsga3>()?;
+    m.add_class::<PyRNsga2>()?;
 
     // Add classes from operators
     m.add_class::<PyBitFlipMutation>()?;

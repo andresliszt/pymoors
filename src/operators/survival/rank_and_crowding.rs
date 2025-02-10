@@ -1,6 +1,8 @@
+use std::fmt::Debug;
+
+use crate::diversity_metrics::crowding_distance;
 use crate::genetic::{Fronts, FrontsExt, Population};
 use crate::operators::{GeneticOperator, SurvivalOperator};
-use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
 pub struct RankCrowdingSurvival;
@@ -18,14 +20,19 @@ impl RankCrowdingSurvival {
 }
 
 impl SurvivalOperator for RankCrowdingSurvival {
-    fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population {
+    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
         // We will collect sub-populations (fronts) that survive here
         let mut chosen_fronts: Vec<Population> = Vec::new();
         let mut n_survivors = 0;
 
-        for front in fronts.iter() {
+        for front in fronts.iter_mut() {
             let front_size = front.len();
-
+            // Compute crowding distance
+            let cd = crowding_distance(&front.fitness);
+            // Set the crowding distance to the front population
+            front
+                .set_diversity(cd)
+                .expect("Failed to set diversity metric");
             // If this entire front fits into the survivor count
             if n_survivors + front_size <= n_survive {
                 chosen_fronts.push(front.clone());
@@ -35,7 +42,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
                 let remaining = n_survive - n_survivors;
                 if remaining > 0 {
                     // Sort by crowding distance (descending)
-                    let cd = front.crowding_distance.clone();
+                    let cd = front.diversity_metric.clone().unwrap();
                     let mut indices: Vec<usize> = (0..front_size).collect();
                     indices.sort_by(|&i, &j| {
                         cd[j]
@@ -70,14 +77,12 @@ mod tests {
         let fitness = arr2(&[[0.1], [0.2], [0.3]]);
         let constraints: Option<Array2<f64>> = None;
         let rank = arr1(&[0, 0, 0]);
-        let crowding_distance = arr1(&[10.0, 5.0, 7.0]);
 
         let population = Population::new(
             genes.clone(),
             fitness.clone(),
             constraints.clone(),
             rank.clone(),
-            crowding_distance.clone(),
         );
         let mut fronts: Fronts = vec![population];
 
@@ -98,14 +103,12 @@ mod tests {
         let fitness = arr2(&[[0.1], [0.2], [0.3]]);
         let constraints: Option<Array2<f64>> = None;
         let rank = arr1(&[0, 0, 0]);
-        let crowding_distance = arr1(&[10.0, 5.0, 7.0]);
 
         let population = Population::new(
             genes.clone(),
             fitness.clone(),
             constraints.clone(),
             rank.clone(),
-            crowding_distance.clone(),
         );
         let mut fronts: Fronts = vec![population];
 
@@ -131,20 +134,17 @@ mod tests {
         let front1_fitness = arr2(&[[0.1], [0.2]]);
         let front1_constraints: Option<Array2<f64>> = None;
         let front1_rank = arr1(&[0, 0]);
-        let front1_cd = arr1(&[8.0, 9.0]);
 
         let front2_genes = arr2(&[[4.0, 5.0], [6.0, 7.0], [8.0, 9.0]]);
         let front2_fitness = arr2(&[[0.3], [0.4], [0.5]]);
         let front2_constraints: Option<Array2<f64>> = None;
         let front2_rank = arr1(&[1, 1, 1]);
-        let front2_cd = arr1(&[3.0, 10.0, 1.0]);
 
         let population1 = Population::new(
             front1_genes,
             front1_fitness,
             front1_constraints,
             front1_rank,
-            front1_cd,
         );
 
         let population2 = Population::new(
@@ -152,7 +152,6 @@ mod tests {
             front2_fitness,
             front2_constraints,
             front2_rank,
-            front2_cd,
         );
 
         let mut fronts: Fronts = vec![population1, population2];

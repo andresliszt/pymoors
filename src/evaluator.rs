@@ -1,6 +1,6 @@
 use crate::{
     genetic::{Fronts, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
-    non_dominated_sorting::{crowding_distance, fast_non_dominated_sorting},
+    non_dominated_sorting::fast_non_dominated_sorting,
 };
 use numpy::ndarray::{Array1, Axis};
 
@@ -19,7 +19,7 @@ pub struct Evaluator {
 
 impl Evaluator {
     /// Creates a new `Evaluator` with a fitness function, an optional constraints function,
-    /// a flag to keep infeasible individuals, and optional lower/upper bounds for the genes.
+    /// a flag to keep infeasible individuals, and optional lower/upper bounds.
     pub fn new(
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
         constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
@@ -63,7 +63,7 @@ impl Evaluator {
             let n = genes.nrows();
             let mut feasible_indices: Vec<usize> = (0..n).collect();
 
-            // Filter individuals that do not satisfy the constraints function (if provided)
+            // Filter individuals that do not satisfy the constraints function (if provided).
             if let Some(ref c) = constraints {
                 feasible_indices = feasible_indices
                     .into_iter()
@@ -88,45 +88,34 @@ impl Evaluator {
                     .collect();
             }
 
-            // Filter all relevant arrays (genes, fitness, and constraints if present)
+            // Filter all relevant arrays (genes, fitness, and constraints if present).
             genes = genes.select(Axis(0), &feasible_indices);
             fitness = fitness.select(Axis(0), &feasible_indices);
             constraints = constraints.map(|c_array| c_array.select(Axis(0), &feasible_indices));
         }
 
-        // Return an empty Vec if no feasible individuals remain after filtering
+        // Return an empty Vec if no feasible individuals remain after filtering.
         if genes.nrows() == 0 {
-            return Vec::new(); // Possible empty result due to constraints
+            return Vec::new();
         }
 
         let sorted_fronts = fast_non_dominated_sorting(&fitness);
         let mut results: Fronts = Vec::new();
 
-        // For each front (rank = front_index), extract the sub-population.
+        // For each front (with rank = front_index), extract the sub-population.
         for (front_index, indices) in sorted_fronts.iter().enumerate() {
-            // Slice out the genes and fitness for just these individuals.
             let front_genes = genes.select(Axis(0), &indices[..]);
             let front_fitness = fitness.select(Axis(0), &indices[..]);
-
-            // If constraints exist, slice them out too.
             let front_constraints = constraints
                 .as_ref()
                 .map(|c| c.select(Axis(0), &indices[..]));
-
-            // Calculate crowding distance for just these individuals.
-            let cd_front = crowding_distance(&front_fitness);
 
             // Create a rank Array1 (one rank value per individual in the front).
             let rank_arr = Array1::from_elem(indices.len(), front_index);
 
             // Build a `Population` representing this entire front.
-            let population_front = Population {
-                genes: front_genes,
-                fitness: front_fitness,
-                constraints: front_constraints,
-                rank: rank_arr,
-                crowding_distance: cd_front,
-            };
+            let population_front =
+                Population::new(front_genes, front_fitness, front_constraints, rank_arr);
 
             results.push(population_front);
         }
@@ -167,6 +156,7 @@ mod tests {
 
     #[test]
     fn test_evaluator_evaluate_fitness() {
+        // Using the Crowding metric in this test.
         let evaluator = Evaluator::new(Box::new(fitness_fn), None, true, None, None);
 
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [0.0, 0.0]];
@@ -191,9 +181,9 @@ mod tests {
         );
 
         let population_genes = array![
-            [1.0, 2.0], // Feasible (sum=3, sum-10=-7; genes ≥ 0)
-            [3.0, 4.0], // Feasible (sum=7, sum-10=-3; genes ≥ 0)
-            [5.0, 6.0]  // Infeasible (sum=11, sum-10=1>0)
+            [1.0, 2.0], // Feasible (sum=3, 3-10=-7; genes ≥ 0)
+            [3.0, 4.0], // Feasible (sum=7, 7-10=-3; genes ≥ 0)
+            [5.0, 6.0]  // Infeasible (sum=11, 11-10=1>0)
         ];
 
         if let Some(constraints_array) = evaluator.evaluate_constraints(&population_genes) {
@@ -240,18 +230,13 @@ mod tests {
             "Total individuals across all fronts should be 3."
         );
 
-        // Check that each front has matching shapes for rank and crowding distance.
+        // Check that in each front the length of the rank array matches.
         for (front_index, front_pop) in fronts.iter().enumerate() {
             let n = front_pop.genes.nrows();
             assert_eq!(
                 front_pop.rank.len(),
                 n,
-                "Rank length should match number of individuals in front"
-            );
-            assert_eq!(
-                front_pop.crowding_distance.len(),
-                n,
-                "Crowding distance length should match individuals in front"
+                "Rank length should match number of individuals in the front"
             );
             for &r in front_pop.rank.iter() {
                 assert_eq!(
@@ -263,7 +248,7 @@ mod tests {
                 assert_eq!(
                     c.nrows(),
                     n,
-                    "Constraints rows should match number of individuals"
+                    "Number of rows in constraints should match number of individuals"
                 );
             }
         }
@@ -272,7 +257,7 @@ mod tests {
     #[test]
     fn test_evaluator_build_fronts_with_infeasible_and_bounds() {
         // Use constraints function and bounds. Also, keep_infeasible is false.
-        // The bounds here require that every gene must be between 0 and 5.
+        // The bounds require each gene to be between 0 and 5.
         let evaluator = Evaluator::new(
             Box::new(fitness_fn),
             Some(Box::new(constraints_fn)),
@@ -284,8 +269,8 @@ mod tests {
         // Create a population with 3 individuals:
         //   - [1.0, 2.0]: Feasible (sum=3, all genes between 0 and 5)
         //   - [3.0, 4.0]: Feasible (sum=7, all genes between 0 and 5)
-        //   - [6.0, 1.0]: Infeasible (fails upper bound, since 6.0 > 5.0)
-        let population_genes = array![[1.0, 2.0], [3.0, 4.0], [6.0, 1.0],];
+        //   - [6.0, 1.0]: Infeasible (6.0 > 5.0)
+        let population_genes = array![[1.0, 2.0], [3.0, 4.0], [6.0, 1.0]];
 
         // Build fronts.
         let fronts = evaluator.build_fronts(population_genes);

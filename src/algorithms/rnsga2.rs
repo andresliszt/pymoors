@@ -8,17 +8,20 @@ use crate::helpers::parser::{
     unwrap_crossover_operator, unwrap_duplicates_cleaner, unwrap_mutation_operator,
     unwrap_sampling_operator,
 };
-use crate::operators::selection::RankAndCrowdingSelection;
-use crate::operators::survival::RankCrowdingSurvival;
+use crate::operators::selection::{DiversityComparison, RankAndCrowdingSelection};
+use crate::operators::survival::RankReferencePointsSurvival;
+
+use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(Nsga2, PyNsga2, "Nsga2");
+define_multiobj_pyclass!(RNsga2, PyRNsga2, "RNsga2");
 
 // Implement PyO3 methods
 #[pymethods]
-impl PyNsga2 {
+impl PyRNsga2 {
     #[new]
     #[pyo3(signature = (
+        reference_points,
         sampler,
         crossover,
         mutation,
@@ -27,6 +30,7 @@ impl PyNsga2 {
         pop_size,
         n_offsprings,
         num_iterations,
+        epsilon = 0.001,
         mutation_rate=0.1,
         crossover_rate=0.9,
         keep_infeasible=false,
@@ -36,7 +40,8 @@ impl PyNsga2 {
         lower_bound=None,
         upper_bound=None
     ))]
-    pub fn py_new(
+    pub fn py_new<'py>(
+        reference_points: &Bound<'py, PyArray2<f64>>,
         sampler: PyObject,
         crossover: PyObject,
         mutation: PyObject,
@@ -45,6 +50,7 @@ impl PyNsga2 {
         pop_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
+        epsilon: f64,
         mutation_rate: f64,
         crossover_rate: f64,
         keep_infeasible: bool,
@@ -76,12 +82,20 @@ impl PyNsga2 {
             None
         };
 
+        // Convert PyArray2 to Array2
+        let reference_points_array = reference_points.to_owned_array();
+
         // Create an instance of the selection/survival struct
-        let selector_box = Box::new(RankAndCrowdingSelection::new());
-        let survivor_box = Box::new(RankCrowdingSurvival::new());
+        let selector_box = Box::new(RankAndCrowdingSelection::new_with_comparison(
+            DiversityComparison::Minimize,
+        ));
+        let survivor_box = Box::new(RankReferencePointsSurvival::new(
+            reference_points_array,
+            epsilon,
+        ));
 
         // Create the Rust struct
-        let rs_obj = Nsga2::new(
+        let rs_obj = RNsga2::new(
             sampler_box,
             crossover_box,
             mutation_box,

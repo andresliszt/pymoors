@@ -325,6 +325,44 @@ class Nsga3:
 
     def run(self) -> None: ...
 
+class _RNsg2Kwargs(_MooAlgorithmKwargs, total=False):
+    reference_points: TwoDArray
+    epsilon: float
+
+class RNsga2:
+    """
+    Implementation of RNsga2 (Reference-based NSGA-II).
+
+    RNsga2 is a variant of NSGA-II that incorporates reference points into the selection process
+    to enhance diversity in many-objective optimization problems. By integrating a reference
+    point–based ranking into the survival operator, RNsga2 aims to obtain a well-distributed
+    approximation of the Pareto front even in high-dimensional objective spaces.
+
+    References:
+        Deb, K., Pratap, A., Agarwal, S., & Meyarivan, T. (2002).
+            A Fast and Elitist Multiobjective Genetic Algorithm: NSGA-II.
+            IEEE Transactions on Evolutionary Computation, 6(2), 182–197.
+
+        Deb, K., & Jain, H. (2014).
+            An Evolutionary Many-Objective Optimization Algorithm Using Reference-Point-Based
+            Nondominated Sorting Approach, Part I: Solving Problems with Box Constraints.
+            IEEE Transactions on Evolutionary Computation, 18(4), 577–601.
+
+    """
+
+    def __init__(self, **kwargs: Unpack[_RNsg2Kwargs]) -> None: ...
+    @property
+    def population(self) -> Population:
+        """
+        Returns the current population of individuals.
+
+        Returns:
+            Population: The current population.
+        """
+        ...
+
+    def run(self) -> None: ...
+
 # Custom Errors
 
 class NoFeasibleIndividualsError(BaseException):

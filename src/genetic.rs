@@ -5,75 +5,55 @@ use numpy::ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
 pub type Genes = Array1<f64>;
 pub type GenesMut<'a> = ArrayViewMut1<'a, f64>;
 
-/// The `Parents` type represents the input for a binary genetic operator, such as a crossover operator.
-/// It is a tuple of two 2-dimensional arrays (`Array2<f64>`) where `Parents.0[i]` will be operated with
-/// `Parents.1[i]` for each `i` in the population size. Each array corresponds to one "parent" group
-/// participating in the operation.
-pub type Parents = (Array1<f64>, Array1<f64>);
-
-/// The `Children` type defines the output of a binary genetic operator, such as the crossover operator.
-/// It is a tuple of two 2-dimensional arrays (`Array2<f64>`) where each array represents the resulting
-/// offspring derived from the corresponding parent arrays in `Parents`.
-pub type Children = (Array1<f64>, Array1<f64>);
-
-/// The `PopulationGenes` type defines the current set of individuals in the population.
-/// It is represented as a 2-dimensional array (`Array2<f64>`), where each row corresponds to an individual.
-pub type PopulationGenes = Array2<f64>;
-
-/// Fitness associated to one Genes
-pub type IndividualFitness = Array1<f64>;
-/// PopulationGenes Fitness
-pub type PopulationFitness = Array2<f64>;
-
-pub type IndividualConstraints = Array1<f64>;
-
-pub type PopulationConstraints = Array2<f64>;
-
+/// Represents an individual with genes, fitness, constraints (if any),
+/// rank, and an optional diversity metric.
 pub struct Individual {
     pub genes: Genes,
-    pub fitness: IndividualFitness,
-    pub constraints: Option<IndividualConstraints>,
+    pub fitness: Array1<f64>,
+    pub constraints: Option<Array1<f64>>,
     pub rank: usize,
-    pub crowding_distance: f64,
+    pub diversity_metric: Option<f64>,
 }
 
 impl Individual {
     pub fn new(
         genes: Genes,
-        fitness: IndividualFitness,
-        constraints: Option<IndividualConstraints>,
+        fitness: Array1<f64>,
+        constraints: Option<Array1<f64>>,
         rank: usize,
-        crowding_distance: f64,
+        diversity_metric: Option<f64>,
     ) -> Self {
         Self {
             genes,
             fitness,
             constraints,
             rank,
-            crowding_distance,
+            diversity_metric,
         }
     }
 
     pub fn is_feasible(&self) -> bool {
         match &self.constraints {
             None => true,
-            Some(c) => {
-                let sum: f64 = c.iter().sum();
-                sum <= 0.0
-            }
+            Some(c) => c.iter().sum::<f64>() <= 0.0,
         }
     }
 }
 
-/// The `Population` struct containing genes, fitness, rank, and crowding distance.
-/// `rank` and `crowding_distance` are optional and may be set during the process.
+/// Type aliases to work with populations.
+pub type PopulationGenes = Array2<f64>;
+pub type PopulationFitness = Array2<f64>;
+pub type PopulationConstraints = Array2<f64>;
+
+/// The `Population` struct contains genes, fitness, constraints (if any),
+/// rank, and optionally a diversity metric vector.
 #[derive(Debug)]
 pub struct Population {
     pub genes: PopulationGenes,
     pub fitness: PopulationFitness,
     pub constraints: Option<PopulationConstraints>,
     pub rank: Array1<usize>,
-    pub crowding_distance: Array1<f64>,
+    pub diversity_metric: Option<Array1<f64>>,
 }
 
 impl Clone for Population {
@@ -83,79 +63,103 @@ impl Clone for Population {
             fitness: self.fitness.clone(),
             constraints: self.constraints.clone(),
             rank: self.rank.clone(),
-            crowding_distance: self.crowding_distance.clone(),
+            diversity_metric: self.diversity_metric.clone(),
         }
     }
 }
 
 impl Population {
-    /// Creates a new `Population` instance with the given genes and fitness.
-    /// `rank` and `crowding_distance` are initially `None`.
+    /// Creates a new `Population` instance with the given genes, fitness, constraints, and rank.
+    /// The `diversity_metric` field is set to `None` by default.
     pub fn new(
         genes: PopulationGenes,
         fitness: PopulationFitness,
         constraints: Option<PopulationConstraints>,
         rank: Array1<usize>,
-        crowding_distance: Array1<f64>,
     ) -> Self {
         Self {
             genes,
             fitness,
             constraints,
             rank,
-            crowding_distance,
+            diversity_metric: None, // Initialized to None by default.
         }
     }
 
     /// Retrieves an `Individual` from the population by index.
     pub fn get(&self, idx: usize) -> Individual {
         let constraints = self.constraints.as_ref().map(|c| c.row(idx).to_owned());
-
+        let diversity = self.diversity_metric.as_ref().map(|dm| dm[idx]);
         Individual::new(
             self.genes.row(idx).to_owned(),
             self.fitness.row(idx).to_owned(),
             constraints,
             self.rank[idx],
-            self.crowding_distance[idx],
+            diversity,
         )
     }
 
     /// Returns a new `Population` containing only the individuals at the specified indices.
-    /// Indices may be repeated, resulting in repeated individuals in the new population.
     pub fn selected(&self, indices: &[usize]) -> Population {
         let genes = self.genes.select(Axis(0), indices);
         let fitness = self.fitness.select(Axis(0), indices);
         let rank = self.rank.select(Axis(0), indices);
-        let crowding_distance = self.crowding_distance.select(Axis(0), indices);
-
+        let diversity_metric = self
+            .diversity_metric
+            .as_ref()
+            .map(|dm| dm.select(Axis(0), indices));
         let constraints = self
             .constraints
             .as_ref()
             .map(|c| c.select(Axis(0), indices));
 
-        Population::new(genes, fitness, constraints, rank, crowding_distance)
+        Population::new(genes, fitness, constraints, rank).with_diversity(diversity_metric)
     }
 
-    /// Returns the number of individuals in this population.
+    /// Returns the number of individuals in the population.
     pub fn len(&self) -> usize {
         self.genes.nrows()
     }
+
     /// Returns a new `Population` containing only the individuals with rank = 0.
     pub fn best(&self) -> Population {
         let indices: Vec<usize> = self
             .rank
             .iter()
             .enumerate()
-            .filter_map(|(i, &rank)| if rank == 0 { Some(i) } else { None })
+            .filter_map(|(i, &r)| if r == 0 { Some(i) } else { None })
             .collect();
         self.selected(&indices)
     }
+
+    /// Auxiliary method to chain the assignment of `diversity_metric` in the `selected` method.
+    fn with_diversity(mut self, diversity_metric: Option<Array1<f64>>) -> Self {
+        self.diversity_metric = diversity_metric;
+        self
+    }
+
+    /// Updates the population's `diversity_metric` field.
+    ///
+    /// This method validates that the provided `diversity` vector has the same number of elements
+    /// as individuals in the population. If not, it returns an error.
+    pub fn set_diversity(&mut self, diversity: Array1<f64>) -> Result<(), String> {
+        if diversity.len() != self.len() {
+            return Err(format!(
+                "The diversity vector has length {} but the population contains {} individuals.",
+                diversity.len(),
+                self.len()
+            ));
+        }
+        self.diversity_metric = Some(diversity);
+        Ok(())
+    }
 }
 
+/// Type alias for a vector of `Population` representing multiple fronts.
 pub type Fronts = Vec<Population>;
 
-/// An extension trait for the `Fronts` type to add a `.flatten()` method
-/// that combines multiple fronts into a single `Population`.
+/// An extension trait for `Fronts` that adds a `.to_population()` method
+/// which flattens multiple fronts into a single `Population`.
 pub trait FrontsExt {
     fn to_population(&self) -> Population;
 }
@@ -167,19 +171,25 @@ impl FrontsExt for Vec<Population> {
         }
 
         let has_constraints = self[0].constraints.is_some();
+        let has_diversity = self[0].diversity_metric.is_some();
 
         let mut genes_views = Vec::new();
         let mut fitness_views = Vec::new();
         let mut rank_views = Vec::new();
-        let mut cd_views = Vec::new();
+        let mut diversity_views = Vec::new();
         let mut constraints_views = Vec::new();
 
         for front in self.iter() {
             genes_views.push(front.genes.view());
             fitness_views.push(front.fitness.view());
             rank_views.push(front.rank.view());
-            cd_views.push(front.crowding_distance.view());
-
+            if has_diversity {
+                let dm = front
+                    .diversity_metric
+                    .as_ref()
+                    .expect("Inconsistent diversity_metric among fronts");
+                diversity_views.push(dm.view());
+            }
             if has_constraints {
                 let c = front
                     .constraints
@@ -193,11 +203,17 @@ impl FrontsExt for Vec<Population> {
             concatenate(Axis(0), &genes_views[..]).expect("Error concatenating genes");
         let merged_fitness =
             concatenate(Axis(0), &fitness_views[..]).expect("Error concatenating fitness");
-
-        // **Concatenate** (Axis(0)) for 1D arrays rank & cd:
         let merged_rank =
-            concatenate(Axis(0), &rank_views[..]).expect("Error concatenating rank arrays"); // 1D result
-        let merged_cd = concatenate(Axis(0), &cd_views[..]).expect("Error concatenating cd arrays"); // 1D result
+            concatenate(Axis(0), &rank_views[..]).expect("Error concatenating rank arrays");
+
+        let merged_diversity = if has_diversity {
+            Some(
+                concatenate(Axis(0), &diversity_views[..])
+                    .expect("Error concatenating diversity arrays"),
+            )
+        } else {
+            None
+        };
 
         let merged_constraints = if has_constraints {
             Some(
@@ -213,7 +229,7 @@ impl FrontsExt for Vec<Population> {
             fitness: merged_fitness,
             constraints: merged_constraints,
             rank: merged_rank,
-            crowding_distance: merged_cd,
+            diversity_metric: merged_diversity,
         }
     }
 }

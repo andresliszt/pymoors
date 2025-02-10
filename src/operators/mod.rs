@@ -164,6 +164,7 @@ pub trait CrossoverOperator: GeneticOperator {
 }
 
 // Enum to represent the result of a tournament duel.
+#[derive(Debug, PartialEq, Eq)]
 pub enum DuelResult {
     LeftWins,
     RightWins,
@@ -260,5 +261,5 @@ pub trait SelectionOperator: GeneticOperator {
 
 pub trait SurvivalOperator: GeneticOperator {
     /// Selects the individuals that will survive to the next generation.
-    fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population;
+    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population;
 }

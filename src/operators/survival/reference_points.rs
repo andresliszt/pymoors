@@ -25,7 +25,7 @@ impl ReferencePointsSurvival {
 }
 
 impl SurvivalOperator for ReferencePointsSurvival {
-    fn operate(&self, fronts: &Fronts, n_survive: usize) -> Population {
+    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
         // Initialize a vector to store selected fronts (populations)
         let mut chosen_fronts: Vec<Population> = Vec::new();
         let mut n_survivors = 0;
@@ -282,11 +282,10 @@ mod tests {
             fitness.clone(),
             None,
             Array1::from(vec![1, 1, 1, 1, 1, 1]),
-            Array1::from(vec![0.5, 0.6, 0.7, 0.8, 0.9, 1.0]),
         );
 
         // Define fronts (for simplicity, all individuals are in the first front)
-        let fronts = vec![population.clone()];
+        let mut fronts = vec![population.clone()];
 
         // Generate reference points.
         let n_ref_points = 3;
@@ -298,7 +297,7 @@ mod tests {
 
         // Perform survival operation to select 4 individuals.
         let n_survive = 4;
-        let new_population = nsga3_survival.operate(&fronts, n_survive);
+        let new_population = nsga3_survival.operate(&mut fronts, n_survive);
 
         // Assert that the new population has 4 individuals.
         assert_eq!(new_population.len(), n_survive);
@@ -319,7 +318,6 @@ mod tests {
             fitness.clone(),
             None,
             Array1::from(vec![1, 1, 1]),
-            Array1::from(vec![0.5, 0.6, 0.7]),
         );
 
         let normalized = normalize_front(&population);
@@ -354,7 +352,6 @@ mod tests {
             fitness.clone(),
             None,
             Array1::from(vec![1, 1, 1]),
-            Array1::from(vec![0.5, 0.6, 0.7]),
         );
 
         let reference_points = array![[1.0, 0.0], [0.0, 1.0], [1.0, 1.0]];
@@ -389,7 +386,6 @@ mod tests {
             fitness.clone(),
             None,
             Array1::from(vec![1, 1, 1, 1]),
-            Array1::from(vec![0.5, 0.6, 0.7, 0.8]),
         );
 
         // Define assignments of individuals to reference points.
