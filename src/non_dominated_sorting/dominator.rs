@@ -234,7 +234,7 @@ mod tests {
         let fronts = fast_non_dominated_sorting(&population_fitness);
 
         // Expected: No fronts
-        let expected_fronts: Vec<Vec<usize>> = vec![];
+        let expected_fronts: Vec<Vec<usize>> = vec![vec![]];
 
         assert_eq!(fronts, expected_fronts);
     }

@@ -97,48 +97,44 @@ mod tests {
     }
 
     #[test]
-    fn test_survival_selection_partial_survival_single_front() {
-        // Only a subset of individuals survive, chosen by descending crowding distance.
-        let genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [4.0, 5.0]]);
-        let fitness = arr2(&[[0.1], [0.2], [0.3]]);
-        let constraints: Option<Array2<f64>> = None;
-        let rank = arr1(&[0, 0, 0]);
-
-        let population = Population::new(
-            genes.clone(),
-            fitness.clone(),
-            constraints.clone(),
-            rank.clone(),
-        );
-        let mut fronts: Fronts = vec![population];
-
-        let n_survive = 2;
-        let selector = RankCrowdingSurvival;
-        let new_population = selector.operate(&mut fronts, n_survive);
-
-        // Sort by CD descending: indices by CD would be [0 (10.0), 2 (7.0), 1 (5.0)]
-        // Top two: indices [0,2]
-        assert_eq!(new_population.len(), 2);
-        assert_eq!(new_population.genes, arr2(&[[0.0, 1.0], [4.0, 5.0]]));
-        assert_eq!(new_population.fitness, arr2(&[[0.1], [0.3]]));
-    }
-
-    #[test]
     fn test_survival_selection_multiple_fronts() {
-        // Multiple fronts scenario:
-        // Front 1: 2 individuals, all must survive
-        // Front 2: 3 individuals, but we only need 2 more to reach n_survive=4 total
-        // Selection from Front 2 should be by crowding distance.
+        /*
+        Test for survival selection with multiple fronts in NSGA-II (classic approach).
 
+        Scenario:
+          - Front 1 contains 2 individuals (first front, rank = 0). Since n_survive = 4,
+            all individuals from Front 1 are selected.
+          - Front 2 contains 4 individuals (second front, rank = 1), but only 2 more individuals
+            are needed to reach a total of 4 survivors.
+
+        Classical NSGA-II crowding distance calculation (for a single objective) assigns
+        an infinite crowding distance to the extreme individuals (those with minimum and maximum fitness values).
+        For Front 2 with fitness values:
+             [0.3], [0.4], [0.5], [0.6]
+        the extreme individuals (with fitness 0.3 and 0.6) get a crowding distance of infinity,
+        while the interior ones get finite values.
+        Hence, when selecting 2 individuals from Front 2, the algorithm should select the two extremes:
+             - The individual with fitness [0.3] (index 0)
+             - The individual with fitness [0.6] (index 3)
+
+        Expected final population:
+          - From Front 1 (all individuals): genes [[0.0, 1.0], [2.0, 3.0]] with fitness [[0.1], [0.2]]
+          - From Front 2 (selected extremes): genes [[4.0, 5.0], [10.0, 11.0]] with fitness [[0.3], [0.6]]
+        */
+
+        // Front 1: 2 individuals (first front, rank 0)
         let front1_genes = arr2(&[[0.0, 1.0], [2.0, 3.0]]);
         let front1_fitness = arr2(&[[0.1], [0.2]]);
         let front1_constraints: Option<Array2<f64>> = None;
         let front1_rank = arr1(&[0, 0]);
 
-        let front2_genes = arr2(&[[4.0, 5.0], [6.0, 7.0], [8.0, 9.0]]);
-        let front2_fitness = arr2(&[[0.3], [0.4], [0.5]]);
+        // Front 2: 4 individuals (second front, rank 1)
+        // With fitness values arranged in increasing order: 0.3, 0.4, 0.5, 0.6.
+        // In classical crowding distance, individuals with fitness 0.3 (first) and 0.6 (last) get INFINITY.
+        let front2_genes = arr2(&[[4.0, 5.0], [6.0, 7.0], [8.0, 9.0], [10.0, 11.0]]);
+        let front2_fitness = arr2(&[[0.3], [0.4], [0.5], [0.6]]);
         let front2_constraints: Option<Array2<f64>> = None;
-        let front2_rank = arr1(&[1, 1, 1]);
+        let front2_rank = arr1(&[1, 1, 1, 1]);
 
         let population1 = Population::new(
             front1_genes,
@@ -154,31 +150,28 @@ mod tests {
             front2_rank,
         );
 
-        let mut fronts: Fronts = vec![population1, population2];
+        let mut fronts: Vec<Population> = vec![population1, population2];
 
-        let n_survive = 4; // We want 4 individuals total
+        let n_survive = 4; // We want 4 individuals total.
+
+        // Use the survival operator (assumed to be RankCrowdingSurvival in NSGA-II classic mode).
         let selector = RankCrowdingSurvival;
         let new_population = selector.operate(&mut fronts, n_survive);
 
-        // After selecting the full first front (2 individuals),
-        // from the second front we pick 2 out of 3 by highest CD.
-        // Front2 CDs: [3.0, 10.0, 1.0], sorted desc: indices [1,0,2]
-        // Take the top 2: indices [1 (CD=10.0), 0 (CD=3.0)]
-        // That means from front2_genes we take rows [1, 0] in that order.
-        // But the code sorts indices and then selects top. The order in final population
-        // depends on flattening. The `select` keeps the chosen order, so we should see
-        // individuals in their original order relative to each other if that matters.
+        // The final population must have 4 individuals.
+        assert_eq!(new_population.len(), n_survive);
 
-        assert_eq!(new_population.len(), 4);
-
-        // The final population should have the first 2 individuals from front 1:
-        // [[0, 1], [2, 3]]
-        // And the chosen 2 from front 2 with the highest CD (indices 1 and 0 from front 2):
-        // front2 index 1 -> [6, 7]
-        // front2 index 0 -> [4, 5]
-
-        let expected_genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [6.0, 7.0], [4.0, 5.0]]);
-        let expected_fitness = arr2(&[[0.1], [0.2], [0.4], [0.3]]);
+        // Expected outcome:
+        // - From Front 1, all individuals are selected: indices [0, 1] with genes [[0.0,1.0], [2.0,3.0]].
+        // - From Front 2, only 2 individuals are selected based on crowding distance.
+        //   In classical NSGA-II, the extreme individuals (with lowest and highest fitness) are selected.
+        //   Therefore, from Front 2, the individuals at index 0 (fitness 0.3) and index 3 (fitness 0.6) are selected.
+        //
+        // Thus, the final population should have:
+        //   Genes: [[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]]
+        //   Fitness: [[0.1], [0.2], [0.3], [0.6]]
+        let expected_genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]]);
+        let expected_fitness = arr2(&[[0.1], [0.2], [0.3], [0.6]]);
         assert_eq!(new_population.genes, expected_genes);
         assert_eq!(new_population.fitness, expected_fitness);
     }

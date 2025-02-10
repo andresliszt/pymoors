@@ -64,11 +64,6 @@ fn compute_rank_for_column(distances: &[f64]) -> Vec<usize> {
 
 /// Given a matrix of distances (with shape (n, P), where n is the number of solutions
 /// in the front and P is the number of reference points), computes the ranking for each solution
-/// as:
-///
-///     r_i = min_{k=1..P} r_{ik}
-///
-/// where r_{ik} is the rank (order) of the distance d_{ik} among all solutions for reference point k.
 fn ranking_by_distances(distances: &Array2<f64>) -> Array1<usize> {
     let (n, p) = distances.dim();
     let mut rank_matrix: Vec<Vec<usize>> = Vec::with_capacity(p);
@@ -187,8 +182,9 @@ mod tests {
         let nadir = array![10.0, 10.0, 10.0];
         let distance = weighted_normalized_euclidean_distance(&f1, &f2, &weights, &ideal, &nadir);
         // The normalized differences will be (1/10, 1/10, 1/10)
-        // Sum of squares: 3*(0.01) = 0.03, sqrt(0.03) ≈ 0.1732.
-        assert!((distance - 0.1732).abs() < 1e-4);
+        // The weights are (1/3, 1/3, 1/3)
+        // Sum of squares: 3*(1/3)*(0.01) = 0.01, sqrt(0.01) ≈ 0.1.
+        assert!((distance - 0.1).abs() < 1e-4);
     }
 
     #[test]

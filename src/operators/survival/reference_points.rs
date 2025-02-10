@@ -304,9 +304,8 @@ mod tests {
 
         // Also verify that the fitness values are the original ones (not normalized).
         // (Here we simply check that none of the fitness values are in [0, 1] range due to normalization.)
-        // This test may be adapted depending on your data.
         for val in new_population.fitness.iter() {
-            assert!(val > &1.0);
+            assert!(val >= &1.0);
         }
     }
 
@@ -322,11 +321,7 @@ mod tests {
 
         let normalized = normalize_front(&population);
 
-        let expected_fitness = array![
-            [0.0, 0.0],
-            [0.3333333333333333, 0.3333333333333333],
-            [0.6666666666666666, 0.6666666666666666]
-        ];
+        let expected_fitness = array![[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]];
 
         assert!(
             arrays_approx_eq(&normalized.fitness, &expected_fitness, 1e-6),

@@ -14,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
     - uses: actions/checkout@v4
 
     - name: Install uv
@@ -34,7 +33,12 @@ jobs:
     - name: Test with pytest
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        uv run pytest --cov --cov-report=xml
+        uv run pytest --cov --cov-report=xml --merge
+
+    - name: Test with cargo
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov test --merge
 
     - name: Get rust coverage report
       run: |

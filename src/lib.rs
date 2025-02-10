@@ -16,8 +16,8 @@ use pyo3::prelude::*;
 
 pub use algorithms::nsga2::PyNsga2;
 pub use algorithms::nsga3::PyNsga3;
-pub use algorithms::rnsga2::PyRNsga2;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
+pub use algorithms::rnsga2::PyRNsga2;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
     PyBitFlipMutation, PyExponentialCrossover, PyGaussianMutation, PyOrderCrossover,

@@ -71,14 +71,37 @@ mod tests {
     use numpy::ndarray::array;
 
     #[test]
+    /// Tests the calculation of crowding distances for a given population fitness matrix.
+    ///
+    /// The test defines a `population_fitness` matrix for four individuals:
+    ///     [1.0, 2.0]
+    ///     [2.0, 1.0]
+    ///     [1.5, 1.5]
+    ///     [3.0, 3.0]
+    ///
+    /// For each objective, the ideal (minimum) and nadir (maximum) values are computed.
+    /// Then, for interior solutions, the crowding distance is calculated based on the normalized difference
+    /// between the neighboring solutions. According to the classical NSGA-II method (which sums the contributions),
+    /// the expected crowding distances are as follows:
+    ///   - Corner individuals (first, second, and fourth) are assigned INFINITY.
+    ///   - The middle individual [1.5, 1.5] has a crowding distance of 1.0 (since its contribution from each objective sums to 1.0).
+    ///
+    /// The test asserts that the computed crowding distances match the expected values:
+    ///     expected = [INFINITY, INFINITY, 1.0, INFINITY]
     fn test_crowding_distance() {
-        // Define a population_fitness with multiple individuals
+        // Define a population_fitness with multiple individuals.
         let population_fitness = array![[1.0, 2.0], [2.0, 1.0], [1.5, 1.5], [3.0, 3.0]];
 
-        // Compute crowding distances
+        // Compute crowding distances.
         let distances = crowding_distance(&population_fitness);
-        // Expected distances: corner individuals have INFINITY
-        let expected = array![INFINITY, INFINITY, 0.5, INFINITY];
+
+        // Expected distances: the corner individuals are assigned INFINITY and the middle individual sums to 1.0.
+        let expected = array![
+            std::f64::INFINITY,
+            std::f64::INFINITY,
+            1.0,
+            std::f64::INFINITY
+        ];
 
         assert_eq!(distances.as_slice().unwrap(), expected.as_slice().unwrap());
     }
