@@ -1,4 +1,5 @@
-use crate::genetic::{Fronts, Genes, Individual, Population, PopulationGenes};
+use crate::genetic::{Fronts, Genes, GenesMut, Individual, Population, PopulationGenes};
+use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
 use rand::{Rng, RngCore};
 use std::fmt::Debug;
@@ -53,12 +54,18 @@ pub trait SamplingOperator: GeneticOperator {
     }
 }
 
+/// MutationOperator defines an in-place mutation where the individual is modified directly.
 pub trait MutationOperator: GeneticOperator {
-    /// Mutates a single individual and returns the mutated individual.
-    fn mutate(&self, individual: &Genes, rng: &mut dyn RngCore) -> Genes;
+    /// Mutates a single individual in place.
+    ///
+    /// # Arguments
+    ///
+    /// * `individual` - The individual to mutate, provided as a mutable view.
+    /// * `rng` - A random number generator.
+    fn mutate<'a>(&self, individual: GenesMut<'a>, rng: &mut dyn RngCore);
 
     /// Selects individuals for mutation based on the mutation rate.
-    fn _select_individuals_for_mutation(
+    fn select_individuals_for_mutation(
         &self,
         pop_size: usize,
         mutation_rate: f64,
@@ -69,32 +76,35 @@ pub trait MutationOperator: GeneticOperator {
             .collect()
     }
 
-    /// Applies the mutation operator to the population.
+    /// Applies the mutation operator to the entire population in place.
+    ///
+    /// # Arguments
+    ///
+    /// * `population` - The population as a mutable 2D array (each row represents an individual).
+    /// * `mutation_rate` - The probability that an individual is mutated.
+    /// * `rng` - A random number generator.
     fn operate(
         &self,
-        population: &PopulationGenes,
+        population: &mut PopulationGenes,
         mutation_rate: f64,
         rng: &mut dyn RngCore,
-    ) -> PopulationGenes {
-        // Step 1: Generate a boolean mask for mutation
-        let mask: Vec<bool> =
-            self._select_individuals_for_mutation(population.len(), mutation_rate, rng);
+    ) {
+        // Get the number of individuals (i.e. the number of rows).
+        let pop_size = population.len_of(Axis(0));
+        // Generate a boolean mask for which individuals will be mutated.
+        let mask: Vec<bool> = self.select_individuals_for_mutation(pop_size, mutation_rate, rng);
 
-        // Step 2: Create a new population with mutated individuals
-        let mut new_population = population.clone();
-        new_population
-            .outer_iter_mut()
-            .enumerate()
-            .for_each(|(i, mut individual)| {
-                if mask[i] {
-                    let mutated = self.mutate(&individual.to_owned(), rng);
-                    individual.assign(&mutated);
-                }
-            });
-
-        new_population
+        // Iterate over the population using outer_iter_mut to get a mutable view for each row.
+        for (i, mut individual) in population.outer_iter_mut().enumerate() {
+            if mask[i] {
+                // Pass a mutable view of the individual to the mutate method.
+                self.mutate(individual.view_mut(), rng);
+            }
+        }
     }
 }
+
+
 
 pub trait CrossoverOperator: GeneticOperator {
     fn n_offsprings_per_crossover(&self) -> usize {

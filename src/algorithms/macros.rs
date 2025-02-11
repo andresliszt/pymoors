@@ -26,8 +26,8 @@ macro_rules! define_multiobj_pyclass {
             // The population getter
             #[getter]
             pub fn population(&self, py: Python) -> PyResult<PyObject> {
-                let pydantic_module = py.import("pymoors.schemas")?;
-                let population_class = pydantic_module.getattr("Population")?;
+                let schemas_module = py.import("pymoors.schemas")?;
+                let population_class = schemas_module.getattr("Population")?;
                 let population = &self.algorithm.population;
 
                 // For each value we want to pass to Python, call the new conversion method.

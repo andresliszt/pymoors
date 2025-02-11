@@ -1,4 +1,4 @@
-use crate::operators::{Genes, GeneticOperator, MutationOperator};
+use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use pyo3::prelude::*;
 use rand::{Rng, RngCore};
 use rand_distr::{Distribution, Normal};
@@ -24,25 +24,21 @@ impl GeneticOperator for GaussianMutation {
     }
 }
 
-impl MutationOperator for GaussianMutation {
-    fn mutate(&self, individual: &Genes, rng: &mut dyn RngCore) -> Genes {
-        // Make a copy of the original individual's genes
-        let mut mutated = individual.clone();
 
-        // Prepare the normal distribution
+impl MutationOperator for GaussianMutation {
+    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RngCore) {
+        // Create a normal distribution with mean 0.0 and standard deviation sigma.
         let normal_dist = Normal::new(0.0, self.sigma)
             .expect("Failed to create normal distribution. Sigma must be > 0.");
 
-        // For each gene, decide if we mutate
-        for val in mutated.iter_mut() {
+        // Iterate over each gene in the mutable view.
+        for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
-                // Sample from Normal(0, sigma) and add to the current gene
+                // Sample a delta from the normal distribution and add it to the gene.
                 let delta = normal_dist.sample(rng);
-                *val += delta;
+                *gene += delta;
             }
         }
-
-        mutated
     }
 }
 
@@ -94,7 +90,8 @@ mod tests {
     #[test]
     fn test_gaussian_mutation_all_genes() {
         // Create an individual [0.5, 0.5, 0.5]
-        let pop: PopulationGenes = array![[0.5, 0.5, 0.5]];
+        let mut pop: PopulationGenes = array![[0.5, 0.5, 0.5]];
+        let pop_before_mut = array![[0.5, 0.5, 0.5]];
 
         // Create operator with 100% chance each gene is mutated, sigma=0.1
         let mutation_operator = GaussianMutation::new(1.0, 0.1);
@@ -103,24 +100,25 @@ mod tests {
         let mut rng = StdRng::seed_from_u64(42);
 
         // Mutate the population
-        let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
+        mutation_operator.operate(&mut pop, 1.0, &mut rng);
 
         // mutated_pop should differ from pop, but let's just ensure it's not identical
-        assert_ne!(pop, mutated_pop);
+        assert_ne!(pop, pop_before_mut);
 
-        println!("Original: {:?}", pop);
-        println!("Mutated: {:?}", mutated_pop);
+        println!("Original: {:?}", pop_before_mut);
+        println!("Mutated: {:?}", pop);
     }
 
     #[test]
     fn test_gaussian_mutation_no_genes() {
         // If gene_mutation_rate=0.0, no genes are mutated
-        let pop: PopulationGenes = array![[0.5, 0.5, 0.5]];
+        let mut pop: PopulationGenes = array![[0.5, 0.5, 0.5]];
+        let expected = array![[0.5, 0.5, 0.5]];
         let mutation_operator = GaussianMutation::new(0.0, 0.1);
 
         let mut rng = StdRng::seed_from_u64(42);
-        let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
+        mutation_operator.operate(&mut pop, 1.0, &mut rng);
 
-        assert_eq!(pop, mutated_pop);
+        assert_eq!(pop, expected);
     }
 }

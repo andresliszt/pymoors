@@ -1,4 +1,4 @@
-use crate::operators::{Genes, GeneticOperator, MutationOperator};
+use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use pyo3::prelude::*;
 use rand::{Rng, RngCore};
 
@@ -20,19 +20,12 @@ impl GeneticOperator for BitFlipMutation {
 }
 
 impl MutationOperator for BitFlipMutation {
-    fn mutate(&self, individual: &Genes, rng: &mut dyn RngCore) -> Genes {
-        // Return a new mutated individual using mapv
-        individual.mapv(|gene| {
+    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RngCore) {
+        for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
-                if gene == 0.0 {
-                    1.0
-                } else {
-                    0.0
-                }
-            } else {
-                gene
+                *gene = if *gene == 0.0 { 1.0 } else { 0.0 };
             }
-        })
+        }
     }
 }
 
@@ -76,7 +69,7 @@ mod tests {
     #[test]
     fn test_bit_flip_mutation() {
         // Create an individual with known genes
-        let pop: PopulationGenes = array![[0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0]];
+        let mut pop: PopulationGenes = array![[0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0]];
 
         // Create a BitFlipMutation operator with a high gene mutation rate
         let mutation_operator = BitFlipMutation::new(1.0); // Ensure all bits are flipped
@@ -86,13 +79,13 @@ mod tests {
 
         println!("Original population: {:?}", pop);
         // Mutate the population
-        let mutated_pop = mutation_operator.operate(&pop, 1.0, &mut rng);
+        mutation_operator.operate(&mut pop, 1.0, &mut rng);
 
         // Check that all bits have been flipped
         let expected_pop: PopulationGenes =
             array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
-        assert_eq!(expected_pop, mutated_pop);
+        assert_eq!(expected_pop, pop);
 
-        println!("Mutated population: {:?}", mutated_pop);
+        println!("Mutated population: {:?}", pop);
     }
 }

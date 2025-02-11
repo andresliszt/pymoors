@@ -72,11 +72,12 @@ impl Evolve {
         rng: &mut dyn RngCore,
     ) -> PopulationGenes {
         // 1) Perform crossover in one batch.
-        let offsprings = self
+        let mut offsprings = self
             .crossover
             .operate(parents_a, parents_b, self.crossover_rate, rng);
         // 2) Perform mutation in one batch (often in-place).
-        self.mutation.operate(&offsprings, self.mutation_rate, rng)
+        self.mutation.operate(&mut offsprings, self.mutation_rate, rng);
+        offsprings
     }
 
     /// Cleans duplicates in `genes` optionally comparing against a reference population.
