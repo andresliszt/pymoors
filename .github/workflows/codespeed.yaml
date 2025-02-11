@@ -31,7 +31,7 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          uv pip uninstall pytest-codspeed
+          uv pip install pytest-codspeed
           make build-prod
 
       - name: Run benchmarks
