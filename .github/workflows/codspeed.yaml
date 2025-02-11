@@ -35,7 +35,8 @@ jobs:
           uv run maturin develop --release --uv
           uv pip install pytest-codspeed
 
-      - name: Run benchmarks
-        uses: CodSpeedHQ/action@v3
-        with:
-          run: uv run pytest tests/benchmarks --codspeed
+      # FIXME: Looks like is not running in an optimized mode in the runner
+      # - name: Run benchmarks
+      #   uses: CodSpeedHQ/action@v3
+      #   with:
+      #     run: uv run pytest tests/benchmarks --codspeed
