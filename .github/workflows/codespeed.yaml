@@ -36,4 +36,4 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: pytest tests/benchmarks --codspeed
+          run: uv run pytest tests/benchmarks --codspeed
