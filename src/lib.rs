@@ -14,10 +14,10 @@ mod operators;
 
 use pyo3::prelude::*;
 
-pub use algorithms::nsga2::PyNsga2;
-pub use algorithms::nsga3::PyNsga3;
+pub use algorithms::nsga2::Nsga2;
+pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
-pub use algorithms::rnsga2::PyRNsga2;
+pub use algorithms::rnsga2::RNsga2;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
     PyBitFlipMutation, PyExponentialCrossover, PyGaussianMutation, PyOrderCrossover,
@@ -30,9 +30,9 @@ pub use operators::py_operators::{
 #[pymodule]
 fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add classes from algorithms
-    m.add_class::<PyNsga2>()?;
-    m.add_class::<PyNsga3>()?;
-    m.add_class::<PyRNsga2>()?;
+    m.add_class::<Nsga2>()?;
+    m.add_class::<Nsga3>()?;
+    m.add_class::<RNsga2>()?;
 
     // Add classes from operators
     m.add_class::<PyBitFlipMutation>()?;

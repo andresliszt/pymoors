@@ -1,122 +1,61 @@
 #[macro_export]
 macro_rules! define_multiobj_pyclass {
-    (
-        $RustStructName:ident,
-        $PyStructName:ident,
-        $PyClassName:literal
-    ) => {
+    ($StructName:ident, $PyClassName:literal) => {
         use numpy::ToPyArray;
         use pyo3::exceptions::PyRuntimeError;
         use pyo3::types::PyDict;
+        use pyo3::IntoPyObject;
 
-        use crate::algorithms::{MultiObjectiveAlgorithm, MultiObjectiveAlgorithmError};
-        use crate::genetic::{PopulationConstraints, PopulationFitness, PopulationGenes};
-        use crate::helpers::duplicates::PopulationCleaner;
-        use crate::operators::{
-            CrossoverOperator, MutationOperator, SamplingOperator, SelectionOperator,
-            SurvivalOperator,
-        };
-
-        // The Rust struct that wraps MultiObjectiveAlgorithm
-        pub struct $RustStructName {
-            pub algorithm: MultiObjectiveAlgorithm,
-        }
-
-        impl $RustStructName {
-            pub fn new(
-                sampler: Box<dyn SamplingOperator>,
-                crossover: Box<dyn CrossoverOperator>,
-                mutation: Box<dyn MutationOperator>,
-                selector: Box<dyn SelectionOperator>,
-                survivor: Box<dyn SurvivalOperator>,
-                duplicates_cleaner: Option<Box<dyn PopulationCleaner>>,
-                fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
-                n_vars: usize,
-                pop_size: usize,
-                n_offsprings: usize,
-                num_iterations: usize,
-                mutation_rate: f64,
-                crossover_rate: f64,
-                keep_infeasible: bool,
-                verbose: bool,
-                constraints_fn: Option<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>>,
-                // Optional lower bound for each gene.
-                lower_bound: Option<f64>,
-                // Optional upper bound for each gene.
-                upper_bound: Option<f64>,
-            ) -> Result<Self, MultiObjectiveAlgorithmError> {
-                // Build the shared MultiObjectiveAlgorithm
-                let algorithm = MultiObjectiveAlgorithm::new(
-                    sampler,
-                    selector,
-                    survivor,
-                    crossover,
-                    mutation,
-                    duplicates_cleaner,
-                    fitness_fn,
-                    n_vars,
-                    pop_size,
-                    n_offsprings,
-                    num_iterations,
-                    mutation_rate,
-                    crossover_rate,
-                    keep_infeasible,
-                    verbose,
-                    constraints_fn,
-                    lower_bound,
-                    upper_bound,
-                )?;
-
-                Ok(Self { algorithm })
-            }
-
-            pub fn run(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
-                self.algorithm.run()
-            }
-        }
+        use crate::algorithms::MultiObjectiveAlgorithm;
 
         // The PyO3-exposed struct
         #[pyclass(name = $PyClassName, unsendable)]
-        pub struct $PyStructName {
-            pub inner: $RustStructName,
+        pub struct $StructName {
+            pub algorithm: MultiObjectiveAlgorithm,
         }
 
         // Implement PyO3 methods
         #[pymethods]
-        impl $PyStructName {
+        impl $StructName {
             pub fn run(&mut self) -> PyResult<()> {
-                // Call the inner run() method and convert any error into a PyRuntimeError.
-                // TODO: Create custom errors in the python side to map errors from MultiObjectiveAlgorithmError
-                self.inner
+                self.algorithm
                     .run()
                     .map_err(|e| PyRuntimeError::new_err(e.to_string()))
             }
+
             // The population getter
             #[getter]
             pub fn population(&self, py: Python) -> PyResult<PyObject> {
-                // Here we factor out the repeated code into a
-                // function or do it inline. For brevity, inline here:
                 let pydantic_module = py.import("pymoors.schemas")?;
                 let population_class = pydantic_module.getattr("Population")?;
+                let population = &self.algorithm.population;
 
-                let population = &self.inner.algorithm.population;
+                // For each value we want to pass to Python, call the new conversion method.
                 let py_genes = population.genes.to_pyarray(py);
                 let py_fitness = population.fitness.to_pyarray(py);
                 let py_rank = population.rank.to_pyarray(py);
+                // For constraints, if Some then convert the array, else convert py.None()
                 let py_constraints = if let Some(ref c) = population.constraints {
                     c.to_pyarray(py).into_py(py)
                 } else {
                     py.None().into_py(py)
                 };
 
+                // Set up the keyword arguments.
                 let kwargs = PyDict::new(py);
                 kwargs.set_item("genes", py_genes)?;
                 kwargs.set_item("fitness", py_fitness)?;
                 kwargs.set_item("rank", py_rank)?;
                 kwargs.set_item("constraints", py_constraints)?;
 
-                let pydantic_instance = population_class.call((), Some(&kwargs))?;
-                Ok(pydantic_instance.into_py(py))
+                // Call the python class to create an instance.
+                let py_instance = population_class.call((), Some(&kwargs))?;
+
+                // Convert the instance to a PyObject using the new trait.
+                let py_instance = py_instance.into_pyobject(py)
+                    .map_err(|e| PyRuntimeError::new_err(format!("Error converting instance: {:?}", e)))?;
+                // Convert the Bound (or Borrowed) into a PyObject.
+                Ok(py_instance.into())
             }
         }
     };

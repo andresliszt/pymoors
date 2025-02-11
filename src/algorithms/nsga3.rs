@@ -13,11 +13,11 @@ use crate::helpers::parser::{
 use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-III algorithm using the macro
-define_multiobj_pyclass!(Nsga3, PyNsga3, "Nsga3");
+define_multiobj_pyclass!(Nsga3, "Nsga3");
 
 // Implement PyO3 methods
 #[pymethods]
-impl PyNsga3 {
+impl Nsga3 {
     #[new]
     #[pyo3(signature = (
         reference_points,
@@ -87,12 +87,12 @@ impl PyNsga3 {
         let survivor_box = Box::new(ReferencePointsSurvival::new(reference_points_array));
 
         // Create the Rust struct
-        let rs_obj = Nsga3::new(
+        let algorithm = MultiObjectiveAlgorithm::new(
             sampler_box,
-            crossover_box,
-            mutation_box,
             selector_box,
             survivor_box,
+            crossover_box,
+            mutation_box,
             duplicates_box,
             fitness_closure,
             n_vars,
@@ -108,6 +108,6 @@ impl PyNsga3 {
             upper_bound,
         )?;
 
-        Ok(Self { inner: rs_obj })
+        Ok(Self { algorithm: algorithm })
     }
 }

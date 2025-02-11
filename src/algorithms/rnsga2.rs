@@ -14,11 +14,11 @@ use crate::operators::survival::RankReferencePointsSurvival;
 use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(RNsga2, PyRNsga2, "RNsga2");
+define_multiobj_pyclass!(RNsga2, "RNsga2");
 
 // Implement PyO3 methods
 #[pymethods]
-impl PyRNsga2 {
+impl RNsga2 {
     #[new]
     #[pyo3(signature = (
         reference_points,
@@ -95,12 +95,12 @@ impl PyRNsga2 {
         ));
 
         // Create the Rust struct
-        let rs_obj = RNsga2::new(
+        let algorithm = MultiObjectiveAlgorithm::new(
             sampler_box,
-            crossover_box,
-            mutation_box,
             selector_box,
             survivor_box,
+            crossover_box,
+            mutation_box,
             duplicates_box,
             fitness_closure,
             n_vars,
@@ -116,6 +116,6 @@ impl PyRNsga2 {
             upper_bound,
         )?;
 
-        Ok(Self { inner: rs_obj })
+        Ok(Self { algorithm: algorithm })
     }
 }

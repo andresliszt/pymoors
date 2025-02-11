@@ -12,11 +12,11 @@ use crate::operators::selection::RankAndCrowdingSelection;
 use crate::operators::survival::RankCrowdingSurvival;
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(Nsga2, PyNsga2, "Nsga2");
+define_multiobj_pyclass!(Nsga2, "Nsga2");
 
 // Implement PyO3 methods
 #[pymethods]
-impl PyNsga2 {
+impl Nsga2 {
     #[new]
     #[pyo3(signature = (
         sampler,
@@ -81,12 +81,12 @@ impl PyNsga2 {
         let survivor_box = Box::new(RankCrowdingSurvival::new());
 
         // Create the Rust struct
-        let rs_obj = Nsga2::new(
+        let algorithm = MultiObjectiveAlgorithm::new(
             sampler_box,
-            crossover_box,
-            mutation_box,
             selector_box,
             survivor_box,
+            crossover_box,
+            mutation_box,
             duplicates_box,
             fitness_closure,
             n_vars,
@@ -102,6 +102,6 @@ impl PyNsga2 {
             upper_bound,
         )?;
 
-        Ok(Self { inner: rs_obj })
+        Ok(Self { algorithm: algorithm })
     }
 }
