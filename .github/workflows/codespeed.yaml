@@ -31,6 +31,7 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
+          uv pip uninstall pytest-speed
           make build-prod
 
       - name: Run benchmarks
