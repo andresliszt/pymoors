@@ -108,6 +108,8 @@ impl Nsga3 {
             upper_bound,
         )?;
 
-        Ok(Self { algorithm: algorithm })
+        Ok(Self {
+            algorithm: algorithm,
+        })
     }
 }

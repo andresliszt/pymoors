@@ -52,8 +52,9 @@ macro_rules! define_multiobj_pyclass {
                 let py_instance = population_class.call((), Some(&kwargs))?;
 
                 // Convert the instance to a PyObject using the new trait.
-                let py_instance = py_instance.into_pyobject(py)
-                    .map_err(|e| PyRuntimeError::new_err(format!("Error converting instance: {:?}", e)))?;
+                let py_instance = py_instance.into_pyobject(py).map_err(|e| {
+                    PyRuntimeError::new_err(format!("Error converting instance: {:?}", e))
+                })?;
                 // Convert the Bound (or Borrowed) into a PyObject.
                 Ok(py_instance.into())
             }

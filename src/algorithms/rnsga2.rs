@@ -116,6 +116,8 @@ impl RNsga2 {
             upper_bound,
         )?;
 
-        Ok(Self { algorithm: algorithm })
+        Ok(Self {
+            algorithm: algorithm,
+        })
     }
 }
