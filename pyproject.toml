@@ -41,6 +41,7 @@ testing = [
     "maturin",
     "pytest",
     "pytest-cov",
+    "pytest-benchmark",
     "pre-commit"
 ]
 linting = [

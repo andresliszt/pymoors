@@ -1,0 +1,34 @@
+name: CodSpeed
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+  workflow_dispatch:
+
+env:
+  DEFAULT_PYTHON: 3.12
+
+jobs:
+  benchmarks:
+    name: Run benchmarks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install pymoors
+        run: |
+          uv sync --group docs
+          make build-dev
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: pytest tests/benchmarks --codspeed

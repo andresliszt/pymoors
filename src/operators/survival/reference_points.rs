@@ -260,6 +260,7 @@ mod tests {
 
     #[test]
     fn test_nsgaiii_survival() {
+        // TODO: This test sometimes fails
         // Create a simple population with 6 individuals and 3 objectives.
         let genes = array![
             [1.0, 2.0, 3.0],
