@@ -115,7 +115,7 @@ jobs:
           make build-dev
 
       - name: Test with pytest
-        run: uv run pytest
+        run: uv run pytest --ignore=tests/benchmarks # Benchmarks run in their own flow
 
   lint:
     runs-on: ubuntu-latest

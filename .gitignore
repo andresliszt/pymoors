@@ -30,3 +30,4 @@ node_modules/
 /target/
 /worktree/
 .DS_Store
+.codspeed

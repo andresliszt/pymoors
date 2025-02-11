@@ -32,7 +32,7 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          make build-prod
+          uv run maturin develop --uv --release
           uv pip install pytest-codspeed
 
       - name: Run benchmarks
