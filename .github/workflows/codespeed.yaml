@@ -24,6 +24,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ matrix.python-version }}
+          enable-cache: true
 
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -31,8 +32,8 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          uv pip install pytest-codspeed
           make build-prod
+          uv pip install pytest-codspeed
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
