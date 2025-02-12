@@ -235,7 +235,7 @@ mod tests {
     fn generate_reference_points(n_points: usize, n_objectives: usize) -> Array2<f64> {
         // A simple grid-based generation for demonstration purposes.
         let mut points = Vec::new();
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::get_rng(None);
 
         for _ in 0..n_points {
             let mut point = Vec::new();

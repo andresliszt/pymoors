@@ -58,8 +58,10 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
 # 2. TEST
 ##############################################################################
 
-
-def test_small_real_biobjective_nsag2():
+@pytest.mark.parametrize(
+    "seed", [42, None], ids=['seed', 'no_seed']
+)
+def test_small_real_biobjective_nsag2(seed:int|None):
     """
     Test a 2D real-valued problem:
       f1 = x^2 + y^2
@@ -69,7 +71,7 @@ def test_small_real_biobjective_nsag2():
     The real front is (x, y) in (0,1): x = y
 
     """
-
+    print(f"{seed=}", flush=True)
     algorithm = Nsga2(
         sampler=RandomSamplingFloat(min=0.0, max=1.0),
         crossover=SimulatedBinaryCrossover(distribution_index=2),
@@ -84,6 +86,7 @@ def test_small_real_biobjective_nsag2():
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
         keep_infeasible=False,
+        seed=seed,
     )
     algorithm.run()
 

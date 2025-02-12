@@ -8,7 +8,8 @@
       "extensions": [
         "rust-lang.rust-analyzer",
         "ms-python.python",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "ms-vscode.makefile-tools"
       ]
     }
   }

@@ -4,6 +4,7 @@ extern crate core;
 
 pub mod evaluator;
 pub mod genetic;
+pub mod random;
 pub mod prelude;
 
 mod algorithms;

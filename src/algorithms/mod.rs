@@ -1,5 +1,4 @@
 use numpy::ndarray::{concatenate, Axis};
-use rand::thread_rng;
 use rand::Rng;
 use std::error::Error;
 use std::fmt;
@@ -17,6 +16,7 @@ use crate::{
         evolve::Evolve, evolve::EvolveError, CrossoverOperator, MutationOperator, SamplingOperator,
         SelectionOperator, SurvivalOperator,
     },
+    random::get_rng,
 };
 
 mod macros;
@@ -75,6 +75,7 @@ pub struct MultiObjectiveAlgorithm {
     num_iterations: usize,
     verbose: bool,
     n_vars: usize,
+    seed: Option<u64>,
 }
 
 impl MultiObjectiveAlgorithm {
@@ -99,8 +100,10 @@ impl MultiObjectiveAlgorithm {
         // Optional lower and upper bounds for each gene.
         lower_bound: Option<f64>,
         upper_bound: Option<f64>,
+        seed: Option<u64>,
     ) -> Result<Self, MultiObjectiveAlgorithmError> {
-        let mut rng = thread_rng();
+
+        let mut rng = get_rng(seed);
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
 
         // Create the evolution operator.
@@ -142,6 +145,7 @@ impl MultiObjectiveAlgorithm {
             num_iterations,
             verbose,
             n_vars,
+            seed,
         })
     }
 
@@ -181,7 +185,7 @@ impl MultiObjectiveAlgorithm {
     }
 
     pub fn run(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
-        let mut rng = thread_rng();
+        let mut rng = get_rng(self.seed);
 
         for current_iter in 0..self.num_iterations {
             match self.next(&mut rng) {

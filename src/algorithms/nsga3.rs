@@ -36,7 +36,8 @@ impl Nsga3 {
         duplicates_cleaner=None,
         constraints_fn=None,
         lower_bound=None,
-        upper_bound=None
+        upper_bound=None,
+        seed=None
     ))]
     pub fn py_new<'py>(
         reference_points: &Bound<'py, PyArray2<f64>>,
@@ -58,6 +59,7 @@ impl Nsga3 {
         lower_bound: Option<f64>,
         // Optional upper bound for each gene.
         upper_bound: Option<f64>,
+        seed: Option<u64>,
     ) -> PyResult<Self> {
         // Unwrap the genetic operators
         let sampler_box = unwrap_sampling_operator(sampler)?;
@@ -106,6 +108,7 @@ impl Nsga3 {
             constraints_closure,
             lower_bound,
             upper_bound,
+            seed,
         )?;
 
         Ok(Self {
