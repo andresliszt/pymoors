@@ -162,6 +162,10 @@ mod tests {
 
         // Create the ExponentialCrossover operator with a crossover rate of 0.5.
         let operator = ExponentialCrossover::new(0.5);
+        assert_eq!(
+            operator.name(),
+            "ExponentialCrossover(exponential_crossover_rate=0.5)"
+        );
 
         // Set up the fake random generator:
         // - For child_a, gen_range_usize returns 1 (start index = 1) and then

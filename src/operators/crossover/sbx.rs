@@ -116,3 +116,121 @@ impl PySimulatedBinaryCrossover {
         }
     }
 }
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod tests {
+    use super::*;
+    use crate::genetic::Genes;
+    use crate::random::{RandomGenerator, TestDummyRng};
+    use numpy::ndarray::array;
+
+    /// A fake random generator for controlled testing of SBX.
+    /// It only provides predetermined probability values via `gen_proability`.
+    struct FakeRandom {
+        /// Predefined probability values to be returned sequentially.
+        probability_values: Vec<f64>,
+        /// Dummy RNG to satisfy the trait requirement.
+        dummy: TestDummyRng,
+    }
+
+    impl FakeRandom {
+        /// Creates a new instance with the given probability responses.
+        fn new(probability_values: Vec<f64>) -> Self {
+            Self {
+                probability_values,
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for FakeRandom {
+        fn rng(&mut self) -> &mut dyn rand::RngCore {
+            &mut self.dummy
+        }
+        fn gen_range_usize(&mut self, _min: usize, _max: usize) -> usize {
+            unimplemented!("Not used in SBX test")
+        }
+        fn gen_range_f64(&mut self, _min: f64, _max: f64) -> f64 {
+            unimplemented!("Not used in SBX test")
+        }
+        fn gen_usize(&mut self) -> usize {
+            unimplemented!("Not used in SBX test")
+        }
+        fn gen_bool(&mut self, _p: f64) -> bool {
+            unimplemented!("Not used in SBX test")
+        }
+        fn gen_proability(&mut self) -> f64 {
+            // Return the next predetermined probability value.
+            self.probability_values.remove(0)
+        }
+    }
+
+    #[test]
+    fn test_simulated_binary_crossover() {
+        // Define two parent genes as Genes (Array1<f64>).
+        // Gene 0: p1 = 1.0, p2 = 3.0 => will undergo SBX.
+        // Gene 1: p1 = 5.0, p2 = 5.0 => nearly equal, so no crossover.
+        let parent_a: Genes = array![1.0, 5.0];
+        let parent_b: Genes = array![3.0, 5.0];
+
+        // Create the SBX operator with distribution_index = 2.0.
+        let operator = SimulatedBinaryCrossover::new(2.0);
+        assert_eq!(
+            operator.name(),
+            "SimulatedBinaryCrossover(distribution_index=2)"
+        );
+
+        // Set up a fake random generator:
+        // For gene 0, we force rand_u = 0.25.
+        // (For gene 1, no random value is needed because the parents are identical.)
+        let mut fake_rng = FakeRandom::new(vec![0.25]);
+
+        // Perform the crossover.
+        let (child_a, child_b) = operator.crossover(&parent_a, &parent_b, &mut fake_rng);
+
+        // For gene 0:
+        // p1 = 1.0 and p2 = 3.0, distribution_index = 2.0, and rand_u = 0.25.
+        // Compute beta_q:
+        //   beta_q = (2 * 0.25)^(1/(2.0+1)) = 0.5^(1/3) ≈ 0.7937005259.
+        // Offspring:
+        //   c1 = 0.5 * ((1.0 + 3.0) - beta_q * (3.0 - 1.0))
+        //      = 0.5 * (4.0 - 0.7937005259 * 2)
+        //      ≈ 0.5 * (4.0 - 1.5874010518)
+        //      ≈ 0.5 * 2.4125989482 ≈ 1.2062994741.
+        //   c2 = 0.5 * ((1.0 + 3.0) + beta_q * (3.0 - 1.0))
+        //      = 0.5 * (4.0 + 1.5874010518)
+        //      ≈ 0.5 * 5.5874010518 ≈ 2.7937005259.
+        //
+        // Since 1.0 < 3.0, sbx_crossover returns (c1, c2).
+        //
+        // For gene 1:
+        // The parents are identical, so no crossover is performed.
+        // Offspring simply copy the parent's value: 5.0.
+        //
+        // Therefore, expected children:
+        // child_a: [1.2062994741, 5.0]
+        // child_b: [2.7937005259, 5.0]
+        let tol = 1e-8;
+        assert!(
+            (child_a[0] - 1.2062994741).abs() < tol,
+            "Gene 0 of child_a not as expected: {}",
+            child_a[0]
+        );
+        assert!(
+            (child_b[0] - 2.7937005259).abs() < tol,
+            "Gene 0 of child_b not as expected: {}",
+            child_b[0]
+        );
+        assert!(
+            (child_a[1] - 5.0).abs() < tol,
+            "Gene 1 of child_a not as expected: {}",
+            child_a[1]
+        );
+        assert!(
+            (child_b[1] - 5.0).abs() < tol,
+            "Gene 1 of child_b not as expected: {}",
+            child_b[1]
+        );
+    }
+}

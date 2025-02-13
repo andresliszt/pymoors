@@ -297,6 +297,7 @@ mod tests {
 
         // Create a ReferencePointsSurvival operator.
         let nsga3_survival = ReferencePointsSurvival::new(reference_points.clone());
+        assert_eq!(nsga3_survival.name(), "ReferencePointsSurvival");
 
         // Perform survival operation to select 4 individuals.
         let n_survive = 4;

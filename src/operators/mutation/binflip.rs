@@ -112,6 +112,7 @@ mod tests {
         // Create a BitFlipMutation operator with a gene mutation rate of 1.0,
         // so every gene should be considered for mutation.
         let mutation_operator = BitFlipMutation::new(1.0);
+        assert_eq!(mutation_operator.name(), "BitFlipMutation");
 
         // Use our controlled fake RNG which always returns true for gen_bool.
         let mut rng = FakeRandomGeneratorTrue::new();

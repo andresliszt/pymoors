@@ -89,6 +89,7 @@ mod tests {
 
         let n_survive = 3;
         let selector = RankCrowdingSurvival;
+        assert_eq!(selector.name(), "RankCrowdingSurvival");
         let new_population = selector.operate(&mut fronts, n_survive);
 
         // All three should survive unchanged

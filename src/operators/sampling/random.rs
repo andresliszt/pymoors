@@ -201,6 +201,7 @@ mod tests {
             min: -1.0,
             max: 1.0,
         };
+        assert_eq!(sampler.name(), "RandomSamplingFloat");
         let mut rng = FakeRandomGenerator::new();
 
         // Generate a population of 10 individuals, each with 5 genes.
@@ -216,6 +217,7 @@ mod tests {
     #[test]
     fn test_random_sampling_int_controlled() {
         let sampler = RandomSamplingInt { min: 0, max: 10 };
+        assert_eq!(sampler.name(), "RandomSamplingInt");
         let mut rng = FakeRandomGenerator::new();
 
         let population = sampler.operate(10, 5, &mut rng);
@@ -230,6 +232,7 @@ mod tests {
     #[test]
     fn test_random_sampling_binary_controlled() {
         let sampler = RandomSamplingBinary;
+        assert_eq!(sampler.name(), "RandomSamplingBinary");
         let mut rng = FakeRandomGenerator::new();
 
         let population = sampler.operate(10, 5, &mut rng);

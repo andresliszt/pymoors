@@ -129,6 +129,7 @@ mod tests {
         let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
         let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
         let selector = RankAndCrowdingSelection::new(); // Default: Maximize
+        assert_eq!(selector.name(), "RankAndCrowdingSelection");
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
         assert_eq!(result, DuelResult::LeftWins);
     }

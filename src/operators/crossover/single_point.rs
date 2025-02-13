@@ -130,6 +130,7 @@ mod tests {
 
         // Create the SinglePointBinaryCrossover operator.
         let crossover_operator = SinglePointBinaryCrossover::new();
+        assert_eq!(crossover_operator.name(), "SinglePointBinaryCrossover");
 
         // Use a controlled fake RNG that always returns 3 as the crossover point.
         // The call to `gen_range_usize(1, num_genes)` will return 3.

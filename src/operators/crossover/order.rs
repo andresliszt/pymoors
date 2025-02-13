@@ -153,6 +153,7 @@ mod tests {
 
         // Create the OrderCrossover operator.
         let crossover_operator = OrderCrossover::new();
+        assert_eq!(crossover_operator.name(), "OrderCrossover");
 
         // Create a controlled fake RNG with predetermined responses [2, 5]
         // which means p1 = 2 and p2 = 5.

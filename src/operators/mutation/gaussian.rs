@@ -97,6 +97,7 @@ mod tests {
 
         // Create operator with 100% chance each gene is mutated, sigma=0.1
         let mutation_operator = GaussianMutation::new(1.0, 0.1);
+        assert_eq!(mutation_operator.name(), "GaussianMutation");
 
         let mut rng = MOORandomGenerator::new(StdRng::seed_from_u64(42));
 

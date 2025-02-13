@@ -110,6 +110,7 @@ mod tests {
     fn test_permutation_sampling_controlled() {
         // Create the sampling operator.
         let sampler = PermutationSampling;
+        assert_eq!(sampler.name(), "PermutationSampling");
         // Use our fake RNG.
         let mut rng = FakeRandomGenerator::new();
 
