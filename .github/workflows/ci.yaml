@@ -16,39 +16,39 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # - name: Install uv
-    #   uses: astral-sh/setup-uv@v5
-    #   with:
-    #     python-version: ${{ env.DEFAULT_PYTHON }}
+    - name: Install uv
+      uses: astral-sh/setup-uv@v5
+      with:
+        python-version: ${{ env.DEFAULT_PYTHON }}
 
-    # - name: install rust nightly
-    #   uses: dtolnay/rust-toolchain@nightly
+    - name: install rust nightly
+      uses: dtolnay/rust-toolchain@nightly
 
-    # - name: Install cargo-llvm-cov
-    #   uses: taiki-e/install-action@cargo-llvm-cov
+    - name: Install cargo-llvm-cov
+      uses: taiki-e/install-action@cargo-llvm-cov
 
-    # - name: Install Pymoors
-    #   run: |
-    #     source <(cargo llvm-cov show-env --export-prefix)
-    #     uv sync --group testing
-    #     make build-dev
+    - name: Install Pymoors
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        uv sync --group testing
+        make build-dev
 
-    # - name: Test with pytest
-    #   run: |
-    #     source <(cargo llvm-cov show-env --export-prefix)
-    #     uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
+    - name: Test with pytest
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
 
-    # - name: Get pytest coverage report
-    #   run: |
-    #     source <(cargo llvm-cov show-env --export-prefix)
-    #     cargo llvm-cov report --codecov --output-path codecov.json --ignore-filename-regex ".*/tests?/.*"
+    - name: Get pytest coverage report
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov report --codecov --output-path codecov.json --ignore-filename-regex ".*/tests?/.*"
 
-    # - name: Upload coverage reports to Codecov
-    #   uses: codecov/codecov-action@v5
-    #   with:
-    #     files: coverage.xml, codecov.json
-    #     fail_ci_if_error: true
-    #     token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: coverage.xml, codecov.json
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   coverage-rust:
 
