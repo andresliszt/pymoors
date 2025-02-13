@@ -73,7 +73,6 @@ pub struct TestDummyRng;
 
 impl RngCore for TestDummyRng {
     /// Not used in tests. This method is unimplemented.
-    #[cfg_attr(coverage_nightly, coverage(off))]
     fn next_u32(&mut self) -> u32 {
         unimplemented!("Not used in this test")
     }
