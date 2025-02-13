@@ -1,5 +1,5 @@
+#![cfg_attr(all(coverage_nightly, test), feature(coverage_attribute))]
 // lib.rs
-
 extern crate core;
 
 mod evaluator;
