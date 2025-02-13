@@ -32,3 +32,6 @@ rstest = "0.18.2"
 name = "benches"
 path = "benches/fds.rs"
 harness = false
+
+[lints.rust]
+unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
