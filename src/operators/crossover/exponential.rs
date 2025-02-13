@@ -94,3 +94,96 @@ impl PyExponentialCrossover {
         }
     }
 }
+
+#[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
+mod tests {
+    use super::*;
+    use crate::random::{RandomGenerator, TestDummyRng};
+    use numpy::ndarray::array;
+
+    /// A simple fake random generator for controlled testing of ExponentialCrossover.
+    /// It returns predetermined values for `gen_range_usize` and `gen_proability`.
+    struct FakeRandom {
+        /// Predefined responses for calls to `gen_range_usize`.
+        range_values: Vec<usize>,
+        /// Predefined responses for calls to `gen_proability`.
+        probability_values: Vec<f64>,
+        /// Dummy RNG to satisfy the trait requirement.
+        dummy: TestDummyRng,
+    }
+
+    impl FakeRandom {
+        /// Creates a new instance with the given responses.
+        fn new(range_values: Vec<usize>, probability_values: Vec<f64>) -> Self {
+            Self {
+                range_values,
+                probability_values,
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for FakeRandom {
+        /// Returns a mutable reference to the underlying dummy RNG.
+        fn rng(&mut self) -> &mut dyn rand::RngCore {
+            &mut self.dummy
+        }
+
+        /// Returns the next predetermined value for a range selection.
+        fn gen_range_usize(&mut self, _min: usize, _max: usize) -> usize {
+            self.range_values.remove(0)
+        }
+
+        fn gen_range_f64(&mut self, _min: f64, _max: f64) -> f64 {
+            unimplemented!("Not used in this test")
+        }
+
+        fn gen_usize(&mut self) -> usize {
+            unimplemented!("Not used in this test")
+        }
+
+        fn gen_bool(&mut self, _p: f64) -> bool {
+            unimplemented!("Not used in this test")
+        }
+
+        /// Returns the next predetermined probability value.
+        fn gen_proability(&mut self) -> f64 {
+            self.probability_values.remove(0)
+        }
+    }
+
+    #[test]
+    fn test_exponential_crossover() {
+        // Define two parent Genes as small Array1<f64> vectors.
+        // For simplicity, we use arrays of length 3.
+        let parent_a: Genes = array![1.0, 2.0, 3.0];
+        let parent_b: Genes = array![4.0, 5.0, 6.0];
+
+        // Create the ExponentialCrossover operator with a crossover rate of 0.5.
+        let operator = ExponentialCrossover::new(0.5);
+
+        // Set up the fake random generator:
+        // - For child_a, gen_range_usize returns 1 (start index = 1) and then
+        //   gen_proability returns 0.7 (>= 0.5) so the loop stops after one replacement.
+        // - For child_b, gen_range_usize returns 2 (start index = 2) and then
+        //   gen_proability returns 0.8 (>= 0.5) so the loop stops after one replacement.
+        let mut fake_rng = FakeRandom::new(vec![1, 2], vec![0.7, 0.8]);
+
+        // Perform the exponential crossover.
+        let (child_a, child_b) = operator.crossover(&parent_a, &parent_b, &mut fake_rng);
+
+        // Expected outcome:
+        // For child_a: start index 1 -> replace gene at index 1 with parent_b[1] (5.0),
+        // so child_a becomes [1.0, 5.0, 3.0].
+        let expected_child_a: Genes = array![1.0, 5.0, 3.0];
+
+        // For child_b: start index 2 -> replace gene at index 2 with parent_a[2] (3.0),
+        // so child_b becomes [4.0, 5.0, 3.0].
+        let expected_child_b: Genes = array![4.0, 5.0, 3.0];
+
+        // Check that the results match the expectations.
+        assert_eq!(child_a, expected_child_a, "child_a does not match expected output");
+        assert_eq!(child_b, expected_child_b, "child_b does not match expected output");
+    }
+}

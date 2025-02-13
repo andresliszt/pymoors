@@ -73,25 +73,30 @@ pub struct TestDummyRng;
 
 impl RngCore for TestDummyRng {
     /// Not used in tests. This method is unimplemented.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn next_u32(&mut self) -> u32 {
         unimplemented!("Not used in this test")
     }
 
     /// Not used in tests. This method is unimplemented.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn next_u64(&mut self) -> u64 {
         unimplemented!("Not used in this test")
     }
 
     /// Not used in tests. This method is unimplemented.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn fill_bytes(&mut self, _dest: &mut [u8]) {
         unimplemented!("Not used in this test")
     }
 
     /// Not used in tests. This method is unimplemented.
+    #[cfg_attr(coverage_nightly, coverage(off))]
     fn try_fill_bytes(&mut self, _dest: &mut [u8]) -> Result<(), rand::Error> {
         unimplemented!("Not used in this test")
     }
 }
+
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
