@@ -103,7 +103,6 @@ impl MultiObjectiveAlgorithm {
         upper_bound: Option<f64>,
         seed: Option<u64>,
     ) -> Result<Self, MultiObjectiveAlgorithmError> {
-        // TODO: Fix this
         let mut rng =
             MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
