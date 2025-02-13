@@ -183,7 +183,13 @@ mod tests {
         let expected_child_b: Genes = array![4.0, 5.0, 3.0];
 
         // Check that the results match the expectations.
-        assert_eq!(child_a, expected_child_a, "child_a does not match expected output");
-        assert_eq!(child_b, expected_child_b, "child_b does not match expected output");
+        assert_eq!(
+            child_a, expected_child_a,
+            "child_a does not match expected output"
+        );
+        assert_eq!(
+            child_b, expected_child_b,
+            "child_b does not match expected output"
+        );
     }
 }
