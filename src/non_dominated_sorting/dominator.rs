@@ -109,6 +109,7 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use numpy::ndarray::{array, Array2};

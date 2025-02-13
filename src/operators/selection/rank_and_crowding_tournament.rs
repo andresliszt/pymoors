@@ -98,6 +98,7 @@ impl SelectionOperator for RankAndCrowdingSelection {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use rand::rngs::StdRng;

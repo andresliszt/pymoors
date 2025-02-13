@@ -155,6 +155,7 @@ impl PyRandomSamplingBinary {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use crate::random::{RandomGenerator, TestDummyRng};

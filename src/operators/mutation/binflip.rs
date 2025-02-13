@@ -58,6 +58,7 @@ impl PyBitFlipMutation {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*; // Brings in BitFlipMutation and related types.
     use crate::genetic::PopulationGenes;

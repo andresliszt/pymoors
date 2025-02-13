@@ -66,6 +66,7 @@ pub fn crowding_distance(population_fitness: &PopulationFitness) -> Array1<f64> 
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use numpy::ndarray::array;

@@ -66,6 +66,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
 }
 
 #[cfg(test)]
+#[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
     use numpy::ndarray::{arr1, arr2, Array2};
