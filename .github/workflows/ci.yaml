@@ -21,9 +21,6 @@ jobs:
       with:
         python-version: ${{ env.DEFAULT_PYTHON }}
 
-    - name: install rust nightly
-      uses: dtolnay/rust-toolchain@nightly
-
     - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
 
