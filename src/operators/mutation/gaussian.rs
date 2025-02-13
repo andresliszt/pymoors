@@ -24,7 +24,6 @@ impl GeneticOperator for GaussianMutation {
     }
 }
 
-
 impl MutationOperator for GaussianMutation {
     fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RngCore) {
         // Create a normal distribution with mean 0.0 and standard deviation sigma.

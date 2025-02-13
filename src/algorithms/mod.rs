@@ -185,7 +185,6 @@ impl MultiObjectiveAlgorithm {
     }
 
     pub fn run(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
-
         for current_iter in 0..self.num_iterations {
             match self.next() {
                 Ok(()) => {

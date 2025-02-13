@@ -58,10 +58,9 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
 # 2. TEST
 ##############################################################################
 
-@pytest.mark.parametrize(
-    "seed", [42, None], ids=['seed', 'no_seed']
-)
-def test_small_real_biobjective_nsag2(seed:int|None):
+
+@pytest.mark.parametrize("seed", [42, None], ids=["seed", "no_seed"])
+def test_small_real_biobjective_nsag2(seed: int | None):
     """
     Test a 2D real-valued problem:
       f1 = x^2 + y^2
@@ -141,3 +140,48 @@ def test_small_real_biobjective_rnsga2():
 
     # Also, the final population size should be exactly 200.
     assert len(final_population) == 200
+
+
+@pytest.mark.xfail(
+    reason="Known issue https://github.com/andresliszt/pymoors/issues/48"
+)
+def test_same_seed_same_result():
+    algorithm1 = Nsga2(
+        sampler=RandomSamplingFloat(min=0.0, max=1.0),
+        crossover=SimulatedBinaryCrossover(distribution_index=2),
+        mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
+        fitness_fn=fitness_biobjective,
+        constraints_fn=constraints_biobjective,
+        n_vars=2,  # We have 2 variables: x,y
+        pop_size=50,
+        n_offsprings=50,
+        num_iterations=20,
+        mutation_rate=0.1,
+        crossover_rate=0.9,
+        duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
+        keep_infeasible=False,
+        seed=1,
+    )
+    algorithm1.run()
+
+    algorithm2 = Nsga2(
+        sampler=RandomSamplingFloat(min=0.0, max=1.0),
+        crossover=SimulatedBinaryCrossover(distribution_index=2),
+        mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
+        fitness_fn=fitness_biobjective,
+        constraints_fn=constraints_biobjective,
+        n_vars=2,  # We have 2 variables: x,y
+        pop_size=50,
+        n_offsprings=50,
+        num_iterations=20,
+        mutation_rate=0.1,
+        crossover_rate=0.9,
+        duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
+        keep_infeasible=False,
+        seed=100,
+    )
+    algorithm2.run()
+
+    np.testing.assert_array_equal(
+        algorithm1.population.genes, algorithm2.population.genes
+    )

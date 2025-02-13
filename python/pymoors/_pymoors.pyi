@@ -255,6 +255,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
         constraints_fn (Optional[ConstraintsPopulationCallable], optional): Function to handle constraints. Defaults to None.
         lower_bound (Optional[float], optional): Optional lower bound for each gene. Defaults to None.
         upper_bound (Optional[float], optional): Optional upper bound for each gene. Defaults to None.
+        seed (Optional[seed], optional): Optional seed to control experiments. Defaults to None.
     """
 
     sampler: SamplingOperator
@@ -273,6 +274,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     constraints_fn: Optional[ConstraintsPopulationCallable]
     lower_bound: Optional[float]
     upper_bound: Optional[float]
+    seed: Optional[int]
 
 class Nsga2:
     """
@@ -359,7 +361,6 @@ class RNsga2:
         Returns:
             Population: The current population.
         """
-        ...
 
     def run(self) -> None: ...
 

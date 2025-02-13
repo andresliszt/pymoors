@@ -76,7 +76,8 @@ impl Evolve {
             .crossover
             .operate(parents_a, parents_b, self.crossover_rate, rng);
         // 2) Perform mutation in one batch (often in-place).
-        self.mutation.operate(&mut offsprings, self.mutation_rate, rng);
+        self.mutation
+            .operate(&mut offsprings, self.mutation_rate, rng);
         offsprings
     }
 

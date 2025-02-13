@@ -210,8 +210,8 @@ mod tests {
     use crate::genetic::Population;
     use crate::operators::SurvivalOperator;
     use ndarray::{array, Array1, Array2};
-    use rand::Rng;
     use rand::rngs::StdRng;
+    use rand::Rng;
     use rand::SeedableRng;
     use std::collections::HashMap;
 
