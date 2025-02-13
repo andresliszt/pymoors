@@ -2,15 +2,15 @@
 
 extern crate core;
 
-pub mod evaluator;
-pub mod genetic;
-pub mod prelude;
+mod evaluator;
+mod genetic;
 
 mod algorithms;
 pub mod diversity_metrics;
 mod helpers;
 pub mod non_dominated_sorting;
 mod operators;
+mod random;
 
 use pyo3::prelude::*;
 

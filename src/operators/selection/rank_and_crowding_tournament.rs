@@ -1,7 +1,8 @@
+use std::fmt::Debug;
+
 use crate::genetic::Individual;
 use crate::operators::{DuelResult, GeneticOperator, SelectionOperator};
-use rand::RngCore;
-use std::fmt::Debug;
+use crate::random::RandomGenerator;
 
 /// Controls how the diversity (crowding) metric is compared during tournament selection.
 #[derive(Clone, Debug)]
@@ -45,7 +46,7 @@ impl SelectionOperator for RankAndCrowdingSelection {
         &self,
         p1: &Individual,
         p2: &Individual,
-        _rng: &mut dyn RngCore,
+        _rng: &mut dyn RandomGenerator,
     ) -> DuelResult {
         // Check feasibility.
         let p1_feasible = p1.is_feasible();
@@ -99,10 +100,14 @@ impl SelectionOperator for RankAndCrowdingSelection {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::genetic::{Individual, Population};
-    use crate::operators::{DuelResult, SelectionOperator};
+    use rand::rngs::StdRng;
+
     use ndarray::{arr1, arr2, Array2};
     use rand::prelude::*;
+
+    use crate::genetic::{Individual, Population};
+    use crate::operators::{DuelResult, SelectionOperator};
+    use crate::random::MOORandomGenerator;
 
     #[test]
     fn test_default_diversity_comparison_maximize() {
@@ -115,32 +120,34 @@ mod tests {
 
     #[test]
     fn test_tournament_duel_maximize() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+
         // Create two individuals using the actual Individual type.
         // Both individuals have the same rank (0) but different diversity metrics.
         // In Maximize mode, the individual with the higher diversity (10.0) should win.
         let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
         let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
         let selector = RankAndCrowdingSelection::new(); // Default: Maximize
-        let mut rng = StdRng::from_entropy();
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
         assert_eq!(result, DuelResult::LeftWins);
     }
 
     #[test]
     fn test_tournament_duel_minimize() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // Create two individuals using the actual Individual type.
         // Both individuals have the same rank (0) but different diversity metrics.
         // In Minimize mode, the individual with the lower diversity (5.0) should win.
         let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
         let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
         let selector = RankAndCrowdingSelection::new_with_comparison(DiversityComparison::Minimize);
-        let mut rng = StdRng::from_entropy();
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
         assert_eq!(result, DuelResult::RightWins);
     }
 
     #[test]
     fn test_tournament_selection_no_constraints_basic() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // For a population of 4:
         // Rank: [0, 1, 0, 1]
         // Diversity (CD): [10.0, 5.0, 9.0, 1.0]
@@ -155,7 +162,6 @@ mod tests {
         // After splitting: pop_a = 2 winners, pop_b = 2 winners.
         let n_crossovers = 2;
         let selector = RankAndCrowdingSelection::new();
-        let mut rng = StdRng::from_entropy();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         assert_eq!(pop_a.len(), 2);
@@ -164,6 +170,7 @@ mod tests {
 
     #[test]
     fn test_tournament_selection_with_constraints() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // Two individuals:
         // Individual 0: feasible
         // Individual 1: infeasible
@@ -177,7 +184,6 @@ mod tests {
         // After splitting: pop_a = 1 winner, pop_b = 1 winner.
         let n_crossovers = 1;
         let selector = RankAndCrowdingSelection::new();
-        let mut rng = StdRng::from_entropy();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // The feasible individual should be one of the winners.
@@ -187,6 +193,7 @@ mod tests {
 
     #[test]
     fn test_tournament_selection_same_rank_and_cd() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // If two individuals have the same rank and the same crowding distance,
         // the tournament duel should result in a tie.
         let genes = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
@@ -200,7 +207,6 @@ mod tests {
         // After splitting: pop_a = 1 winner, pop_b = 1 winner.
         let n_crossovers = 1;
         let selector = RankAndCrowdingSelection::new();
-        let mut rng = StdRng::from_entropy();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // In a tie, the overall selection process must eventually choose winners.
@@ -211,6 +217,7 @@ mod tests {
 
     #[test]
     fn test_tournament_selection_large_population() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // Large population test to ensure stability.
         let pop_size = 100;
         let n_genes = 5;
@@ -218,8 +225,9 @@ mod tests {
         let fitness = Array2::from_shape_fn((pop_size, 1), |(i, _)| i as f64 / 100.0);
         let constraints = None;
 
-        let mut rng = StdRng::from_entropy();
-        let rank_vec: Vec<usize> = (0..pop_size).map(|_| rng.gen_range(0..5)).collect();
+        let rank_vec: Vec<usize> = (0..pop_size)
+            .map(|_| rng.gen_range_usize(0, n_genes))
+            .collect();
         let rank = arr1(&rank_vec);
 
         let population = Population::new(genes, fitness, constraints, rank);
@@ -236,6 +244,7 @@ mod tests {
 
     #[test]
     fn test_tournament_selection_single_tournament() {
+        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // One crossover:
         // total_needed = 4 participants → 2 tournaments → 2 winners.
         // After splitting: pop_a = 1, pop_b = 1.
@@ -248,7 +257,6 @@ mod tests {
 
         let n_crossovers = 1;
         let selector = RankAndCrowdingSelection::new();
-        let mut rng = StdRng::from_entropy();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // The individual with the better rank should win one tournament.

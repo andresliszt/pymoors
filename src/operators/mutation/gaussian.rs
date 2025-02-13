@@ -1,6 +1,7 @@
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::random::RandomGenerator;
+
 use pyo3::prelude::*;
-use rand::{Rng, RngCore};
 use rand_distr::{Distribution, Normal};
 
 #[derive(Clone, Debug)]
@@ -25,7 +26,7 @@ impl GeneticOperator for GaussianMutation {
 }
 
 impl MutationOperator for GaussianMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RngCore) {
+    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
         // Create a normal distribution with mean 0.0 and standard deviation sigma.
         let normal_dist = Normal::new(0.0, self.sigma)
             .expect("Failed to create normal distribution. Sigma must be > 0.");
@@ -34,7 +35,7 @@ impl MutationOperator for GaussianMutation {
         for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
                 // Sample a delta from the normal distribution and add it to the gene.
-                let delta = normal_dist.sample(rng);
+                let delta = normal_dist.sample(rng.rng());
                 *gene += delta;
             }
         }
@@ -82,6 +83,7 @@ impl PyGaussianMutation {
 mod tests {
     use super::*;
     use crate::genetic::PopulationGenes;
+    use crate::random::MOORandomGenerator;
     use numpy::ndarray::array;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
@@ -95,8 +97,7 @@ mod tests {
         // Create operator with 100% chance each gene is mutated, sigma=0.1
         let mutation_operator = GaussianMutation::new(1.0, 0.1);
 
-        // Use a fixed seed for deterministic test
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = MOORandomGenerator::new(StdRng::seed_from_u64(42));
 
         // Mutate the population
         mutation_operator.operate(&mut pop, 1.0, &mut rng);
@@ -115,7 +116,7 @@ mod tests {
         let expected = array![[0.5, 0.5, 0.5]];
         let mutation_operator = GaussianMutation::new(0.0, 0.1);
 
-        let mut rng = StdRng::seed_from_u64(42);
+        let mut rng = MOORandomGenerator::new(StdRng::seed_from_u64(42));
         mutation_operator.operate(&mut pop, 1.0, &mut rng);
 
         assert_eq!(pop, expected);

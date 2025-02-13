@@ -1,6 +1,6 @@
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::random::RandomGenerator;
 use pyo3::prelude::*;
-use rand::{Rng, RngCore};
 
 #[derive(Clone, Debug)]
 pub struct BitFlipMutation {
@@ -20,7 +20,7 @@ impl GeneticOperator for BitFlipMutation {
 }
 
 impl MutationOperator for BitFlipMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RngCore) {
+    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
         for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
                 *gene = if *gene == 0.0 { 1.0 } else { 0.0 };
@@ -57,35 +57,73 @@ impl PyBitFlipMutation {
     }
 }
 
-// Tests module
 #[cfg(test)]
 mod tests {
-    use super::*; // Bring all items from the parent module into scope
+    use super::*; // Brings in BitFlipMutation and related types.
     use crate::genetic::PopulationGenes;
+    use crate::random::{RandomGenerator, TestDummyRng};
     use numpy::ndarray::array;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
+    use rand::RngCore;
+
+    /// A fake RandomGenerator for testing that always returns `true` for `gen_bool`.
+    struct FakeRandomGeneratorTrue {
+        dummy: TestDummyRng,
+    }
+
+    impl FakeRandomGeneratorTrue {
+        fn new() -> Self {
+            Self {
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for FakeRandomGeneratorTrue {
+        fn rng(&mut self) -> &mut dyn RngCore {
+            &mut self.dummy
+        }
+        fn gen_range_usize(&mut self, _min: usize, _max: usize) -> usize {
+            unimplemented!("Not used in test")
+        }
+        fn gen_range_f64(&mut self, _min: f64, _max: f64) -> f64 {
+            unimplemented!("Not used in this test")
+        }
+        fn gen_usize(&mut self) -> usize {
+            unimplemented!("Not used in this test")
+        }
+        fn gen_bool(&mut self, _p: f64) -> bool {
+            // Always return true so that every gene is mutated.
+            true
+        }
+
+        fn gen_proability(&mut self) -> f64 {
+            1.0
+        }
+    }
 
     #[test]
-    fn test_bit_flip_mutation() {
-        // Create an individual with known genes
+    fn test_bit_flip_mutation_controlled() {
+        // Create a population with two individuals:
+        // - The first individual is all zeros.
+        // - The second individual is all ones.
         let mut pop: PopulationGenes = array![[0.0, 0.0, 0.0, 0.0, 0.0], [1.0, 1.0, 1.0, 1.0, 1.0]];
 
-        // Create a BitFlipMutation operator with a high gene mutation rate
-        let mutation_operator = BitFlipMutation::new(1.0); // Ensure all bits are flipped
+        // Create a BitFlipMutation operator with a gene mutation rate of 1.0,
+        // so every gene should be considered for mutation.
+        let mutation_operator = BitFlipMutation::new(1.0);
 
-        // Use a fixed seed for RNG to make the test deterministic
-        let mut rng = StdRng::seed_from_u64(42);
+        // Use our controlled fake RNG which always returns true for gen_bool.
+        let mut rng = FakeRandomGeneratorTrue::new();
 
-        println!("Original population: {:?}", pop);
-        // Mutate the population
+        // Mutate the population. The `operate` method (from MutationOperator) should
+        // call `mutate` on each individual.
         mutation_operator.operate(&mut pop, 1.0, &mut rng);
 
-        // Check that all bits have been flipped
+        // After mutation, every bit should be flipped:
+        // - The first individual (originally all 0.0) becomes all 1.0.
+        // - The second individual (originally all 1.0) becomes all 0.0.
         let expected_pop: PopulationGenes =
             array![[1.0, 1.0, 1.0, 1.0, 1.0], [0.0, 0.0, 0.0, 0.0, 0.0]];
         assert_eq!(expected_pop, pop);
-
-        println!("Mutated population: {:?}", pop);
     }
 }

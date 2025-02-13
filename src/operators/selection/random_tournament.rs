@@ -1,8 +1,8 @@
-use rand::{Rng, RngCore};
 use std::fmt::Debug;
 
 use crate::genetic::Individual;
 use crate::operators::{DuelResult, GeneticOperator, SelectionOperator};
+use crate::random::RandomGenerator;
 
 #[derive(Clone, Debug)]
 pub struct RandomSelection {}
@@ -24,7 +24,7 @@ impl SelectionOperator for RandomSelection {
         &self,
         p1: &Individual,
         p2: &Individual,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> DuelResult {
         let p1_feasible = p1.is_feasible();
         let p2_feasible = p2.is_feasible();

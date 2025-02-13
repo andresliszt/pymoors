@@ -1,4 +1,5 @@
 use crate::genetic::{Fronts, Genes, GenesMut, Individual, Population, PopulationGenes};
+use crate::random::RandomGenerator;
 use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
 use rand::{Rng, RngCore};
@@ -22,10 +23,15 @@ pub trait GeneticOperator: Debug {
 
 pub trait SamplingOperator: GeneticOperator {
     /// Samples a single individual.
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes;
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes;
 
     /// Samples a population of individuals.
-    fn operate(&self, pop_size: usize, n_vars: usize, rng: &mut dyn RngCore) -> PopulationGenes {
+    fn operate(
+        &self,
+        pop_size: usize,
+        n_vars: usize,
+        rng: &mut dyn RandomGenerator,
+    ) -> PopulationGenes {
         let mut population = Vec::with_capacity(pop_size);
 
         // Sample individuals and collect them
@@ -62,18 +68,16 @@ pub trait MutationOperator: GeneticOperator {
     ///
     /// * `individual` - The individual to mutate, provided as a mutable view.
     /// * `rng` - A random number generator.
-    fn mutate<'a>(&self, individual: GenesMut<'a>, rng: &mut dyn RngCore);
+    fn mutate<'a>(&self, individual: GenesMut<'a>, rng: &mut dyn RandomGenerator);
 
     /// Selects individuals for mutation based on the mutation rate.
     fn select_individuals_for_mutation(
         &self,
         pop_size: usize,
         mutation_rate: f64,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> Vec<bool> {
-        (0..pop_size)
-            .map(|_| rng.gen::<f64>() < mutation_rate)
-            .collect()
+        (0..pop_size).map(|_| rng.gen_bool(mutation_rate)).collect()
     }
 
     /// Applies the mutation operator to the entire population in place.
@@ -83,7 +87,12 @@ pub trait MutationOperator: GeneticOperator {
     /// * `population` - The population as a mutable 2D array (each row represents an individual).
     /// * `mutation_rate` - The probability that an individual is mutated.
     /// * `rng` - A random number generator.
-    fn operate(&self, population: &mut PopulationGenes, mutation_rate: f64, rng: &mut dyn RngCore) {
+    fn operate(
+        &self,
+        population: &mut PopulationGenes,
+        mutation_rate: f64,
+        rng: &mut dyn RandomGenerator,
+    ) {
         // Get the number of individuals (i.e. the number of rows).
         let pop_size = population.len_of(Axis(0));
         // Generate a boolean mask for which individuals will be mutated.
@@ -109,7 +118,7 @@ pub trait CrossoverOperator: GeneticOperator {
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> (Genes, Genes);
 
     /// Applies the crossover operator to the population.
@@ -120,7 +129,7 @@ pub trait CrossoverOperator: GeneticOperator {
         parents_a: &PopulationGenes,
         parents_b: &PopulationGenes,
         crossover_rate: f64,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> PopulationGenes {
         let pop_size = parents_a.nrows();
         assert_eq!(
@@ -144,7 +153,7 @@ pub trait CrossoverOperator: GeneticOperator {
             let parent_a = parents_a.row(i).to_owned();
             let parent_b = parents_b.row(i).to_owned();
 
-            if rng.gen::<f64>() < crossover_rate {
+            if rng.gen_proability() <= crossover_rate {
                 // Perform crossover
                 let (child_a, child_b) = self.crossover(&parent_a, &parent_b, rng);
                 flat_offspring.extend(child_a.into_iter());
@@ -190,7 +199,7 @@ pub trait SelectionOperator: GeneticOperator {
         &self,
         pop_size: usize,
         n_crossovers: usize,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> Vec<Vec<usize>> {
         // Note that we have fixed n_parents = 2 and pressure = 2
         let total_needed = n_crossovers * self.n_parents_per_crossover() * self.pressure();
@@ -199,7 +208,7 @@ pub trait SelectionOperator: GeneticOperator {
         let n_perms = (total_needed + pop_size - 1) / pop_size; // Ceil division
         for _ in 0..n_perms {
             let mut perm: Vec<usize> = (0..pop_size).collect();
-            perm.shuffle(rng);
+            perm.shuffle(rng.rng());
             all_indices.extend_from_slice(&perm);
         }
 
@@ -220,14 +229,14 @@ pub trait SelectionOperator: GeneticOperator {
         &self,
         p1: &Individual,
         p2: &Individual,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> DuelResult;
 
     fn operate(
         &self,
         population: &Population,
         n_crossovers: usize,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> (Population, Population) {
         let pop_size = population.len();
 

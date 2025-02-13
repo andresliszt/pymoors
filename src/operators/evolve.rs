@@ -1,4 +1,3 @@
-use rand::RngCore;
 use std::fmt;
 use std::fmt::Debug;
 
@@ -6,6 +5,7 @@ use crate::{
     genetic::{Population, PopulationGenes},
     helpers::duplicates::PopulationCleaner,
     operators::{CrossoverOperator, MutationOperator, SelectionOperator},
+    random::RandomGenerator,
 };
 
 #[derive(Debug)]
@@ -69,7 +69,7 @@ impl Evolve {
         &self,
         parents_a: &PopulationGenes,
         parents_b: &PopulationGenes,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> PopulationGenes {
         // 1) Perform crossover in one batch.
         let mut offsprings = self
@@ -110,7 +110,7 @@ impl Evolve {
         population: &Population,
         n_offsprings: usize,
         max_iter: usize,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> Result<PopulationGenes, EvolveError> {
         // We'll accumulate offspring rows in a Vec<Vec<f64>>
         let mut all_offsprings: Vec<Vec<f64>> = Vec::with_capacity(n_offsprings);

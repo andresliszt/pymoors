@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
-use rand::{Rng, RngCore};
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
+use crate::random::RandomGenerator;
 
 #[derive(Clone, Debug)]
 pub struct ExponentialCrossover {
@@ -31,7 +31,7 @@ impl CrossoverOperator for ExponentialCrossover {
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> (Genes, Genes) {
         let len = parent_a.len();
         assert_eq!(len, parent_b.len());
@@ -41,7 +41,7 @@ impl CrossoverOperator for ExponentialCrossover {
         let mut child_b = parent_b.clone();
 
         // random start [0..len)
-        let start = rng.gen_range(0..len);
+        let start = rng.gen_range_usize(0, len);
 
         // We'll copy from parent_b into child_a as long as rng < CR
         // in a circular manner
@@ -53,14 +53,14 @@ impl CrossoverOperator for ExponentialCrossover {
             if i == start {
                 break; // completed a full circle, stop
             }
-            let r: f64 = rng.gen();
+            let r: f64 = rng.gen_proability();
             if r >= self.exponential_crossover_rate {
                 break;
             }
         }
 
         // Similarly for child_b, but swap roles of A/B
-        let start_b = rng.gen_range(0..len);
+        let start_b = rng.gen_range_usize(0, len);
         let mut j = start_b;
         loop {
             child_b[j] = parent_a[j];
@@ -68,7 +68,7 @@ impl CrossoverOperator for ExponentialCrossover {
             if j == start_b {
                 break;
             }
-            let r: f64 = rng.gen();
+            let r: f64 = rng.gen_proability();
             if r >= self.exponential_crossover_rate {
                 break;
             }

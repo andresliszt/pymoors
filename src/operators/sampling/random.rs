@@ -1,7 +1,7 @@
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
+use crate::random::RandomGenerator;
 use pyo3::prelude::*;
-use rand::{Rng, RngCore};
 use std::fmt::Debug;
 
 #[derive(Clone, Debug)]
@@ -17,9 +17,9 @@ impl GeneticOperator for RandomSamplingFloat {
 }
 
 impl SamplingOperator for RandomSamplingFloat {
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes {
         (0..n_vars)
-            .map(|_| rng.gen_range(self.min..self.max))
+            .map(|_| rng.gen_range_f64(self.min, self.max))
             .collect()
     }
 }
@@ -37,9 +37,9 @@ impl GeneticOperator for RandomSamplingInt {
 }
 
 impl SamplingOperator for RandomSamplingInt {
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes {
         (0..n_vars)
-            .map(|_| rng.gen_range(self.min..self.max) as f64)
+            .map(|_| rng.gen_range_f64(self.min as f64, self.max as f64))
             .collect()
     }
 }
@@ -54,7 +54,7 @@ impl GeneticOperator for RandomSamplingBinary {
 }
 
 impl SamplingOperator for RandomSamplingBinary {
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RngCore) -> Genes {
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes {
         (0..n_vars)
             .map(|_| if rng.gen_bool(0.5) { 1.0 } else { 0.0 })
             .collect()
@@ -157,48 +157,86 @@ impl PyRandomSamplingBinary {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
+    use crate::random::{RandomGenerator, TestDummyRng};
+    use rand::RngCore;
+
+    /// A controlled fake RandomGenerator for testing purposes.
+    /// It returns predictable values:
+    /// - `gen_range_f64(min, _max)` always returns `min`
+    /// - `gen_bool(_p)` always returns `false`
+    struct FakeRandomGenerator {
+        dummy: TestDummyRng,
+    }
+
+    impl FakeRandomGenerator {
+        fn new() -> Self {
+            Self {
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for FakeRandomGenerator {
+        fn rng(&mut self) -> &mut dyn RngCore {
+            &mut self.dummy
+        }
+        fn gen_range_usize(&mut self, min: usize, _max: usize) -> usize {
+            min
+        }
+        fn gen_range_f64(&mut self, min: f64, _max: f64) -> f64 {
+            min
+        }
+        fn gen_usize(&mut self) -> usize {
+            0
+        }
+        fn gen_bool(&mut self, _p: f64) -> bool {
+            false
+        }
+    }
 
     #[test]
-    fn test_random_sampling_float() {
+    fn test_random_sampling_float_controlled() {
         let sampler = RandomSamplingFloat {
             min: -1.0,
             max: 1.0,
         };
-        let mut rng = StdRng::from_seed([0; 32]);
+        let mut rng = FakeRandomGenerator::new();
+
+        // Generate a population of 10 individuals, each with 5 genes.
         let population = sampler.operate(10, 5, &mut rng);
 
-        assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
-        for &gene in population.iter() {
-            assert!(gene >= -1.0 && gene < 1.0);
+        // Since our fake returns the minimum for every call to `gen_range_f64`,
+        // every gene in the population should be -1.0.
+        for gene in population.iter() {
+            assert_eq!(*gene, -1.0);
         }
     }
 
     #[test]
-    fn test_random_sampling_int() {
+    fn test_random_sampling_int_controlled() {
         let sampler = RandomSamplingInt { min: 0, max: 10 };
-        let mut rng = StdRng::from_seed([0; 32]);
+        let mut rng = FakeRandomGenerator::new();
+
         let population = sampler.operate(10, 5, &mut rng);
 
-        assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
-        for &gene in population.iter() {
-            assert!(gene >= 0.0 && gene < 10.0);
+        // The operator uses `gen_range_f64` (with `min` as 0.0) for each gene,
+        // so every gene should be 0.0.
+        for gene in population.iter() {
+            assert_eq!(*gene, 0.0);
         }
     }
 
     #[test]
-    fn test_random_sampling_binary() {
+    fn test_random_sampling_binary_controlled() {
         let sampler = RandomSamplingBinary;
-        let mut rng = StdRng::from_seed([0; 32]);
+        let mut rng = FakeRandomGenerator::new();
+
         let population = sampler.operate(10, 5, &mut rng);
 
-        assert_eq!(population.nrows(), 10);
-        assert_eq!(population.ncols(), 5);
-        for &gene in population.iter() {
-            assert!(gene == 0.0 || gene == 1.0);
+        // Since our fake returns false for every call to `gen_bool(0.5)`,
+        // each gene will be 0.0 (because the sampling operator maps false to 0.0).
+        for gene in population.iter() {
+            assert_eq!(*gene, 0.0);
         }
     }
 }

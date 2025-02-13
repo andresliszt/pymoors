@@ -1,6 +1,5 @@
 use numpy::ndarray::{concatenate, Axis};
 use rand::rngs::StdRng;
-use rand::Rng;
 use rand::SeedableRng;
 use std::error::Error;
 use std::fmt;
@@ -8,8 +7,8 @@ use std::fmt;
 use pyo3::exceptions::PyRuntimeError;
 use pyo3::PyErr;
 
-use crate::algorithms::py_errors::NoFeasibleIndividualsError;
 use crate::{
+    algorithms::py_errors::NoFeasibleIndividualsError,
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     helpers::duplicates::PopulationCleaner,
@@ -18,6 +17,7 @@ use crate::{
         evolve::Evolve, evolve::EvolveError, CrossoverOperator, MutationOperator, SamplingOperator,
         SelectionOperator, SurvivalOperator,
     },
+    random::MOORandomGenerator,
 };
 
 mod macros;
@@ -76,7 +76,7 @@ pub struct MultiObjectiveAlgorithm {
     num_iterations: usize,
     verbose: bool,
     n_vars: usize,
-    rng: StdRng,
+    rng: MOORandomGenerator,
 }
 
 impl MultiObjectiveAlgorithm {
@@ -103,7 +103,9 @@ impl MultiObjectiveAlgorithm {
         upper_bound: Option<f64>,
         seed: Option<u64>,
     ) -> Result<Self, MultiObjectiveAlgorithmError> {
-        let mut rng = seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64);
+        // TODO: Fix this
+        let mut rng =
+            MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
 
         // Create the evolution operator.

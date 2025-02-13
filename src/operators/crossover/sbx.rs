@@ -1,9 +1,8 @@
 use pyo3::prelude::*;
-use rand::{Rng, RngCore};
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
-
+use crate::random::RandomGenerator;
 /// Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
 ///
 /// # SBX Overview
@@ -34,9 +33,9 @@ impl SimulatedBinaryCrossover {
     ///
     /// This function is private because it's only intended to be used
     /// internally within the operator's main crossover method.
-    fn sbx_crossover(&self, y1: f64, y2: f64, rng: &mut dyn RngCore) -> (f64, f64) {
+    fn sbx_crossover(&self, y1: f64, y2: f64, rng: &mut dyn RandomGenerator) -> (f64, f64) {
         let (p1, p2) = if y1 < y2 { (y1, y2) } else { (y2, y1) };
-        let rand_u = rng.gen::<f64>();
+        let rand_u = rng.gen_proability();
 
         // Compute beta_q according to Deb & Agrawal (1995)
         let beta_q = if rand_u <= 0.5 {
@@ -72,7 +71,7 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> (Genes, Genes) {
         let len = parent_a.len();
         assert_eq!(len, parent_b.len());

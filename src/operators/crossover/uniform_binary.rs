@@ -1,10 +1,9 @@
 use numpy::ndarray::Array1;
 use pyo3::prelude::*;
-use rand::distributions::Uniform;
-use rand::{Rng, RngCore};
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
+use crate::random::RandomGenerator;
 
 #[derive(Clone, Debug)]
 pub struct UniformBinaryCrossover;
@@ -26,7 +25,7 @@ impl CrossoverOperator for UniformBinaryCrossover {
         &self,
         parent_a: &Genes,
         parent_b: &Genes,
-        rng: &mut dyn RngCore,
+        rng: &mut dyn RandomGenerator,
     ) -> (Genes, Genes) {
         assert_eq!(
             parent_a.len(),
@@ -38,10 +37,8 @@ impl CrossoverOperator for UniformBinaryCrossover {
         let mut offspring_a = Array1::zeros(num_genes);
         let mut offspring_b = Array1::zeros(num_genes);
 
-        let uniform = Uniform::new(0.0f64, 1.0);
-
         for i in 0..num_genes {
-            if rng.sample(uniform) < 0.5 {
+            if rng.gen_proability() < 0.5 {
                 // Swap genes
                 offspring_a[i] = parent_b[i];
                 offspring_b[i] = parent_a[i];
@@ -76,26 +73,94 @@ impl PyUniformBinaryCrossover {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use numpy::ndarray::array;
-    use rand::rngs::StdRng;
-    use rand::SeedableRng;
+    use crate::random::{RandomGenerator, TestDummyRng};
+    use numpy::ndarray::{array, Array1};
+    use rand::RngCore;
+
+    /// A controlled fake random generator that returns predetermined values for `gen_proability()`.
+    struct ControlledFakeProbabilityGenerator {
+        /// A list of predetermined f64 responses.
+        responses: Vec<f64>,
+        /// Current index into the responses vector.
+        index: usize,
+        /// Dummy RNG used to satisfy the `rng()` method.
+        dummy: TestDummyRng,
+    }
+
+    impl ControlledFakeProbabilityGenerator {
+        fn new(responses: Vec<f64>) -> Self {
+            Self {
+                responses,
+                index: 0,
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for ControlledFakeProbabilityGenerator {
+        fn rng(&mut self) -> &mut dyn RngCore {
+            &mut self.dummy
+        }
+        fn gen_range_usize(&mut self, min: usize, _max: usize) -> usize {
+            // Not used in this test.
+            min
+        }
+        fn gen_range_f64(&mut self, min: f64, _max: f64) -> f64 {
+            // Not used in this test.
+            min
+        }
+        fn gen_usize(&mut self) -> usize {
+            0
+        }
+        fn gen_bool(&mut self, _p: f64) -> bool {
+            false
+        }
+        // Override the default `gen_proability()` to return controlled values.
+        fn gen_proability(&mut self) -> f64 {
+            let value = self.responses[self.index];
+            self.index += 1;
+            value
+        }
+    }
 
     #[test]
-    fn test_uniform_binary_crossover() {
-        let parent_a = array![0.0, 1.0, 1.0, 0.0, 1.0];
-        let parent_b = array![1.0, 0.0, 0.0, 1.0, 0.0];
+    fn test_uniform_binary_crossover_controlled() {
+        // Define two parent individuals.
+        let parent_a: Array1<f64> = array![0.0, 1.0, 1.0, 0.0, 1.0];
+        let parent_b: Array1<f64> = array![1.0, 0.0, 0.0, 1.0, 0.0];
 
         let crossover_operator = UniformBinaryCrossover::new();
-        let mut rng = StdRng::seed_from_u64(42);
 
+        // Create a controlled fake RNG with predetermined probability values.
+        // For each gene index, the decision is made by comparing the generated probability with 0.5:
+        // Index 0: 0.6 (>= 0.5 → no swap)
+        // Index 1: 0.7 (>= 0.5 → no swap)
+        // Index 2: 0.8 (>= 0.5 → no swap)
+        // Index 3: 0.3 (< 0.5 → swap)
+        // Index 4: 0.4 (< 0.5 → swap)
+        let responses = vec![0.6, 0.7, 0.8, 0.3, 0.4];
+        let mut fake_rng = ControlledFakeProbabilityGenerator::new(responses);
+
+        // Perform the uniform binary crossover.
         let (offspring_a, offspring_b) =
-            crossover_operator.crossover(&parent_a, &parent_b, &mut rng);
+            crossover_operator.crossover(&parent_a, &parent_b, &mut fake_rng);
 
-        // Expected offspring based on the fixed seed and swapping decisions
-        let expected_offspring_a = array![0.0, 1.0, 1.0, 1.0, 0.0];
-        let expected_offspring_b = array![1.0, 0.0, 0.0, 0.0, 1.0];
+        // Expected offspring:
+        // For index 0: no swap → offspring_a[0] = parent_a[0] = 0.0, offspring_b[0] = parent_b[0] = 1.0.
+        // For index 1: no swap → offspring_a[1] = parent_a[1] = 1.0, offspring_b[1] = parent_b[1] = 0.0.
+        // For index 2: no swap → offspring_a[2] = parent_a[2] = 1.0, offspring_b[2] = parent_b[2] = 0.0.
+        // For index 3: swap    → offspring_a[3] = parent_b[3] = 1.0, offspring_b[3] = parent_a[3] = 0.0.
+        // For index 4: swap    → offspring_a[4] = parent_b[4] = 0.0, offspring_b[4] = parent_a[4] = 1.0.
+        let expected_offspring_a: Array1<f64> = array![0.0, 1.0, 1.0, 1.0, 0.0];
+        let expected_offspring_b: Array1<f64> = array![1.0, 0.0, 0.0, 0.0, 1.0];
 
-        assert_eq!(offspring_a, expected_offspring_a);
-        assert_eq!(offspring_b, expected_offspring_b);
+        assert_eq!(
+            offspring_a, expected_offspring_a,
+            "Offspring A is not as expected"
+        );
+        assert_eq!(
+            offspring_b, expected_offspring_b,
+            "Offspring B is not as expected"
+        );
     }
 }
