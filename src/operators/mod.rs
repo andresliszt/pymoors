@@ -2,7 +2,6 @@ use crate::genetic::{Fronts, Genes, GenesMut, Individual, Population, Population
 use crate::random::RandomGenerator;
 use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
-use rand::{Rng, RngCore};
 use std::fmt::Debug;
 
 mod macros;
