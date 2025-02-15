@@ -20,6 +20,7 @@ ordered-float = "4.6.0"
 rand_distr = "0.4.3"
 rayon = "1.10.0"
 ndarray-linalg = { version = "0.13"}
+paste = "1.0.15"
 
 [features]
 extension-module = ["pyo3/extension-module"]

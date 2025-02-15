@@ -41,6 +41,8 @@ class MutationOperator:
             **kwargs: Arbitrary keyword arguments.
         """
 
+    def muatation(self, population: TwoDArray, seed: Optional[int]) -> TwoDArray: ...
+
 class CrossoverOperator:
     """
     Base class for crossover operators used to combine two parent individuals to produce offspring.
@@ -56,6 +58,10 @@ class CrossoverOperator:
             *args: Variable length argument list.
             **kwargs: Arbitrary keyword arguments.
         """
+
+    def crossover(
+        self, parents_a: TwoDArray, parents_b: TwoDArray, seed: Optional[int]
+    ) -> TwoDArray: ...
 
 class RandomSamplingFloat(SamplingOperator):
     """

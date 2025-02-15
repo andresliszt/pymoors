@@ -1,6 +1,3 @@
-use numpy::ndarray::Array1;
-use pyo3::prelude::*;
-
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
@@ -34,8 +31,8 @@ impl CrossoverOperator for UniformBinaryCrossover {
         );
 
         let num_genes = parent_a.len();
-        let mut offspring_a = Array1::zeros(num_genes);
-        let mut offspring_b = Array1::zeros(num_genes);
+        let mut offspring_a = Genes::zeros(num_genes);
+        let mut offspring_b = Genes::zeros(num_genes);
 
         for i in 0..num_genes {
             if rng.gen_proability() < 0.5 {
@@ -53,22 +50,12 @@ impl CrossoverOperator for UniformBinaryCrossover {
     }
 }
 
-/// Uniform binary crossover operator for genetic algorithms.
-#[pyclass(name = "UniformBinaryCrossover")]
-#[derive(Clone)]
-pub struct PyUniformBinaryCrossover {
-    pub inner: UniformBinaryCrossover,
-}
-
-#[pymethods]
-impl PyUniformBinaryCrossover {
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: UniformBinaryCrossover::new(),
-        }
-    }
-}
+impl_py_crossover!(
+    "Uniform binary crossover operator for genetic algorithms.",
+    PyUniformBinaryCrossover,
+    UniformBinaryCrossover,
+    "UniformBinaryCrossover"
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

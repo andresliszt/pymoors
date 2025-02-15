@@ -1,6 +1,5 @@
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
-use pyo3::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct SwapMutation;
@@ -37,23 +36,12 @@ impl MutationOperator for SwapMutation {
     }
 }
 
-/// Mutation operator that swaps two genes in a permutation-based individual.
-#[pyclass(name = "SwapMutation")]
-#[derive(Clone)]
-pub struct PySwapMutation {
-    // The actual Rust struct
-    pub inner: SwapMutation,
-}
-
-#[pymethods]
-impl PySwapMutation {
-    /// Python constructor: `SwapMutation()`
-    #[new]
-    fn new() -> Self {
-        let swap = SwapMutation::new();
-        Self { inner: swap }
-    }
-}
+impl_py_mutation!(
+    "Mutation operator that swaps two genes in a permutation-based individual.",
+    PySwapMutation,
+    SwapMutation,
+    "SwapMutation"
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

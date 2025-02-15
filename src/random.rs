@@ -1,5 +1,5 @@
 use rand::rngs::StdRng;
-use rand::{Rng, RngCore};
+use rand::{Rng, RngCore, SeedableRng};
 
 /// A trait defining a unified interface for generating random values,
 /// used across genetic operators and algorithms.
@@ -33,6 +33,10 @@ pub struct MOORandomGenerator {
 impl MOORandomGenerator {
     /// Creates a new `MOORandomGenerator` with the provided `StdRng`.
     pub fn new(rng: StdRng) -> Self {
+        Self { rng }
+    }
+    pub fn new_from_seed(seed: Option<u64>) -> Self {
+        let rng = seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64);
         Self { rng }
     }
 }

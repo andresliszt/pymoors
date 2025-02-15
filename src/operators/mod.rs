@@ -4,6 +4,9 @@ use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
 use std::fmt::Debug;
 
+#[macro_use]
+mod macros;
+
 pub mod crossover;
 pub mod evolve;
 pub mod mutation;

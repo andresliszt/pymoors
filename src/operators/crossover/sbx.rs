@@ -1,5 +1,3 @@
-use pyo3::prelude::*;
-
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
@@ -99,23 +97,13 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
     }
 }
 
-/// Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
-#[pyclass(name = "SimulatedBinaryCrossover")]
-#[derive(Clone)]
-pub struct PySimulatedBinaryCrossover {
-    pub inner: SimulatedBinaryCrossover,
-}
-
-#[pymethods]
-impl PySimulatedBinaryCrossover {
-    /// Create a new Python-exposed `SimulatedBinaryCrossover` with the given distribution index.
-    #[new]
-    fn new(distribution_index: f64) -> Self {
-        Self {
-            inner: SimulatedBinaryCrossover::new(distribution_index),
-        }
-    }
-}
+impl_py_crossover!(
+    "Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.",
+    PySimulatedBinaryCrossover,
+    SimulatedBinaryCrossover,
+    "SimulatedBinaryCrossover",
+    distribution_index: f64,
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

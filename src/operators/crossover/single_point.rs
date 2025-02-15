@@ -1,5 +1,4 @@
 use numpy::ndarray::{concatenate, s, Array1, Axis};
-use pyo3::prelude::*;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -58,22 +57,12 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
     }
 }
 
-/// Single-point crossover operator for binary-encoded individuals.
-#[pyclass(name = "SinglePointBinaryCrossover")]
-#[derive(Clone)]
-pub struct PySinglePointBinaryCrossover {
-    pub inner: SinglePointBinaryCrossover,
-}
-
-#[pymethods]
-impl PySinglePointBinaryCrossover {
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: SinglePointBinaryCrossover::new(),
-        }
-    }
-}
+impl_py_crossover!(
+    "Single-point crossover operator for binary-encoded individuals.",
+    PySinglePointBinaryCrossover,
+    SinglePointBinaryCrossover,
+    "SinglePointBinaryCrossover"
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

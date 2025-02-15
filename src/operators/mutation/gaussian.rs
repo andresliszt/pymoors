@@ -1,7 +1,6 @@
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
-use pyo3::prelude::*;
 use rand_distr::{Distribution, Normal};
 
 #[derive(Clone, Debug)]
@@ -42,42 +41,13 @@ impl MutationOperator for GaussianMutation {
     }
 }
 
-/// Mutation operator that adds Gaussian noise to float variables.
-#[pyclass(name = "GaussianMutation")]
-#[derive(Clone)]
-pub struct PyGaussianMutation {
-    pub inner: GaussianMutation,
-}
-
-#[pymethods]
-impl PyGaussianMutation {
-    /// Python constructor: `GaussianMutation(gene_mutation_rate=0.1, sigma=0.01)`
-    #[new]
-    fn new(gene_mutation_rate: f64, sigma: f64) -> Self {
-        let gmut = GaussianMutation::new(gene_mutation_rate, sigma);
-        Self { inner: gmut }
-    }
-
-    #[getter]
-    fn get_gene_mutation_rate(&self) -> f64 {
-        self.inner.gene_mutation_rate
-    }
-
-    #[setter]
-    fn set_gene_mutation_rate(&mut self, value: f64) {
-        self.inner.gene_mutation_rate = value;
-    }
-
-    #[getter]
-    fn get_sigma(&self) -> f64 {
-        self.inner.sigma
-    }
-
-    #[setter]
-    fn set_sigma(&mut self, value: f64) {
-        self.inner.sigma = value;
-    }
-}
+impl_py_mutation!(
+    "Mutation operator that adds Gaussian noise to float variables.",
+    PyGaussianMutation,
+    GaussianMutation,
+    "GaussianMutation",
+    gene_mutation_rate: f64, sigma: f64
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

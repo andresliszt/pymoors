@@ -1,5 +1,3 @@
-use pyo3::prelude::*;
-
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
@@ -78,22 +76,13 @@ impl CrossoverOperator for ExponentialCrossover {
     }
 }
 
-/// Crossover operator that combines parent genes based on an exponential distribution.
-#[pyclass(name = "ExponentialCrossover")]
-#[derive(Clone)]
-pub struct PyExponentialCrossover {
-    pub inner: ExponentialCrossover,
-}
-
-#[pymethods]
-impl PyExponentialCrossover {
-    #[new]
-    fn new(exponential_crossover_rate: f64) -> Self {
-        Self {
-            inner: ExponentialCrossover::new(exponential_crossover_rate),
-        }
-    }
-}
+impl_py_crossover!(
+    "Crossover operator that combines parent genes based on an exponential distribution.",
+    PyExponentialCrossover,
+    ExponentialCrossover,
+    "ExponentialCrossover",
+    exponential_crossover_rate: f64
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

@@ -1,6 +1,5 @@
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
-use pyo3::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct BitFlipMutation {
@@ -29,33 +28,13 @@ impl MutationOperator for BitFlipMutation {
     }
 }
 
-/// Mutation operator that flips bits in a binary individual with a specified mutation rate.
-#[pyclass(name = "BitFlipMutation")]
-#[derive(Clone)] // So we can clone when converting to Box<dyn MutationOperator>
-pub struct PyBitFlipMutation {
-    // The actual Rust struct
-    pub inner: BitFlipMutation,
-}
-
-#[pymethods]
-impl PyBitFlipMutation {
-    /// Python constructor: `BitFlipMutation(gene_mutation_rate=0.05)`
-    #[new]
-    fn new(gene_mutation_rate: f64) -> Self {
-        let bitflip = BitFlipMutation::new(gene_mutation_rate);
-        Self { inner: bitflip }
-    }
-
-    #[getter]
-    fn get_gene_mutation_rate(&self) -> f64 {
-        self.inner.gene_mutation_rate
-    }
-
-    #[setter]
-    fn set_gene_mutation_rate(&mut self, value: f64) {
-        self.inner.gene_mutation_rate = value;
-    }
-}
+impl_py_mutation!(
+    "Mutation operator that flips bits in a binary individual with a specified mutation rate",
+    PyBitFlipMutation,
+    BitFlipMutation,
+    "BitFlipMutation",
+    gene_mutation_rate: f64
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

@@ -1,5 +1,4 @@
 use numpy::ndarray::Array1;
-use pyo3::prelude::*;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
@@ -79,22 +78,12 @@ impl CrossoverOperator for OrderCrossover {
     }
 }
 
-/// Crossover operator for permutation-based individuals using Order Crossover (OX)
-#[pyclass(name = "OrderCrossover")]
-#[derive(Clone)]
-pub struct PyOrderCrossover {
-    pub inner: OrderCrossover,
-}
-
-#[pymethods]
-impl PyOrderCrossover {
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: OrderCrossover::new(),
-        }
-    }
-}
+impl_py_crossover!(
+    "Crossover operator for permutation-based individuals using Order Crossover (OX).",
+    PyOrderCrossover,
+    OrderCrossover,
+    "OrderCrossover"
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
