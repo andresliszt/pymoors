@@ -16,11 +16,6 @@ macro_rules! impl_py_common {
                     pub fn $field(&self) -> $type {
                         self.inner.$field
                     }
-
-                    #[setter]
-                    pub fn [<set_ $field>](&mut self, value: $type) {
-                        self.inner.$field = value;
-                    }
                 )*
             }
         }
@@ -122,6 +117,48 @@ macro_rules! impl_py_crossover {
                     let mut rng = MOORandomGenerator::new_from_seed(seed);
                     let offspring = self.inner.operate(&owned_parents_a, &owned_parents_b, 1.0, &mut rng);
                     Ok(offspring.to_pyarray(py))
+                }
+            }
+        }
+    }
+}
+
+#[macro_export]
+macro_rules! impl_py_sampling {
+    ($doc:expr, $py_class:ident, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
+        use pyo3::prelude::*;
+        use numpy::{
+            PyArray2,
+            ToPyArray,
+        };
+        use crate::random::MOORandomGenerator;
+
+        #[doc = $doc]
+        #[pyclass(name = $py_name)]
+        #[derive(Clone)]
+        pub struct $py_class {
+            pub inner: $rust_struct,
+        }
+
+        // Inject common implementation (constructor, getters, and setters).
+        impl_py_common!($py_class, $rust_struct $(, $field : $type )*);
+
+        // Additional mutation-specific methods.
+        paste::paste! {
+            #[pymethods]
+            impl $py_class {
+                #[pyo3(signature = (pop_size, n_vars, seed=None))]
+                pub fn sample<'py>(
+                    &self,
+                    py: Python<'py>,
+                    pop_size: usize,
+                    n_vars: usize,
+                    seed: Option<u64>,
+                ) -> PyResult<Bound<'py, PyArray2<f64>>> {
+                    let mut rng = MOORandomGenerator::new_from_seed(seed);
+                    let sampled_population = self.inner.operate(pop_size, n_vars, &mut rng);
+
+                    Ok(sampled_population.to_pyarray(py))
                 }
             }
         }

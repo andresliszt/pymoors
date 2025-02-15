@@ -25,6 +25,8 @@ class SamplingOperator:
             **kwargs: Arbitrary keyword arguments.
         """
 
+    def sample(self, pop_size: int, n_vars: int, seed: Optional[int]) -> TwoDArray: ...
+
 class MutationOperator:
     """
     Base class for mutation operators used to introduce variations in individuals.

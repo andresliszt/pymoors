@@ -26,11 +26,9 @@ def test_mutation_exposed_methods(operator_class, kwargs, pop_type):
     if pop_type == "binary":
         # For binary operators, use an array of 0.0 and 1.0.
         population = np.random.randint(0, 2, size=(pop_size, n_vars)).astype(np.float64)
-    elif pop_type == "real":
+    else:
         # For operators that expect real numbers, use random floats.
         population = np.random.rand(pop_size, n_vars)
-    else:
-        raise ValueError("Invalid population type specified.")
 
     # Instantiate the mutation operator.
     op = operator_class(**kwargs)

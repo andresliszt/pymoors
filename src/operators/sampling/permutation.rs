@@ -1,13 +1,18 @@
 use crate::operators::{Genes, GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
 use numpy::ndarray::Array1;
-use pyo3::prelude::*;
 use rand::seq::SliceRandom;
 use std::fmt::Debug;
 
 /// A sampling operator that returns a random permutation of [0..n_vars).
 #[derive(Clone, Debug)]
 pub struct PermutationSampling;
+
+impl PermutationSampling {
+    pub fn new() -> Self {
+        Self
+    }
+}
 
 impl GeneticOperator for PermutationSampling {
     fn name(&self) -> String {
@@ -29,23 +34,12 @@ impl SamplingOperator for PermutationSampling {
     }
 }
 
-/// Sampling operator for permutation-based variables.
-#[pyclass(name = "PermutationSampling")]
-#[derive(Clone)]
-pub struct PyPermutationSampling {
-    pub inner: PermutationSampling,
-}
-
-#[pymethods]
-impl PyPermutationSampling {
-    /// Python constructor: `PermutationSampling()`
-    #[new]
-    fn new() -> Self {
-        Self {
-            inner: PermutationSampling,
-        }
-    }
-}
+impl_py_sampling!(
+    "Sampling operator for permutation-based variables.",
+    PyPermutationSampling,
+    PermutationSampling,
+    "PermutationSampling"
+);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
