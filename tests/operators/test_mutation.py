@@ -38,9 +38,9 @@ def test_mutation_exposed_methods(operator_class, kwargs, pop_type):
         assert getattr(op, k) == v
 
     # Call the mutation method.
-    mutated = op.mutate_population(population, seed=42)
-    mutated_same_seed = op.mutate_population(population, seed=42)
-    mutated_no_seed = op.mutate_population(population)
+    mutated = op.mutate(population, seed=42)
+    mutated_same_seed = op.mutate(population, seed=42)
+    mutated_no_seed = op.mutate(population)
 
     np.testing.assert_array_equal(mutated, mutated_same_seed)
 
@@ -48,6 +48,6 @@ def test_mutation_exposed_methods(operator_class, kwargs, pop_type):
     assert mutated.shape == mutated_no_seed.shape == (pop_size, n_vars)
 
     with pytest.raises(
-        ValueError, match="Population numpy array must be 2D to use mutate_population."
+        ValueError, match="Population numpy array must be 2D to use mutate."
     ):
-        op.mutate_population(population[0], seed=42)
+        op.mutate(population[0], seed=42)
