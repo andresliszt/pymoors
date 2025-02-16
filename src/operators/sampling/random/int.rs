@@ -31,7 +31,6 @@ impl SamplingOperator for RandomSamplingInt {
 
 impl_py_sampling!(
     "Sampling operator for integer variables using uniform random distribution.",
-    PyRandomSamplingInt,
     RandomSamplingInt,
     "RandomSamplingInt",
     min: i32,

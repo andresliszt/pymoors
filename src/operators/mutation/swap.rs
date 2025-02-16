@@ -38,7 +38,6 @@ impl MutationOperator for SwapMutation {
 
 impl_py_mutation!(
     "Mutation operator that swaps two genes in a permutation-based individual.",
-    PySwapMutation,
     SwapMutation,
     "SwapMutation"
 );

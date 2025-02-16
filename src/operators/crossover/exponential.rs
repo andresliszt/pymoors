@@ -78,7 +78,6 @@ impl CrossoverOperator for ExponentialCrossover {
 
 impl_py_crossover!(
     "Crossover operator that combines parent genes based on an exponential distribution.",
-    PyExponentialCrossover,
     ExponentialCrossover,
     "ExponentialCrossover",
     exponential_crossover_rate: f64

@@ -28,7 +28,6 @@ impl SamplingOperator for RandomSamplingBinary {
 
 impl_py_sampling!(
     "Sampling operator for binary variables.",
-    PyRandomSamplingBinary,
     RandomSamplingBinary,
     "RandomSamplingBinary"
 );

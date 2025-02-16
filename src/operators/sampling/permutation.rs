@@ -36,7 +36,6 @@ impl SamplingOperator for PermutationSampling {
 
 impl_py_sampling!(
     "Sampling operator for permutation-based variables.",
-    PyPermutationSampling,
     PermutationSampling,
     "PermutationSampling"
 );

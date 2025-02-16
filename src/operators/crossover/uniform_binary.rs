@@ -52,7 +52,6 @@ impl CrossoverOperator for UniformBinaryCrossover {
 
 impl_py_crossover!(
     "Uniform binary crossover operator for genetic algorithms.",
-    PyUniformBinaryCrossover,
     UniformBinaryCrossover,
     "UniformBinaryCrossover"
 );

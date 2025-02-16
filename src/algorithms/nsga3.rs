@@ -13,7 +13,7 @@ use crate::helpers::parser::{
 use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-III algorithm using the macro
-define_multiobj_pyclass!(Nsga3, "Nsga3");
+define_multiobj_pyclass!(Nsga3);
 
 // Implement PyO3 methods
 #[pymethods]

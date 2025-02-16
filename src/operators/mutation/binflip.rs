@@ -30,7 +30,6 @@ impl MutationOperator for BitFlipMutation {
 
 impl_py_mutation!(
     "Mutation operator that flips bits in a binary individual with a specified mutation rate",
-    PyBitFlipMutation,
     BitFlipMutation,
     "BitFlipMutation",
     gene_mutation_rate: f64

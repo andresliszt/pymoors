@@ -14,7 +14,7 @@ use crate::operators::survival::RankReferencePointsSurvival;
 use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(RNsga2, "RNsga2");
+define_multiobj_pyclass!(RNsga2);
 
 // Implement PyO3 methods
 #[pymethods]

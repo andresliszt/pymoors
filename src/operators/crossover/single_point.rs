@@ -59,7 +59,6 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
 
 impl_py_crossover!(
     "Single-point crossover operator for binary-encoded individuals.",
-    PySinglePointBinaryCrossover,
     SinglePointBinaryCrossover,
     "SinglePointBinaryCrossover"
 );

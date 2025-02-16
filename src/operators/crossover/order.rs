@@ -80,7 +80,6 @@ impl CrossoverOperator for OrderCrossover {
 
 impl_py_crossover!(
     "Crossover operator for permutation-based individuals using Order Crossover (OX).",
-    PyOrderCrossover,
     OrderCrossover,
     "OrderCrossover"
 );

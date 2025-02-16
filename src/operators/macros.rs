@@ -1,9 +1,9 @@
 // Define the common submacro to implement the constructor, getters, and setters.
 macro_rules! impl_py_common {
-    ($py_class:ident, $rust_struct:ident $(, $field:ident : $type:ty )* $(,)?) => {
+    ($rust_struct:ident $(, $field:ident : $type:ty )* $(,)?) => {
         paste::paste! {
             #[pymethods]
-            impl $py_class {
+            impl [<Py $rust_struct>] {
                 #[new]
                 pub fn new( $( $field: $type ),* ) -> Self {
                     Self {
@@ -24,7 +24,7 @@ macro_rules! impl_py_common {
 
 #[macro_export]
 macro_rules! impl_py_mutation {
-    ($doc:expr, $py_class:ident, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
+    ($doc:expr, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
         use pyo3::prelude::*;
         use numpy::{PyArray2, PyReadonlyArrayDyn};
         use ndarray::Ix2;
@@ -35,20 +35,20 @@ macro_rules! impl_py_mutation {
         };
         use crate::random::MOORandomGenerator;
 
-        #[doc = $doc]
-        #[pyclass(name = $py_name)]
-        #[derive(Clone)]
-        pub struct $py_class {
-            pub inner: $rust_struct,
-        }
-
-        // Inject common implementation (constructor, getters, and setters).
-        impl_py_common!($py_class, $rust_struct $(, $field : $type )*);
-
-        // Additional mutation-specific methods.
         paste::paste! {
+            #[doc = $doc]
+            #[pyclass(name = $py_name)]
+            #[derive(Clone)]
+            pub struct [<Py $rust_struct>] {
+                pub inner: $rust_struct,
+            }
+
+            // Inject common implementation (constructor, getters, and setters).
+            impl_py_common!($rust_struct $(, $field : $type )*);
+
+            // Additional mutation-specific methods.
             #[pymethods]
-            impl $py_class {
+            impl [<Py $rust_struct>]  {
                 #[pyo3(signature = (population, seed=None))]
                 pub fn mutate_population<'py>(
                     &self,
@@ -73,31 +73,31 @@ macro_rules! impl_py_mutation {
 
 #[macro_export]
 macro_rules! impl_py_crossover {
-    ($doc:expr, $py_class:ident, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
+    ($doc:expr, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
         use pyo3::prelude::*;
         use numpy::{PyArray2, PyReadonlyArrayDyn};
         use ndarray::Ix2;
         use pyo3::exceptions::PyValueError;
-        use numpy::{
-            PyArrayMethods,
-            ToPyArray,
-        };
+        use numpy::{PyArrayMethods, ToPyArray};
         use crate::random::MOORandomGenerator;
 
-        #[doc = $doc]
-        #[pyclass(name = $py_name)]
-        #[derive(Clone)]
-        pub struct $py_class {
-            pub inner: $rust_struct,
+        // Define the struct with the name generated as "Py" + $rust_struct.
+        paste::paste! {
+            #[doc = $doc]
+            #[pyclass(name = $py_name)]
+            #[derive(Clone)]
+            pub struct [<Py $rust_struct>] {
+                pub inner: $rust_struct,
+            }
         }
 
-        // Inject common implementation (constructor, getters, and setters).
-        impl_py_common!($py_class, $rust_struct $(, $field : $type )*);
+        // Inject common implementation (constructor, getters, and setters)
+        impl_py_common!($rust_struct $(, $field : $type )*);
 
         // Additional crossover-specific methods.
         paste::paste! {
             #[pymethods]
-            impl $py_class {
+            impl [<Py $rust_struct>] {
                 #[pyo3(signature = (parents_a, parents_b, seed=None))]
                 pub fn crossover<'py>(
                     &self,
@@ -125,7 +125,7 @@ macro_rules! impl_py_crossover {
 
 #[macro_export]
 macro_rules! impl_py_sampling {
-    ($doc:expr, $py_class:ident, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
+    ($doc:expr, $rust_struct:ident, $py_name:expr $(, $field:ident : $type:ty )* $(,)?) => {
         use pyo3::prelude::*;
         use numpy::{
             PyArray2,
@@ -133,20 +133,23 @@ macro_rules! impl_py_sampling {
         };
         use crate::random::MOORandomGenerator;
 
-        #[doc = $doc]
-        #[pyclass(name = $py_name)]
-        #[derive(Clone)]
-        pub struct $py_class {
-            pub inner: $rust_struct,
+        // Define the struct using paste to concatenate "Py" with $rust_struct.
+        paste::paste! {
+            #[doc = $doc]
+            #[pyclass(name = $py_name)]
+            #[derive(Clone)]
+            pub struct [<Py $rust_struct>] {
+                pub inner: $rust_struct,
+            }
         }
 
-        // Inject common implementation (constructor, getters, and setters).
-        impl_py_common!($py_class, $rust_struct $(, $field : $type )*);
+        // Inject common implementation (constructor, getters, and setters)
+        impl_py_common!($rust_struct $(, $field : $type )*);
 
-        // Additional mutation-specific methods.
+        // Additional sampling-specific methods.
         paste::paste! {
             #[pymethods]
-            impl $py_class {
+            impl [<Py $rust_struct>] {
                 #[pyo3(signature = (pop_size, n_vars, seed=None))]
                 pub fn sample<'py>(
                     &self,
@@ -157,7 +160,6 @@ macro_rules! impl_py_sampling {
                 ) -> PyResult<Bound<'py, PyArray2<f64>>> {
                     let mut rng = MOORandomGenerator::new_from_seed(seed);
                     let sampled_population = self.inner.operate(pop_size, n_vars, &mut rng);
-
                     Ok(sampled_population.to_pyarray(py))
                 }
             }

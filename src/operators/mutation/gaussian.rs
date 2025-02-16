@@ -43,7 +43,6 @@ impl MutationOperator for GaussianMutation {
 
 impl_py_mutation!(
     "Mutation operator that adds Gaussian noise to float variables.",
-    PyGaussianMutation,
     GaussianMutation,
     "GaussianMutation",
     gene_mutation_rate: f64, sigma: f64

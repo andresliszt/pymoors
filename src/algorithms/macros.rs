@@ -1,6 +1,6 @@
 #[macro_export]
 macro_rules! define_multiobj_pyclass {
-    ($StructName:ident, $PyClassName:literal) => {
+    ($StructName:ident) => {
         use numpy::ToPyArray;
         use pyo3::exceptions::PyRuntimeError;
         use pyo3::types::PyDict;
@@ -9,7 +9,7 @@ macro_rules! define_multiobj_pyclass {
         use crate::algorithms::MultiObjectiveAlgorithm;
 
         // The PyO3-exposed struct
-        #[pyclass(name = $PyClassName, unsendable)]
+        #[pyclass(unsendable)]
         pub struct $StructName {
             pub algorithm: MultiObjectiveAlgorithm,
         }

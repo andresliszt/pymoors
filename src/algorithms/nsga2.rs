@@ -12,7 +12,7 @@ use crate::operators::selection::RankAndCrowdingSelection;
 use crate::operators::survival::RankCrowdingSurvival;
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(Nsga2, "Nsga2");
+define_multiobj_pyclass!(Nsga2);
 
 // Implement PyO3 methods
 #[pymethods]

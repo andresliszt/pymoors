@@ -31,7 +31,6 @@ impl SamplingOperator for RandomSamplingFloat {
 
 impl_py_sampling!(
     "Sampling operator for floating-point variables using uniform random distribution.",
-    PyRandomSamplingFloat,
     RandomSamplingFloat,
     "RandomSamplingFloat",
     min: f64,

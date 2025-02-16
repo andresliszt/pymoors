@@ -99,7 +99,6 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
 
 impl_py_crossover!(
     "Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.",
-    PySimulatedBinaryCrossover,
     SimulatedBinaryCrossover,
     "SimulatedBinaryCrossover",
     distribution_index: f64,
