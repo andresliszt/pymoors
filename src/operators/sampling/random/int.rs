@@ -1,8 +1,15 @@
+use std::fmt::Debug;
+
+use pymoors_macros::py_operator;
+
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
-use std::fmt::Debug;
 
+#[py_operator(
+    "sampling",
+    "Sampling operator for integer variables using uniform random distribution."
+)]
 #[derive(Clone, Debug)]
 pub struct RandomSamplingInt {
     pub min: i32,
@@ -28,11 +35,3 @@ impl SamplingOperator for RandomSamplingInt {
             .collect()
     }
 }
-
-impl_py_sampling!(
-    "Sampling operator for integer variables using uniform random distribution.",
-    RandomSamplingInt,
-    "RandomSamplingInt",
-    min: i32,
-    max: i32
-);

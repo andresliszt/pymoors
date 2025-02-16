@@ -1,8 +1,12 @@
+use std::fmt::Debug;
+
+use pymoors_macros::py_operator;
+
 use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
-use std::fmt::Debug;
 
+#[py_operator("sampling", "Sampling operator for binary variables.")]
 #[derive(Clone, Debug)]
 pub struct RandomSamplingBinary;
 
@@ -25,9 +29,3 @@ impl SamplingOperator for RandomSamplingBinary {
             .collect()
     }
 }
-
-impl_py_sampling!(
-    "Sampling operator for binary variables.",
-    RandomSamplingBinary,
-    "RandomSamplingBinary"
-);

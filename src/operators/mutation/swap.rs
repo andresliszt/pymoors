@@ -1,6 +1,12 @@
+use pymoors_macros::py_operator;
+
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
+#[py_operator(
+    "mutation",
+    "Mutation operator that swaps two genes in a permutation-based individual."
+)]
 #[derive(Clone, Debug)]
 pub struct SwapMutation;
 
@@ -35,12 +41,6 @@ impl MutationOperator for SwapMutation {
         }
     }
 }
-
-impl_py_mutation!(
-    "Mutation operator that swaps two genes in a permutation-based individual.",
-    SwapMutation,
-    "SwapMutation"
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

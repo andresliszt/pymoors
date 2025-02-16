@@ -1,9 +1,14 @@
 use numpy::ndarray::{concatenate, s, Array1, Axis};
+use pymoors_macros::py_operator;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
+#[py_operator(
+    "crossover",
+    "Single-point crossover operator for binary-encoded individuals."
+)]
 #[derive(Clone, Debug)]
 pub struct SinglePointBinaryCrossover;
 
@@ -56,12 +61,6 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
         (offspring_a, offspring_b)
     }
 }
-
-impl_py_crossover!(
-    "Single-point crossover operator for binary-encoded individuals.",
-    SinglePointBinaryCrossover,
-    "SinglePointBinaryCrossover"
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

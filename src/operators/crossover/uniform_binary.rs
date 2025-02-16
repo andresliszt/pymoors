@@ -1,7 +1,13 @@
+use pymoors_macros::py_operator;
+
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
+#[py_operator(
+    "crossover",
+    "Uniform binary crossover operator for genetic algorithms."
+)]
 #[derive(Clone, Debug)]
 pub struct UniformBinaryCrossover;
 
@@ -49,12 +55,6 @@ impl CrossoverOperator for UniformBinaryCrossover {
         (offspring_a, offspring_b)
     }
 }
-
-impl_py_crossover!(
-    "Uniform binary crossover operator for genetic algorithms.",
-    UniformBinaryCrossover,
-    "UniformBinaryCrossover"
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

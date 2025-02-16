@@ -1,10 +1,13 @@
-use crate::operators::{Genes, GeneticOperator, SamplingOperator};
-use crate::random::RandomGenerator;
-use numpy::ndarray::Array1;
-use rand::seq::SliceRandom;
 use std::fmt::Debug;
 
-/// A sampling operator that returns a random permutation of [0..n_vars).
+use numpy::ndarray::Array1;
+use pymoors_macros::py_operator;
+use rand::seq::SliceRandom;
+
+use crate::operators::{Genes, GeneticOperator, SamplingOperator};
+use crate::random::RandomGenerator;
+
+#[py_operator("sampling", "Sampling operator for permutation-based variables.")]
 #[derive(Clone, Debug)]
 pub struct PermutationSampling;
 
@@ -33,12 +36,6 @@ impl SamplingOperator for PermutationSampling {
         Array1::from_vec(indices)
     }
 }
-
-impl_py_sampling!(
-    "Sampling operator for permutation-based variables.",
-    PermutationSampling,
-    "PermutationSampling"
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

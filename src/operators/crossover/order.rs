@@ -1,9 +1,14 @@
 use numpy::ndarray::Array1;
+use pymoors_macros::py_operator;
 
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
+#[py_operator(
+    "crossover",
+    "Crossover operator for permutation-based individuals using Order Crossover (OX)."
+)]
 #[derive(Clone, Debug)]
 pub struct OrderCrossover;
 
@@ -77,12 +82,6 @@ impl CrossoverOperator for OrderCrossover {
         (child_a, child_b)
     }
 }
-
-impl_py_crossover!(
-    "Crossover operator for permutation-based individuals using Order Crossover (OX).",
-    OrderCrossover,
-    "OrderCrossover"
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

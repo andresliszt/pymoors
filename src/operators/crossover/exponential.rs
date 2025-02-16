@@ -1,7 +1,10 @@
+use pymoors_macros::py_operator;
+
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
+#[py_operator("crossover", "ds")]
 #[derive(Clone, Debug)]
 pub struct ExponentialCrossover {
     pub exponential_crossover_rate: f64,
@@ -75,13 +78,6 @@ impl CrossoverOperator for ExponentialCrossover {
         (child_a, child_b)
     }
 }
-
-impl_py_crossover!(
-    "Crossover operator that combines parent genes based on an exponential distribution.",
-    ExponentialCrossover,
-    "ExponentialCrossover",
-    exponential_crossover_rate: f64
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

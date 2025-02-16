@@ -1,3 +1,5 @@
+use pymoors_macros::py_operator;
+
 use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
@@ -14,6 +16,10 @@ use crate::random::RandomGenerator;
 ///
 /// **Reference**: Deb, Kalyanmoy, and R. B. Agrawal. "Simulated binary crossover
 /// for continuous search space." Complex systems 9.2 (1995): 115-148.
+#[py_operator(
+    "crossover",
+    "Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms."
+)]
 #[derive(Clone, Debug)]
 pub struct SimulatedBinaryCrossover {
     /// Distribution index (η) that controls offspring spread. Typical range: [2, 20].
@@ -96,13 +102,6 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
         (child_a, child_b)
     }
 }
-
-impl_py_crossover!(
-    "Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.",
-    SimulatedBinaryCrossover,
-    "SimulatedBinaryCrossover",
-    distribution_index: f64,
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]

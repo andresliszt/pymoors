@@ -1,8 +1,13 @@
+use pymoors_macros::py_operator;
+use rand_distr::{Distribution, Normal};
+
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
-use rand_distr::{Distribution, Normal};
-
+#[py_operator(
+    "mutation",
+    "Mutation operator that adds Gaussian noise to float variables."
+)]
 #[derive(Clone, Debug)]
 pub struct GaussianMutation {
     pub gene_mutation_rate: f64,
@@ -40,13 +45,6 @@ impl MutationOperator for GaussianMutation {
         }
     }
 }
-
-impl_py_mutation!(
-    "Mutation operator that adds Gaussian noise to float variables.",
-    GaussianMutation,
-    "GaussianMutation",
-    gene_mutation_rate: f64, sigma: f64
-);
 
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
