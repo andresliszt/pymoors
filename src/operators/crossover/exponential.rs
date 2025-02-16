@@ -4,7 +4,7 @@ use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator("crossover", "ds")]
+#[py_operator("crossover", "Crossover operator that combines parent genes based on an exponential distribution.")]
 #[derive(Clone, Debug)]
 pub struct ExponentialCrossover {
     pub exponential_crossover_rate: f64,
