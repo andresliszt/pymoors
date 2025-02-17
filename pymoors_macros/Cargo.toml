@@ -1,0 +1,16 @@
+[package]
+name = "pymoors_macros"
+version = "0.1.2"
+edition = "2021"
+authors = ["Andrés Sandoval Abarca <andres.sndbrca@gmail.com>"]
+description = "Procedural macros for pymoors project"
+license = "MIT"
+repository = "https://github.com/andresliszt/pymoors_macros"
+
+
+[lib]
+proc-macro = true
+
+[dependencies]
+quote = "1.0.38"
+syn = "2.0.0"

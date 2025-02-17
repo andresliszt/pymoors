@@ -27,7 +27,7 @@ node_modules/
 /sandbox/
 /sandbox/
 /site/
-/target/
+**/target/
 /worktree/
 .DS_Store
 .codspeed
