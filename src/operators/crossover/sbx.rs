@@ -16,11 +16,9 @@ use crate::random::RandomGenerator;
 ///
 /// **Reference**: Deb, Kalyanmoy, and R. B. Agrawal. "Simulated binary crossover
 /// for continuous search space." Complex systems 9.2 (1995): 115-148.
-#[py_operator(
-    "crossover",
-    "Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms."
-)]
+#[py_operator("crossover")]
 #[derive(Clone, Debug)]
+/// Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
 pub struct SimulatedBinaryCrossover {
     /// Distribution index (η) that controls offspring spread. Typical range: [2, 20].
     pub distribution_index: f64,

@@ -5,11 +5,9 @@ use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "crossover",
-    "Crossover operator for permutation-based individuals using Order Crossover (OX)."
-)]
+#[py_operator("crossover")]
 #[derive(Clone, Debug)]
+/// Crossover operator for permutation-based individuals using Order Crossover (OX).
 pub struct OrderCrossover;
 
 impl OrderCrossover {

@@ -3,11 +3,9 @@ use pymoors_macros::py_operator;
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "mutation",
-    "Mutation operator that swaps two genes in a permutation-based individual."
-)]
+#[py_operator("mutation")]
 #[derive(Clone, Debug)]
+/// Mutation operator that swaps two genes in a permutation-based individual.
 pub struct SwapMutation;
 
 impl SwapMutation {

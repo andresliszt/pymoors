@@ -4,10 +4,8 @@ use rand_distr::{Distribution, Normal};
 use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "mutation",
-    "Mutation operator that adds Gaussian noise to float variables."
-)]
+#[py_operator("mutation")]
+/// Mutation operator that adds Gaussian noise to float variables.
 #[derive(Clone, Debug)]
 pub struct GaussianMutation {
     pub gene_mutation_rate: f64,

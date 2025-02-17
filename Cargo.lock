@@ -708,9 +708,9 @@ dependencies = [
 
 [[package]]
 name = "pymoors_macros"
-version = "0.1.1"
+version = "0.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05df61e719e2a3d6b96c51aa2ec8b296646d59ed743ad6653dc32101a40302c7"
+checksum = "ac74b2df5f530b3d218bb889f944f1d90dcba5ab9b4f6c2a354560c1a357776a"
 dependencies = [
  "quote",
  "syn",

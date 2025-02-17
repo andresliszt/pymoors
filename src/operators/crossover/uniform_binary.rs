@@ -4,11 +4,9 @@ use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "crossover",
-    "Uniform binary crossover operator for genetic algorithms."
-)]
+#[py_operator("crossover")]
 #[derive(Clone, Debug)]
+/// Uniform binary crossover operator for genetic algorithms.
 pub struct UniformBinaryCrossover;
 
 impl UniformBinaryCrossover {

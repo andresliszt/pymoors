@@ -3,11 +3,9 @@ use crate::random::RandomGenerator;
 
 use pymoors_macros::py_operator;
 
-#[py_operator(
-    "mutation",
-    "Mutation operator that flips bits in a binary individual with a specified mutation rate"
-)]
+#[py_operator("mutation")]
 #[derive(Clone, Debug)]
+/// Mutation operator that flips bits in a binary individual with a specified mutation rate
 pub struct BitFlipMutation {
     pub gene_mutation_rate: f64,
 }

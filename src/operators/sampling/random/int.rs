@@ -6,11 +6,9 @@ use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "sampling",
-    "Sampling operator for integer variables using uniform random distribution."
-)]
+#[py_operator("sampling")]
 #[derive(Clone, Debug)]
+/// Sampling operator for integer variables using uniform random distribution.
 pub struct RandomSamplingInt {
     pub min: i32,
     pub max: i32,

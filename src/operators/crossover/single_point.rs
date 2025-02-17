@@ -5,11 +5,9 @@ use crate::genetic::Genes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator(
-    "crossover",
-    "Single-point crossover operator for binary-encoded individuals."
-)]
+#[py_operator("crossover")]
 #[derive(Clone, Debug)]
+/// Single-point crossover operator for binary-encoded individuals.
 pub struct SinglePointBinaryCrossover;
 
 impl SinglePointBinaryCrossover {

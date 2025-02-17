@@ -20,7 +20,7 @@ ordered-float = "4.6.0"
 rand_distr = "0.4.3"
 rayon = "1.10.0"
 ndarray-linalg = { version = "0.13"}
-pymoors_macros = "0.1.1"
+pymoors_macros = "0.1.2"
 
 [features]
 extension-module = ["pyo3/extension-module"]

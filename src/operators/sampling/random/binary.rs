@@ -6,8 +6,9 @@ use crate::genetic::Genes;
 use crate::operators::{GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator("sampling", "Sampling operator for binary variables.")]
+#[py_operator("sampling")]
 #[derive(Clone, Debug)]
+/// Sampling operator for binary variables.
 pub struct RandomSamplingBinary;
 
 impl RandomSamplingBinary {

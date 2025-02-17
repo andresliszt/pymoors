@@ -7,8 +7,9 @@ use rand::seq::SliceRandom;
 use crate::operators::{Genes, GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
 
-#[py_operator("sampling", "Sampling operator for permutation-based variables.")]
+#[py_operator("sampling")]
 #[derive(Clone, Debug)]
+/// Sampling operator for permutation-based variables.
 pub struct PermutationSampling;
 
 impl PermutationSampling {
