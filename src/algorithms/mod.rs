@@ -8,8 +8,9 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::PyErr;
 
 use crate::{
-    algorithms::py_errors::NoFeasibleIndividualsError,
     algorithms::py_errors::InvalidParameterError,
+    algorithms::py_errors::NoFeasibleIndividualsError,
+    duplicates::PopulationCleaner,
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     helpers::printer::print_minimum_objectives,
@@ -73,7 +74,6 @@ impl From<MultiObjectiveAlgorithmError> for PyErr {
 
 impl Error for MultiObjectiveAlgorithmError {}
 
-
 // Helper function for probability validation
 fn validate_probability(value: f64, name: &str) -> Result<(), MultiObjectiveAlgorithmError> {
     if !(0.0..=1.0).contains(&value) {
@@ -133,7 +133,6 @@ impl MultiObjectiveAlgorithm {
         upper_bound: Option<f64>,
         seed: Option<u64>,
     ) -> Result<Self, MultiObjectiveAlgorithmError> {
-
         // Validate probabilities
         validate_probability(mutation_rate, "Mutation rate")?;
         validate_probability(crossover_rate, "Crossover rate")?;
@@ -153,7 +152,6 @@ impl MultiObjectiveAlgorithm {
                 )));
             }
         }
-
 
         let mut rng =
             MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
