@@ -110,6 +110,7 @@ mod tests {
             let mut rng = FakeRandomGeneratorDisplacement::new(rng_values);
 
             let mutation_operator = DisplacementMutation::new();
+            assert_eq!(mutation_operator.name(), "DisplacementMutation");
             mutation_operator.mutate(view, &mut rng);
         }
 

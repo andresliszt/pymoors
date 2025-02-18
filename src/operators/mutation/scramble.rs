@@ -100,6 +100,7 @@ mod tests {
         let mut individual: Array1<f64> = array![0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
         let mut rng = FakeRandomGeneratorScramble::new(rng_boundaries);
         let mutation_operator = ScrambleMutation::new();
+        assert_eq!(mutation_operator.name(), "ScrambleMutation");
         {
             let view = individual.view_mut();
             mutation_operator.mutate(view, &mut rng);
