@@ -2,8 +2,8 @@ use std::fmt;
 use std::fmt::Debug;
 
 use crate::{
+    duplicates::PopulationCleaner,
     genetic::{Population, PopulationGenes},
-    helpers::duplicates::PopulationCleaner,
     operators::{CrossoverOperator, MutationOperator, SelectionOperator},
     random::RandomGenerator,
 };

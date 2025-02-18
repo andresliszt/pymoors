@@ -227,6 +227,11 @@ class DuplicatesCleaner:
     This abstract class defines the interface for different duplicate cleaning strategies.
     """
 
+    def remove_duplicates(
+        self, population: TwoDArray, reference: Optional[TwoDArray]
+    ) -> TwoDArray:
+        """Removes duplicates from population."""
+
 class ExactDuplicatesCleaner(DuplicatesCleaner):
     """
     Cleaner that removes exact duplicate individuals from the population.

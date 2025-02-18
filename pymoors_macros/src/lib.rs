@@ -135,7 +135,7 @@ pub fn py_operator(attr: TokenStream, item: TokenStream) -> TokenStream {
                     .map_err(|_| pyo3::exceptions::PyValueError::new_err("Population numpy array must be 2D to use mutate."))?;
                 let mut rng = crate::random::MOORandomGenerator::new_from_seed(seed);
                 self.inner.operate(&mut owned_population, 1.0, &mut rng);
-                Ok(owned_population.to_pyarray(py))
+                Ok(numpy::ToPyArray::to_pyarray(&owned_population, py))
             }
         }
     } else if operator_type == "crossover" {
@@ -156,7 +156,7 @@ pub fn py_operator(attr: TokenStream, item: TokenStream) -> TokenStream {
                     .map_err(|_| pyo3::exceptions::PyValueError::new_err("parent_b numpy array must be 2D to use crossover."))?;
                 let mut rng = crate::random::MOORandomGenerator::new_from_seed(seed);
                 let offspring = self.inner.operate(&owned_parents_a, &owned_parents_b, 1.0, &mut rng);
-                Ok(offspring.to_pyarray(py))
+                Ok(numpy::ToPyArray::to_pyarray(&offspring, py))
             }
         }
     } else if operator_type == "sampling" {
@@ -171,8 +171,30 @@ pub fn py_operator(attr: TokenStream, item: TokenStream) -> TokenStream {
             ) -> pyo3::prelude::PyResult<pyo3::prelude::Bound<'py, numpy::PyArray2<f64>>> {
                 let mut rng = crate::random::MOORandomGenerator::new_from_seed(seed);
                 let sampled_population = self.inner.operate(pop_size, n_vars, &mut rng);
-                Ok(sampled_population.to_pyarray(py))
+                Ok(numpy::ToPyArray::to_pyarray(&sampled_population, py))
             }
+        }
+    } else if operator_type == "duplicates" {
+        quote! {
+        #[pyo3(signature = (population, reference=None))]
+        pub fn remove_duplicates<'py>(
+                &self,
+                py: pyo3::prelude::Python<'py>,
+                population: numpy::PyReadonlyArrayDyn<'py, f64>,
+                reference: Option<numpy::PyReadonlyArrayDyn<'py, f64>>,
+        ) -> pyo3::prelude::PyResult<pyo3::prelude::Bound<'py, numpy::PyArray2<f64>>> {
+                let population = population.to_owned_array();
+                let population = population.into_dimensionality::<ndarray::Ix2>()
+                .map_err(|_| pyo3::exceptions::PyValueError::new_err("population numpy array must be 2D to use crossover."))?;
+                let reference = reference
+                .map(|ref_arr| {
+                    ref_arr.to_owned_array().into_dimensionality::<ndarray::Ix2>()
+                        .map_err(|_| pyo3::exceptions::PyValueError::new_err("Reference numpy array must be 2D."))
+                })
+                .transpose()?;
+                let clean_population = self.inner.remove(&population, reference.as_ref());
+                Ok(numpy::ToPyArray::to_pyarray(&clean_population, py))
+        }
         }
     } else {
         return syn::Error::new_spanned(
@@ -184,7 +206,8 @@ pub fn py_operator(attr: TokenStream, item: TokenStream) -> TokenStream {
     };
 
     let expanded = quote! {
-        use numpy::{PyArrayMethods, ToPyArray};
+        // Is there a way to avoid this import here?. Importing doesn't let us to use the macro twice in a module
+        use numpy::PyArrayMethods;
 
         #input
 

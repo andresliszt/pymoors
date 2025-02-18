@@ -43,10 +43,10 @@ unwrap_operator!(
 
 unwrap_operator!(
     unwrap_duplicates_cleaner,
-    crate::helpers::duplicates::PopulationCleaner,
+    crate::duplicates::PopulationCleaner,
     "Unsupported or unknown duplicates cleaner",
     [
-        crate::helpers::duplicates::PyCloseDuplicatesCleaner,
-        crate::helpers::duplicates::PyExactDuplicatesCleaner
+        crate::duplicates::close::PyCloseDuplicatesCleaner,
+        crate::duplicates::exact::PyExactDuplicatesCleaner
     ]
 );

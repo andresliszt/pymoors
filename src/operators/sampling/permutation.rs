@@ -2,7 +2,6 @@ use std::fmt::Debug;
 
 use numpy::ndarray::Array1;
 use pymoors_macros::py_operator;
-use rand::seq::SliceRandom;
 
 use crate::operators::{Genes, GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;

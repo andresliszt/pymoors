@@ -12,7 +12,6 @@ use crate::{
     algorithms::py_errors::InvalidParameterError,
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
-    helpers::duplicates::PopulationCleaner,
     helpers::printer::print_minimum_objectives,
     operators::{
         evolve::Evolve, evolve::EvolveError, CrossoverOperator, MutationOperator, SamplingOperator,

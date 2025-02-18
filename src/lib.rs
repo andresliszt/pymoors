@@ -7,6 +7,7 @@ mod genetic;
 
 mod algorithms;
 pub mod diversity_metrics;
+mod duplicates;
 mod helpers;
 pub mod non_dominated_sorting;
 mod operators;
@@ -19,7 +20,7 @@ pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
 pub use algorithms::py_errors::InvalidParameterError;
 pub use algorithms::rnsga2::RNsga2;
-pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
+pub use duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
     PyBitFlipMutation, PyDisplacementMutation, PyExponentialCrossover, PyGaussianMutation,
     PyOrderCrossover, PyPermutationSampling, PyRandomSamplingBinary, PyRandomSamplingFloat,
