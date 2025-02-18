@@ -143,6 +143,14 @@ class GaussianMutation(MutationOperator):
 
     def __init__(self, gene_mutation_rate: float, sigma: float) -> None: ...
 
+class DisplacementMutation(MutationOperator):
+    """Operator that extracts a segment from an individual and reinserts it at a new random position."""
+    def __init__(self) -> None: ...
+
+class ScrambleMutation(MutationOperator):
+    """Operator that selects a random segment from an individual and scrambles it by randomly reordering the genes within the segment."""
+    def __init__(self) -> None: ...
+
 class OrderCrossover(CrossoverOperator):
     """
     Crossover operator for permutation-based individuals using Order Crossover (OX).

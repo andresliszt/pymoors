@@ -86,20 +86,6 @@ mod tests {
         fn rng(&mut self) -> &mut dyn RngCore {
             &mut self.dummy
         }
-        fn gen_range_usize(&mut self, min: usize, _max: usize) -> usize {
-            // Not used in this test.
-            min
-        }
-        fn gen_range_f64(&mut self, min: f64, _max: f64) -> f64 {
-            // Not used in this test.
-            min
-        }
-        fn gen_usize(&mut self) -> usize {
-            0
-        }
-        fn gen_bool(&mut self, _p: f64) -> bool {
-            false
-        }
         // Override the default `gen_proability()` to return controlled values.
         fn gen_proability(&mut self) -> f64 {
             let value = self.responses[self.index];

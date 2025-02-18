@@ -7,7 +7,13 @@ is done extensively in the Rust modules where they are defined.
 import numpy as np
 import pytest
 
-from pymoors import BitFlipMutation, SwapMutation, GaussianMutation
+from pymoors import (
+    BitFlipMutation,
+    SwapMutation,
+    GaussianMutation,
+    DisplacementMutation,
+    ScrambleMutation,
+)
 
 
 @pytest.mark.parametrize(
@@ -16,6 +22,8 @@ from pymoors import BitFlipMutation, SwapMutation, GaussianMutation
         (BitFlipMutation, {"gene_mutation_rate": 0.5}, "binary"),
         (SwapMutation, {}, "binary"),
         (GaussianMutation, {"gene_mutation_rate": 0.5, "sigma": 0.1}, "real"),
+        (DisplacementMutation, {}),
+        (ScrambleMutation, {}),
     ],
 )
 def test_mutation_exposed_methods(operator_class, kwargs, pop_type):

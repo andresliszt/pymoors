@@ -120,18 +120,6 @@ mod tests {
             self.range_values.remove(0)
         }
 
-        fn gen_range_f64(&mut self, _min: f64, _max: f64) -> f64 {
-            unimplemented!("Not used in this test")
-        }
-
-        fn gen_usize(&mut self) -> usize {
-            unimplemented!("Not used in this test")
-        }
-
-        fn gen_bool(&mut self, _p: f64) -> bool {
-            unimplemented!("Not used in this test")
-        }
-
         /// Returns the next predetermined probability value.
         fn gen_proability(&mut self) -> f64 {
             self.probability_values.remove(0)

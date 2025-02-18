@@ -1,28 +1,39 @@
 use rand::rngs::StdRng;
+use rand::seq::SliceRandom;
 use rand::{Rng, RngCore, SeedableRng};
 
 /// A trait defining a unified interface for generating random values,
 /// used across genetic operators and algorithms.
 pub trait RandomGenerator {
-    /// Generates a random `usize` in the range `[min, max)`.
-    fn gen_range_usize(&mut self, min: usize, max: usize) -> usize;
+    /// Generates a random `usize` in the range `[min, max)` using the underlying RNG.
+    fn gen_range_usize(&mut self, min: usize, max: usize) -> usize {
+        self.rng().gen_range(min..max)
+    }
 
-    /// Generates a random `f64` in the range `[min, max)`.
-    fn gen_range_f64(&mut self, min: f64, max: f64) -> f64;
+    /// Generates a random `f64` in the range `[min, max)` using the underlying RNG.
+    fn gen_range_f64(&mut self, min: f64, max: f64) -> f64 {
+        self.rng().gen_range(min..max)
+    }
 
-    /// Generates a random `usize` with no specified range.
-    fn gen_usize(&mut self) -> usize;
+    /// Generates a random `usize` using the underlying RNG.
+    fn gen_usize(&mut self) -> usize {
+        self.rng().gen()
+    }
 
-    /// Generates a random boolean value with `p` probability of being `true`.
-    fn gen_bool(&mut self, p: f64) -> bool;
-
-    /// Returns a mutable reference to the underlying RNG implementing `RngCore`.
-    fn rng(&mut self) -> &mut dyn RngCore;
-
+    /// Generates a random boolean value with probability `p` of being `true`
+    /// using the underlying RNG.
+    fn gen_bool(&mut self, p: f64) -> bool {
+        self.rng().gen_bool(p)
+    }
     /// Generates a random probability as an `f64` in the range `[0.0, 1.0)`.
     fn gen_proability(&mut self) -> f64 {
         self.rng().gen::<f64>()
     }
+    fn shuffle_vec(&mut self, vector: &mut Vec<f64>) {
+        vector.shuffle(self.rng())
+    }
+    /// Returns a mutable reference to the underlying RNG implementing `RngCore`.
+    fn rng(&mut self) -> &mut dyn RngCore;
 }
 
 /// The production implementation of `RandomGenerator` using `StdRng`.
@@ -45,27 +56,6 @@ impl RandomGenerator for MOORandomGenerator {
     /// Returns a mutable reference to the underlying `StdRng`.
     fn rng(&mut self) -> &mut dyn RngCore {
         &mut self.rng
-    }
-
-    /// Generates a random `usize` in the range `[min, max)` using the underlying RNG.
-    fn gen_range_usize(&mut self, min: usize, max: usize) -> usize {
-        self.rng.gen_range(min..max)
-    }
-
-    /// Generates a random `f64` in the range `[min, max)` using the underlying RNG.
-    fn gen_range_f64(&mut self, min: f64, max: f64) -> f64 {
-        self.rng.gen_range(min..max)
-    }
-
-    /// Generates a random `usize` using the underlying RNG.
-    fn gen_usize(&mut self) -> usize {
-        self.rng.gen()
-    }
-
-    /// Generates a random boolean value with probability `p` of being `true`
-    /// using the underlying RNG.
-    fn gen_bool(&mut self, p: f64) -> bool {
-        self.rng.gen_bool(p)
     }
 }
 

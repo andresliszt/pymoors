@@ -32,7 +32,7 @@ impl SamplingOperator for PermutationSampling {
         let mut indices: Vec<f64> = (0..n_vars).map(|i| i as f64).collect();
 
         // 2) Shuffle the indices in-place using the `SliceRandom` trait
-        indices.shuffle(rng.rng());
+        rng.shuffle_vec(&mut indices);
 
         Array1::from_vec(indices)
     }
@@ -41,26 +41,9 @@ impl SamplingOperator for PermutationSampling {
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
-    use super::*; // Import PermutationSampling, etc.
-    use crate::random::RandomGenerator;
+    use super::*;
+    use crate::random::{RandomGenerator, TestDummyRng};
     use rand::RngCore;
-
-    pub struct TestDummyRng;
-
-    impl RngCore for TestDummyRng {
-        fn next_u32(&mut self) -> u32 {
-            0
-        }
-        fn next_u64(&mut self) -> u64 {
-            unimplemented!("Not used in this test")
-        }
-        fn fill_bytes(&mut self, _dest: &mut [u8]) {
-            unimplemented!("Not used in this test")
-        }
-        fn try_fill_bytes(&mut self, _dest: &mut [u8]) -> Result<(), rand::Error> {
-            unimplemented!("Not used in this test")
-        }
-    }
 
     /// A fake RandomGenerator for testing. It contains a TestDummyRng to provide
     /// the required RngCore behavior.
@@ -82,18 +65,8 @@ mod tests {
             &mut self.dummy
         }
 
-        fn gen_range_usize(&mut self, min: usize, _max: usize) -> usize {
-            // Not used by the shuffle, so just return min.
-            min
-        }
-        fn gen_range_f64(&mut self, min: f64, _max: f64) -> f64 {
-            min
-        }
-        fn gen_usize(&mut self) -> usize {
-            0
-        }
-        fn gen_bool(&mut self, _p: f64) -> bool {
-            false
+        fn shuffle_vec(&mut self, vector: &mut Vec<f64>) {
+            vector.reverse();
         }
     }
 
@@ -116,15 +89,7 @@ mod tests {
         assert_eq!(population.nrows(), pop_size);
         assert_eq!(population.ncols(), n_vars);
 
-        // With our dummy RNG always returning 0, the shuffle will behave as follows:
-        //
-        // For the initial vector [0.0, 1.0, 2.0, 3.0]:
-        //  - i = 3: j = 0, swap positions 3 and 0 => [3.0, 1.0, 2.0, 0.0]
-        //  - i = 2: j = 0, swap positions 2 and 0 => [2.0, 1.0, 3.0, 0.0]
-        //  - i = 1: j = 0, swap positions 1 and 0 => [1.0, 2.0, 3.0, 0.0]
-        //
-        // Thus, the expected permutation for each individual is:
-        let expected = vec![1.0, 2.0, 3.0, 0.0];
+        let expected = vec![3.0, 2.0, 1.0, 0.0];
 
         // Verify that each individual's genes match the expected permutation.
         for row in population.outer_iter() {

@@ -78,16 +78,6 @@ mod tests {
             self.index += 1;
             resp
         }
-
-        fn gen_range_f64(&mut self, min: f64, _max: f64) -> f64 {
-            min
-        }
-        fn gen_usize(&mut self) -> usize {
-            0
-        }
-        fn gen_bool(&mut self, _p: f64) -> bool {
-            true
-        }
     }
 
     #[test]

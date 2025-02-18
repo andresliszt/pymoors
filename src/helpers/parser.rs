@@ -11,6 +11,8 @@ unwrap_operator!(
         crate::operators::py_operators::PyBitFlipMutation,
         crate::operators::py_operators::PySwapMutation,
         crate::operators::py_operators::PyGaussianMutation,
+        crate::operators::py_operators::PyDisplacementMutation,
+        crate::operators::py_operators::PyScrambleMutation,
     ]
 );
 

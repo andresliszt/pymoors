@@ -132,18 +132,6 @@ mod tests {
         fn rng(&mut self) -> &mut dyn rand::RngCore {
             &mut self.dummy
         }
-        fn gen_range_usize(&mut self, _min: usize, _max: usize) -> usize {
-            unimplemented!("Not used in SBX test")
-        }
-        fn gen_range_f64(&mut self, _min: f64, _max: f64) -> f64 {
-            unimplemented!("Not used in SBX test")
-        }
-        fn gen_usize(&mut self) -> usize {
-            unimplemented!("Not used in SBX test")
-        }
-        fn gen_bool(&mut self, _p: f64) -> bool {
-            unimplemented!("Not used in SBX test")
-        }
         fn gen_proability(&mut self) -> f64 {
             // Return the next predetermined probability value.
             self.probability_values.remove(0)
