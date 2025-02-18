@@ -83,6 +83,8 @@ def available_operators(
                 BitFlipMutation,
                 SwapMutation,
                 GaussianMutation,
+                ScrambleMutation,
+                DisplacementMutation,
             ],
             include_docs=include_docs,
         )
