@@ -8,3 +8,11 @@ create_exception!(
     PyBaseException,
     "Raise this error when no feasible individuals are found"
 );
+
+// Raised when an invalid parameter value is provided
+create_exception!(
+    pymoors,
+    InvalidParameterError,
+    PyBaseException,
+    "Raised when an invalid parameter value is provided"
+);

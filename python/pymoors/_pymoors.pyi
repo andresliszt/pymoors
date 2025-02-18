@@ -384,3 +384,6 @@ class RNsga2:
 
 class NoFeasibleIndividualsError(BaseException):
     """Raise this error when no feasible individuals are found"""
+
+class InvalidParameterError(BaseException):
+    """Raise this error when an invalid parameter is provided"""

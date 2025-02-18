@@ -21,6 +21,7 @@ from ._pymoors import (
     ExactDuplicatesCleaner,
     CloseDuplicatesCleaner,
     NoFeasibleIndividualsError,
+    InvalidParameterError,
 )
 
 
@@ -128,5 +129,6 @@ __all__ = (
     "ExactDuplicatesCleaner",
     "CloseDuplicatesCleaner",
     "NoFeasibleIndividualsError",
+    "InvalidParameterError",
     "available_operators",
 )

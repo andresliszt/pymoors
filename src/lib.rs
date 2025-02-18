@@ -17,6 +17,7 @@ use pyo3::prelude::*;
 pub use algorithms::nsga2::Nsga2;
 pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
+pub use algorithms::py_errors::InvalidParameterError;
 pub use algorithms::rnsga2::RNsga2;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
@@ -55,6 +56,11 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add(
         "NoFeasibleIndividualsError",
         _py.get_type::<NoFeasibleIndividualsError>(),
+    )?;
+    // Py Errors
+    m.add(
+        "InvalidParameterError",
+        _py.get_type::<InvalidParameterError>(),
     )?;
 
     Ok(())

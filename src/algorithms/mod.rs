@@ -9,6 +9,7 @@ use pyo3::PyErr;
 
 use crate::{
     algorithms::py_errors::NoFeasibleIndividualsError,
+    algorithms::py_errors::InvalidParameterError,
     evaluator::Evaluator,
     genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     helpers::duplicates::PopulationCleaner,
@@ -30,6 +31,7 @@ pub mod rnsga2;
 pub enum MultiObjectiveAlgorithmError {
     Evolve(EvolveError),
     NoFeasibleIndividuals,
+    InvalidParameter(String),
 }
 
 impl fmt::Display for MultiObjectiveAlgorithmError {
@@ -40,6 +42,9 @@ impl fmt::Display for MultiObjectiveAlgorithmError {
             }
             MultiObjectiveAlgorithmError::NoFeasibleIndividuals => {
                 write!(f, "No feasible individuals found")
+            }
+            MultiObjectiveAlgorithmError::InvalidParameter(msg) => {
+                write!(f, "Invalid parameter: {}", msg)
             }
         }
     }
@@ -52,12 +57,15 @@ impl From<EvolveError> for MultiObjectiveAlgorithmError {
 }
 
 /// Once a new error is created to be exposed to the python side
-/// the match must be updatetd
+/// the match must be updated to convert the error to the new error type.
 impl From<MultiObjectiveAlgorithmError> for PyErr {
     fn from(err: MultiObjectiveAlgorithmError) -> PyErr {
         match err {
             MultiObjectiveAlgorithmError::NoFeasibleIndividuals => {
                 NoFeasibleIndividualsError::new_err(err.to_string())
+            }
+            MultiObjectiveAlgorithmError::InvalidParameter(msg) => {
+                InvalidParameterError::new_err(msg)
             }
             _ => PyRuntimeError::new_err(err.to_string()),
         }
@@ -65,6 +73,29 @@ impl From<MultiObjectiveAlgorithmError> for PyErr {
 }
 
 impl Error for MultiObjectiveAlgorithmError {}
+
+
+// Helper function for probability validation
+fn validate_probability(value: f64, name: &str) -> Result<(), MultiObjectiveAlgorithmError> {
+    if !(0.0..=1.0).contains(&value) {
+        return Err(MultiObjectiveAlgorithmError::InvalidParameter(format!(
+            "{} must be between 0 and 1, got {}",
+            name, value
+        )));
+    }
+    Ok(())
+}
+
+// Helper function for positive integer validation
+fn validate_positive(value: usize, name: &str) -> Result<(), MultiObjectiveAlgorithmError> {
+    if value == 0 {
+        return Err(MultiObjectiveAlgorithmError::InvalidParameter(format!(
+            "{} must be greater than 0",
+            name
+        )));
+    }
+    Ok(())
+}
 
 pub struct MultiObjectiveAlgorithm {
     population: Population,
