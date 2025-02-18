@@ -134,6 +134,28 @@ impl MultiObjectiveAlgorithm {
         upper_bound: Option<f64>,
         seed: Option<u64>,
     ) -> Result<Self, MultiObjectiveAlgorithmError> {
+
+        // Validate probabilities
+        validate_probability(mutation_rate, "Mutation rate")?;
+        validate_probability(crossover_rate, "Crossover rate")?;
+
+        // Validate positive values
+        validate_positive(n_vars, "Number of variables")?;
+        validate_positive(pop_size, "Population size")?;
+        validate_positive(n_offsprings, "Number of offsprings")?;
+        validate_positive(num_iterations, "Number of iterations")?;
+
+        // Validate bounds
+        if let (Some(lower), Some(upper)) = (lower_bound, upper_bound) {
+            if lower >= upper {
+                return Err(MultiObjectiveAlgorithmError::InvalidParameter(format!(
+                    "Lower bound ({}) must be less than upper bound ({})",
+                    lower, upper
+                )));
+            }
+        }
+
+
         let mut rng =
             MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
         let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
