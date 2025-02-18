@@ -21,9 +21,9 @@ from pymoors import (
     [
         (BitFlipMutation, {"gene_mutation_rate": 0.5}, "binary"),
         (SwapMutation, {}, "binary"),
-        (GaussianMutation, {"gene_mutation_rate": 0.5, "sigma": 0.1}, "real"),
-        (DisplacementMutation, {}),
-        (ScrambleMutation, {}),
+        (GaussianMutation, {"gene_mutation_rate": 0.5, "sigma": 0.1}, "any"),
+        (DisplacementMutation, {}, "any"),
+        (ScrambleMutation, {}, "any"),
     ],
 )
 def test_mutation_exposed_methods(operator_class, kwargs, pop_type):
