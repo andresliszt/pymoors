@@ -20,10 +20,10 @@ pub use algorithms::py_errors::NoFeasibleIndividualsError;
 pub use algorithms::rnsga2::RNsga2;
 pub use helpers::duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
-    PyBitFlipMutation, PyExponentialCrossover, PyGaussianMutation, PyOrderCrossover,
-    PyPermutationSampling, PyRandomSamplingBinary, PyRandomSamplingFloat, PyRandomSamplingInt,
-    PySimulatedBinaryCrossover, PySinglePointBinaryCrossover, PySwapMutation,
-    PyUniformBinaryCrossover,
+    PyBitFlipMutation, PyDisplacementMutation, PyExponentialCrossover, PyGaussianMutation,
+    PyOrderCrossover, PyPermutationSampling, PyRandomSamplingBinary, PyRandomSamplingFloat,
+    PyRandomSamplingInt, PyScrambleMutation, PySimulatedBinaryCrossover,
+    PySinglePointBinaryCrossover, PySwapMutation, PyUniformBinaryCrossover,
 };
 
 /// Root module `pymoors` that includes all classes.
@@ -38,6 +38,8 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyBitFlipMutation>()?;
     m.add_class::<PySwapMutation>()?;
     m.add_class::<PyGaussianMutation>()?;
+    m.add_class::<PyScrambleMutation>()?;
+    m.add_class::<PyDisplacementMutation>()?;
     m.add_class::<PyRandomSamplingBinary>()?;
     m.add_class::<PyRandomSamplingFloat>()?;
     m.add_class::<PyRandomSamplingInt>()?;
