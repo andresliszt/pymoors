@@ -1,7 +1,7 @@
 use numpy::ndarray::{concatenate, s, Array1, Axis};
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
@@ -25,10 +25,10 @@ impl GeneticOperator for SinglePointBinaryCrossover {
 impl CrossoverOperator for SinglePointBinaryCrossover {
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes) {
+    ) -> (IndividualGenes, IndividualGenes) {
         let num_genes = parent_a.len();
         assert_eq!(
             num_genes,

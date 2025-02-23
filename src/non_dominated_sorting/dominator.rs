@@ -141,10 +141,10 @@ mod tests {
     // fn test_get_current_front() {
     //     // Define the fitness values of the population
     //     let population_fitness = array![
-    //         [1.0, 2.0], // Genes 0
-    //         [2.0, 1.0], // Genes 1
-    //         [1.5, 1.5], // Genes 2
-    //         [3.0, 4.0], // Genes 3 (dominated by everyone)
+    //         [1.0, 2.0], // IndividualGenes 0
+    //         [2.0, 1.0], // IndividualGenes 1
+    //         [1.5, 1.5], // IndividualGenes 2
+    //         [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
     //     ];
 
     //     // All individuals are initially considered
@@ -163,10 +163,10 @@ mod tests {
     // fn test_get_current_front_partial_population() {
     //     // Define the fitness values of the population
     //     let population_fitness = array![
-    //         [1.0, 2.0], // Genes 0
-    //         [2.0, 1.0], // Genes 1
-    //         [1.5, 1.5], // Genes 2
-    //         [3.0, 4.0], // Genes 3 (dominated by everyone)
+    //         [1.0, 2.0], // IndividualGenes 0
+    //         [2.0, 1.0], // IndividualGenes 1
+    //         [1.5, 1.5], // IndividualGenes 2
+    //         [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
     //     ];
 
     //     // Consider only a subset of individuals (partial population)
@@ -185,11 +185,11 @@ mod tests {
     fn test_fast_non_dominated_sorting() {
         // Define the fitness values of the population
         let population_fitness = array![
-            [1.0, 2.0], // Genes 0
-            [2.0, 1.0], // Genes 1
-            [1.5, 1.5], // Genes 2
-            [3.0, 4.0], // Genes 3 (dominated by everyone)
-            [4.0, 3.0]  // Genes 4 (dominated by everyone)
+            [1.0, 2.0], // IndividualGenes 0
+            [2.0, 1.0], // IndividualGenes 1
+            [1.5, 1.5], // IndividualGenes 2
+            [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
+            [4.0, 3.0]  // IndividualGenes 4 (dominated by everyone)
         ];
 
         // Perform fast non-dominated sorting
@@ -210,9 +210,9 @@ mod tests {
     fn test_fast_non_dominated_sorting_single_front() {
         // Define a population where no individual dominates another
         let population_fitness = array![
-            [1.0, 2.0], // Genes 0
-            [2.0, 1.0], // Genes 1
-            [1.5, 1.5], // Genes 2
+            [1.0, 2.0], // IndividualGenes 0
+            [2.0, 1.0], // IndividualGenes 1
+            [1.5, 1.5], // IndividualGenes 2
         ];
 
         // Perform fast non-dominated sorting

@@ -1,6 +1,6 @@
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 /// Simulated Binary Crossover (SBX) operator for real-coded genetic algorithms.
@@ -71,10 +71,10 @@ impl GeneticOperator for SimulatedBinaryCrossover {
 impl CrossoverOperator for SimulatedBinaryCrossover {
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes) {
+    ) -> (IndividualGenes, IndividualGenes) {
         let len = parent_a.len();
         assert_eq!(len, parent_b.len());
 
@@ -105,7 +105,7 @@ impl CrossoverOperator for SimulatedBinaryCrossover {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use crate::genetic::Genes;
+    use crate::genetic::IndividualGenes;
     use crate::random::{RandomGenerator, TestDummyRng};
     use numpy::ndarray::array;
 
@@ -140,11 +140,11 @@ mod tests {
 
     #[test]
     fn test_simulated_binary_crossover() {
-        // Define two parent genes as Genes (Array1<f64>).
+        // Define two parent genes as IndividualGenes (Array1<f64>).
         // Gene 0: p1 = 1.0, p2 = 3.0 => will undergo SBX.
         // Gene 1: p1 = 5.0, p2 = 5.0 => nearly equal, so no crossover.
-        let parent_a: Genes = array![1.0, 5.0];
-        let parent_b: Genes = array![3.0, 5.0];
+        let parent_a: IndividualGenes = array![1.0, 5.0];
+        let parent_b: IndividualGenes = array![3.0, 5.0];
 
         // Create the SBX operator with distribution_index = 2.0.
         let operator = SimulatedBinaryCrossover::new(2.0);

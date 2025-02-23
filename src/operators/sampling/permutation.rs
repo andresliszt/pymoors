@@ -3,7 +3,7 @@ use std::fmt::Debug;
 use numpy::ndarray::Array1;
 use pymoors_macros::py_operator;
 
-use crate::operators::{Genes, GeneticOperator, SamplingOperator};
+use crate::operators::{GeneticOperator, IndividualGenes, SamplingOperator};
 use crate::random::RandomGenerator;
 
 #[py_operator("sampling")]
@@ -26,7 +26,7 @@ impl GeneticOperator for PermutationSampling {
 impl SamplingOperator for PermutationSampling {
     /// Generates a single individual of length `n_vars` where the genes
     /// are a shuffled permutation of the integers [0, 1, 2, ..., n_vars - 1].
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes {
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> IndividualGenes {
         // 1) Create a vector of indices [0, 1, 2, ..., n_vars - 1]
         let mut indices: Vec<f64> = (0..n_vars).map(|i| i as f64).collect();
 

@@ -1,9 +1,8 @@
-// src/lib.rs
-
-use crate::genetic::{Fronts, FrontsExt, Population};
-use crate::operators::{GeneticOperator, SurvivalOperator};
-use ndarray::{s, Array2, ArrayView1};
+use ndarray::{s, Array1, Array2, ArrayView1};
 use std::collections::HashMap;
+
+use crate::genetic::{Fronts, FrontsExt, Population, PopulationFitness};
+use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
 
 /// Structure representing the NSGA-III survival operator.
 #[derive(Clone, Debug)]
@@ -25,6 +24,15 @@ impl ReferencePointsSurvival {
 }
 
 impl SurvivalOperator for ReferencePointsSurvival {
+    fn survival_score(
+        &self,
+        _front_fitness: &PopulationFitness,
+        _context: FrontContext,
+    ) -> Array1<f64> {
+        // TODO: Adapt this method
+        unimplemented!("Adapt this operator to use SurivalOperator trait")
+    }
+
     fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
         // Initialize a vector to store selected fronts (populations)
         let mut chosen_fronts: Vec<Population> = Vec::new();
@@ -377,10 +385,10 @@ mod tests {
         // Create a population with these fitness values.
         let population = Population::new(
             array![
-                [1.0, 2.0], // Genes for Individual 0
-                [2.0, 3.0], // Genes for Individual 1
-                [3.0, 4.0], // Genes for Individual 2
-                [4.0, 5.0]  // Genes for Individual 3
+                [1.0, 2.0], // IndividualGenes for Individual 0
+                [2.0, 3.0], // IndividualGenes for Individual 1
+                [3.0, 4.0], // IndividualGenes for Individual 2
+                [4.0, 5.0]  // IndividualGenes for Individual 3
             ],
             fitness.clone(),
             None,

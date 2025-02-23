@@ -1,4 +1,4 @@
-use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::operators::{GeneticOperator, IndividualGenesMut, MutationOperator};
 use crate::random::RandomGenerator;
 
 use pymoors_macros::py_operator;
@@ -23,7 +23,7 @@ impl GeneticOperator for BitFlipMutation {
 }
 
 impl MutationOperator for BitFlipMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
+    fn mutate<'a>(&self, mut individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator) {
         for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
                 *gene = if *gene == 0.0 { 1.0 } else { 0.0 };

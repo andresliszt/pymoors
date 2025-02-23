@@ -1,7 +1,7 @@
 use numpy::ndarray::Array1;
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
@@ -25,10 +25,10 @@ impl GeneticOperator for OrderCrossover {
 impl CrossoverOperator for OrderCrossover {
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes) {
+    ) -> (IndividualGenes, IndividualGenes) {
         let len = parent_a.len();
         assert_eq!(len, parent_b.len());
 
@@ -85,7 +85,7 @@ impl CrossoverOperator for OrderCrossover {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use crate::genetic::Genes;
+    use crate::genetic::IndividualGenes;
     use crate::random::{RandomGenerator, TestDummyRng};
     use numpy::ndarray::Array1;
     use rand::RngCore;
@@ -123,9 +123,10 @@ mod tests {
     fn test_order_crossover_controlled() {
         let len = 8;
         // Define parent_a as [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0]
-        let parent_a: Genes = Array1::from_vec((0..len).map(|x| x as f64).collect());
+        let parent_a: IndividualGenes = Array1::from_vec((0..len).map(|x| x as f64).collect());
         // Define parent_b as [7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]
-        let parent_b: Genes = Array1::from_vec((0..len).map(|x| (len - 1 - x) as f64).collect());
+        let parent_b: IndividualGenes =
+            Array1::from_vec((0..len).map(|x| (len - 1 - x) as f64).collect());
 
         // Create the OrderCrossover operator.
         let crossover_operator = OrderCrossover::new();

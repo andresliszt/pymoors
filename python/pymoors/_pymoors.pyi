@@ -263,7 +263,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
         sampler (SamplingOperator): Operator to sample initial population.
         crossover (CrossoverOperator): Operator to perform crossover.
         mutation (MutationOperator): Operator to perform mutation.
-        fitness_fn (FitnessPopulationCallable): Function to evaluate the fitness of the population.
+        fitness_fn (FitnessPopuAgeMoealationCallable): Function to evaluate the fitness of the population.
         n_vars (int): Number of variables in the optimization problem.
         pop_size (int): Population size.
         n_offsprings (int): Number of offsprings generated in each generation.
@@ -381,6 +381,19 @@ class RNsga2:
 
         Returns:
             Population: The current population.
+        """
+
+    def run(self) -> None: ...
+
+class AgeMoea:
+    def __init__(self, **kwargs: Unpack[_MooAlgorithmKwargs]): ...
+    @property
+    def population(self) -> Population:
+        """
+        Get the current population.
+
+        Returns:
+            Population: The current population of individuals.
         """
 
     def run(self) -> None: ...

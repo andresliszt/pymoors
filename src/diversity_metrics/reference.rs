@@ -1,22 +1,9 @@
-use crate::genetic::PopulationFitness;
+use std::cmp::Ordering;
+
 use numpy::ndarray::{Array1, Array2, Axis};
-use std::cmp::Ordering; // Assume PopulationFitness is defined as Array2<f64> elsewhere.
 
-// ---------------------------------------------------------------------------
-// Auxiliary Functions for Distance and Ranking Computations
-// ---------------------------------------------------------------------------
-
-/// Computes the ideal point from a fitness matrix.
-/// Each element of the returned array is the minimum value along the corresponding column.
-pub fn get_nideal(population_fitness: &PopulationFitness) -> Array1<f64> {
-    population_fitness.fold_axis(Axis(0), f64::INFINITY, |a, &b| a.min(b))
-}
-
-/// Computes the nadir point from a fitness matrix.
-/// Each element of the returned array is the maximum value along the corresponding column.
-pub fn get_nadir(population_fitness: &PopulationFitness) -> Array1<f64> {
-    population_fitness.fold_axis(Axis(0), f64::NEG_INFINITY, |a, &b| a.max(b))
-}
+use crate::genetic::PopulationFitness;
+use crate::helpers::extreme_points::{get_nadir, get_nideal};
 
 /// Computes the weighted, normalized Euclidean distance between two objective vectors `f1` and `f2`.
 /// Normalization is performed using the provided ideal (`nideal`) and nadir (`nadir`) points.

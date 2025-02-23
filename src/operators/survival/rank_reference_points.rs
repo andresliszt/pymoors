@@ -4,8 +4,8 @@ use std::fmt::Debug;
 use ndarray::{Array1, Array2};
 
 use crate::diversity_metrics::{reference_points_rank_distance, weighted_distance_matrix};
-use crate::genetic::{Fronts, FrontsExt, Population};
-use crate::operators::{GeneticOperator, SurvivalOperator};
+use crate::genetic::{Fronts, FrontsExt, Population, PopulationFitness};
+use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
 
 #[derive(Clone, Debug)]
 pub struct RankReferencePointsSurvival {
@@ -39,6 +39,15 @@ impl RankReferencePointsSurvival {
 /// to compute the internal distances among solutions.
 
 impl SurvivalOperator for RankReferencePointsSurvival {
+    fn survival_score(
+        &self,
+        _front_fitness: &PopulationFitness,
+        _context: FrontContext,
+    ) -> Array1<f64> {
+        // TODO: Adapt this method
+        unimplemented!("Adapt this operator to use SurivalOperator trait")
+    }
+
     fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
         // We will collect sub-populations (fronts) that survive here.
         let mut chosen_fronts: Vec<Population> = Vec::new();
@@ -52,7 +61,7 @@ impl SurvivalOperator for RankReferencePointsSurvival {
                     reference_points_rank_distance(&front.fitness, &self.reference_points);
                 // Set the diversity metric (crowding distance) for the whole front.
                 front
-                    .set_diversity(ranking_by_distance)
+                    .set_survival_score(ranking_by_distance)
                     .expect("Failed to set diversity metric");
                 // If the entire front fits, add it as is.
                 chosen_fronts.push(front.clone());
@@ -127,7 +136,7 @@ impl SurvivalOperator for RankReferencePointsSurvival {
                             .collect::<Vec<f64>>(),
                     );
                     selected_front
-                        .set_diversity(selected_crowding)
+                        .set_survival_score(selected_crowding)
                         .expect("Failed to set updated diversity metric");
                     chosen_fronts.push(selected_front);
                 }

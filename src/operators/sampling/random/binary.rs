@@ -2,7 +2,7 @@ use std::fmt::Debug;
 
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{GeneticOperator, SamplingOperator};
 use crate::random::RandomGenerator;
 
@@ -24,7 +24,7 @@ impl GeneticOperator for RandomSamplingBinary {
 }
 
 impl SamplingOperator for RandomSamplingBinary {
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes {
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> IndividualGenes {
         (0..n_vars)
             .map(|_| if rng.gen_bool(0.5) { 1.0 } else { 0.0 })
             .collect()

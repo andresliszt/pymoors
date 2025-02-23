@@ -21,6 +21,7 @@ use crate::{
     random::MOORandomGenerator,
 };
 
+pub mod agemoea;
 mod macros;
 pub mod nsga2;
 pub mod nsga3;
@@ -229,7 +230,6 @@ impl MultiObjectiveAlgorithm {
         if fronts.is_empty() {
             return Err(MultiObjectiveAlgorithmError::NoFeasibleIndividuals);
         }
-
         // Select the new population
         self.population = self.survivor.operate(&mut fronts, self.pop_size);
         Ok(())

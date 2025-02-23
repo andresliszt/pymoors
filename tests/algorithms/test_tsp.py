@@ -5,6 +5,7 @@ from itertools import permutations
 from pymoors import (
     Nsga2,
     Nsga3,
+    AgeMoea,
     PermutationSampling,
     SwapMutation,
     OrderCrossover,
@@ -133,6 +134,7 @@ def get_real_pareto_front() -> list[Individual]:
     "algorithm_class, extra_kw",
     [
         (Nsga2, {}),
+        (AgeMoea, {}),
         (
             Nsga3,
             {

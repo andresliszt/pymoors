@@ -15,6 +15,7 @@ mod random;
 
 use pyo3::prelude::*;
 
+pub use algorithms::agemoea::AgeMoea;
 pub use algorithms::nsga2::Nsga2;
 pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::InvalidParameterError;
@@ -35,6 +36,7 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Nsga2>()?;
     m.add_class::<Nsga3>()?;
     m.add_class::<RNsga2>()?;
+    m.add_class::<AgeMoea>()?;
 
     // Add classes from operators
     m.add_class::<PyBitFlipMutation>()?;

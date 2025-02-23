@@ -1,6 +1,6 @@
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
@@ -24,10 +24,10 @@ impl GeneticOperator for UniformBinaryCrossover {
 impl CrossoverOperator for UniformBinaryCrossover {
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes) {
+    ) -> (IndividualGenes, IndividualGenes) {
         assert_eq!(
             parent_a.len(),
             parent_b.len(),
@@ -35,8 +35,8 @@ impl CrossoverOperator for UniformBinaryCrossover {
         );
 
         let num_genes = parent_a.len();
-        let mut offspring_a = Genes::zeros(num_genes);
-        let mut offspring_b = Genes::zeros(num_genes);
+        let mut offspring_a = IndividualGenes::zeros(num_genes);
+        let mut offspring_b = IndividualGenes::zeros(num_genes);
 
         for i in 0..num_genes {
             if rng.gen_proability() < 0.5 {

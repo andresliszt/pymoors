@@ -1,4 +1,4 @@
-use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::operators::{GeneticOperator, IndividualGenesMut, MutationOperator};
 use crate::random::RandomGenerator;
 use ndarray::s;
 use pymoors_macros::py_operator;
@@ -21,7 +21,7 @@ impl GeneticOperator for ScrambleMutation {
 }
 
 impl MutationOperator for ScrambleMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
+    fn mutate<'a>(&self, mut individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator) {
         let n = individual.len();
         // Select two random indices to define the segment.
         let idx1 = rng.gen_range_usize(0, n);

@@ -1,6 +1,9 @@
-use crate::genetic::{Fronts, Genes, GenesMut, Individual, Population, PopulationGenes};
+use crate::genetic::{
+    Fronts, FrontsExt, Individual, IndividualGenes, IndividualGenesMut, Population,
+    PopulationFitness, PopulationGenes,
+};
 use crate::random::RandomGenerator;
-use numpy::ndarray::Axis;
+use numpy::ndarray::{Array1, Axis};
 use rand::prelude::SliceRandom;
 use std::fmt::Debug;
 
@@ -20,7 +23,7 @@ pub trait GeneticOperator: Debug {
 
 pub trait SamplingOperator: GeneticOperator {
     /// Samples a single individual.
-    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> Genes;
+    fn sample_individual(&self, n_vars: usize, rng: &mut dyn RandomGenerator) -> IndividualGenes;
 
     /// Samples a population of individuals.
     fn operate(
@@ -65,7 +68,7 @@ pub trait MutationOperator: GeneticOperator {
     ///
     /// * `individual` - The individual to mutate, provided as a mutable view.
     /// * `rng` - A random number generator.
-    fn mutate<'a>(&self, individual: GenesMut<'a>, rng: &mut dyn RandomGenerator);
+    fn mutate<'a>(&self, individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator);
 
     /// Selects individuals for mutation based on the mutation rate.
     fn select_individuals_for_mutation(
@@ -113,10 +116,10 @@ pub trait CrossoverOperator: GeneticOperator {
     /// Performs crossover between two parents to produce two offspring.
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes);
+    ) -> (IndividualGenes, IndividualGenes);
 
     /// Applies the crossover operator to the population.
     /// Takes two parent populations and returns two offspring populations.
@@ -268,7 +271,80 @@ pub trait SelectionOperator: GeneticOperator {
     }
 }
 
+/// Enum to provide context to the survival score computation.
+#[derive(Clone, Copy, Debug)]
+pub enum FrontContext {
+    First,     // The first (nondominated) front.
+    Inner,     // Subsequent fronts that fit entirely.
+    Splitting, // The front that must be partially selected (splitting).
+}
+
+/// The SurvivalOperator trait extends GeneticOperator and requires that concrete operators
+/// provide a method for computing the survival score from a front's fitness.
+/// The default implementation of `operate` uses this survival score to select individuals.
 pub trait SurvivalOperator: GeneticOperator {
+    /// Computes the survival score for a given front's fitness.
+    /// This method is the only one that needs to be overridden by each survival operator,
+    /// since it determines how the survival score is assigned.
+    fn survival_score(
+        &self,
+        front_fitness: &PopulationFitness,
+        context: FrontContext,
+    ) -> Array1<f64>;
+
     /// Selects the individuals that will survive to the next generation.
-    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population;
+    /// The default implementation is nearly identical across survival operators:
+    /// it assigns survival scores to each front and then selects whole fronts until the required
+    /// number of survivors is reached. If a front must be partially selected, it sorts the
+    /// individuals by survival score (in descending order) and picks the top ones.
+    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
+        let mut chosen_fronts: Vec<Population> = Vec::new();
+        let mut n_survivors = 0;
+
+        for (i, front) in fronts.iter_mut().enumerate() {
+            let front_size = front.len();
+            // Determine the context: if this is the first front, use FrontContext::First;
+            // otherwise, if the entire front fits, use FrontContext::Inner.
+            let context = if i == 0 {
+                FrontContext::First
+            } else {
+                FrontContext::Inner
+            };
+
+            if n_survivors + front_size <= n_survive {
+                // The entire front fits.
+                println!("INNER FRONT EN SURVIVAL {}", front.genes);
+                let score_vec = self.survival_score(&front.fitness, context);
+                front
+                    .set_survival_score(score_vec)
+                    .expect("Failed to set survival score");
+                chosen_fronts.push(front.clone());
+                n_survivors += front_size;
+            } else {
+                // Only part of this front can be selected: use the splitting context.
+                let remaining = n_survive - n_survivors;
+                if remaining > 0 {
+                    let score_vec = self.survival_score(&front.fitness, FrontContext::Splitting);
+                    front
+                        .set_survival_score(score_vec)
+                        .expect("Failed to set survival score");
+                    let scores = front.survival_score.clone().expect("No survival score set");
+                    let mut indices: Vec<usize> = (0..front_size).collect();
+                    // Sort indices in descending order by survival score.
+                    indices.sort_by(|&i, &j| {
+                        scores[j]
+                            .partial_cmp(&scores[i])
+                            .unwrap_or(std::cmp::Ordering::Equal)
+                    });
+                    let selected_indices: Vec<usize> =
+                        indices.into_iter().take(remaining).collect();
+                    let partial = front.selected(&selected_indices);
+                    chosen_fronts.push(partial);
+                }
+                break;
+            }
+        }
+
+        chosen_fronts.to_population()
+    }
 }

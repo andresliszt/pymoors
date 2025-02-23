@@ -1,8 +1,10 @@
 use std::fmt::Debug;
 
+use ndarray::Array1;
+
 use crate::diversity_metrics::crowding_distance;
-use crate::genetic::{Fronts, FrontsExt, Population};
-use crate::operators::{GeneticOperator, SurvivalOperator};
+use crate::genetic::PopulationFitness;
+use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
 
 #[derive(Clone, Debug)]
 pub struct RankCrowdingSurvival;
@@ -20,48 +22,12 @@ impl RankCrowdingSurvival {
 }
 
 impl SurvivalOperator for RankCrowdingSurvival {
-    fn operate(&self, fronts: &mut Fronts, n_survive: usize) -> Population {
-        // We will collect sub-populations (fronts) that survive here
-        let mut chosen_fronts: Vec<Population> = Vec::new();
-        let mut n_survivors = 0;
-
-        for front in fronts.iter_mut() {
-            let front_size = front.len();
-            // Compute crowding distance
-            let cd = crowding_distance(&front.fitness);
-            // Set the crowding distance to the front population
-            front
-                .set_diversity(cd)
-                .expect("Failed to set diversity metric");
-            // If this entire front fits into the survivor count
-            if n_survivors + front_size <= n_survive {
-                chosen_fronts.push(front.clone());
-                n_survivors += front_size;
-            } else {
-                // Only part of this front fits
-                let remaining = n_survive - n_survivors;
-                if remaining > 0 {
-                    // Sort by crowding distance (descending)
-                    let cd = front.diversity_metric.clone().unwrap();
-                    let mut indices: Vec<usize> = (0..front_size).collect();
-                    indices.sort_by(|&i, &j| {
-                        cd[j]
-                            .partial_cmp(&cd[i])
-                            .unwrap_or(std::cmp::Ordering::Equal)
-                    });
-
-                    // Take only 'remaining' individuals
-                    let selected_indices = indices.into_iter().take(remaining).collect::<Vec<_>>();
-                    let partial = front.selected(&selected_indices);
-                    chosen_fronts.push(partial);
-                }
-                // No more slots left after this
-                break;
-            }
-        }
-
-        // Finally, combine the chosen fronts into a single population
-        chosen_fronts.to_population()
+    fn survival_score(
+        &self,
+        front_fitness: &PopulationFitness,
+        _context: FrontContext,
+    ) -> Array1<f64> {
+        crowding_distance(&front_fitness)
     }
 }
 
@@ -69,6 +35,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
+    use crate::genetic::{Fronts, Population};
     use numpy::ndarray::{arr1, arr2, Array2};
 
     #[test]
@@ -170,7 +137,7 @@ mod tests {
         //   Therefore, from Front 2, the individuals at index 0 (fitness 0.3) and index 3 (fitness 0.6) are selected.
         //
         // Thus, the final population should have:
-        //   Genes: [[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]]
+        //   IndividualGenes: [[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]]
         //   Fitness: [[0.1], [0.2], [0.3], [0.6]]
         let expected_genes = arr2(&[[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]]);
         let expected_fitness = arr2(&[[0.1], [0.2], [0.3], [0.6]]);

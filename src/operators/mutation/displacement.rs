@@ -1,4 +1,4 @@
-use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::operators::{GeneticOperator, IndividualGenesMut, MutationOperator};
 use crate::random::RandomGenerator;
 use ndarray::{concatenate, s, Array1, Axis};
 use pymoors_macros::py_operator;
@@ -22,7 +22,7 @@ impl GeneticOperator for DisplacementMutation {
 }
 
 impl MutationOperator for DisplacementMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
+    fn mutate<'a>(&self, mut individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator) {
         let n = individual.len();
 
         // Select two random indices to define the segment boundaries.

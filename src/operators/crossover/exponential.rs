@@ -1,6 +1,6 @@
 use pymoors_macros::py_operator;
 
-use crate::genetic::Genes;
+use crate::genetic::IndividualGenes;
 use crate::operators::{CrossoverOperator, GeneticOperator};
 use crate::random::RandomGenerator;
 
@@ -31,10 +31,10 @@ impl GeneticOperator for ExponentialCrossover {
 impl CrossoverOperator for ExponentialCrossover {
     fn crossover(
         &self,
-        parent_a: &Genes,
-        parent_b: &Genes,
+        parent_a: &IndividualGenes,
+        parent_b: &IndividualGenes,
         rng: &mut dyn RandomGenerator,
-    ) -> (Genes, Genes) {
+    ) -> (IndividualGenes, IndividualGenes) {
         let len = parent_a.len();
         assert_eq!(len, parent_b.len());
 
@@ -128,10 +128,10 @@ mod tests {
 
     #[test]
     fn test_exponential_crossover() {
-        // Define two parent Genes as small Array1<f64> vectors.
+        // Define two parent IndividualGenes as small Array1<f64> vectors.
         // For simplicity, we use arrays of length 3.
-        let parent_a: Genes = array![1.0, 2.0, 3.0];
-        let parent_b: Genes = array![4.0, 5.0, 6.0];
+        let parent_a: IndividualGenes = array![1.0, 2.0, 3.0];
+        let parent_b: IndividualGenes = array![4.0, 5.0, 6.0];
 
         // Create the ExponentialCrossover operator with a crossover rate of 0.5.
         let operator = ExponentialCrossover::new(0.5);
@@ -153,11 +153,11 @@ mod tests {
         // Expected outcome:
         // For child_a: start index 1 -> replace gene at index 1 with parent_b[1] (5.0),
         // so child_a becomes [1.0, 5.0, 3.0].
-        let expected_child_a: Genes = array![1.0, 5.0, 3.0];
+        let expected_child_a: IndividualGenes = array![1.0, 5.0, 3.0];
 
         // For child_b: start index 2 -> replace gene at index 2 with parent_a[2] (3.0),
         // so child_b becomes [4.0, 5.0, 3.0].
-        let expected_child_b: Genes = array![4.0, 5.0, 3.0];
+        let expected_child_b: IndividualGenes = array![4.0, 5.0, 3.0];
 
         // Check that the results match the expectations.
         assert_eq!(

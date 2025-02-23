@@ -8,7 +8,7 @@ use crate::helpers::parser::{
     unwrap_crossover_operator, unwrap_duplicates_cleaner, unwrap_mutation_operator,
     unwrap_sampling_operator,
 };
-use crate::operators::selection::RankAndCrowdingSelection;
+use crate::operators::selection::RankAndScoringSelection;
 use crate::operators::survival::RankCrowdingSurvival;
 
 // Define the NSGA-II algorithm using the macro
@@ -79,7 +79,7 @@ impl Nsga2 {
         };
 
         // Create an instance of the selection/survival struct
-        let selector_box = Box::new(RankAndCrowdingSelection::new());
+        let selector_box = Box::new(RankAndScoringSelection::new());
         let survivor_box = Box::new(RankCrowdingSurvival::new());
 
         // Create the Rust struct

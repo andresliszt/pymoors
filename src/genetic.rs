@@ -1,34 +1,34 @@
 use numpy::ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
 
 /// Represents an individual in the population.
-/// Each `Genes` is an `Array1<f64>`.
-pub type Genes = Array1<f64>;
-pub type GenesMut<'a> = ArrayViewMut1<'a, f64>;
+/// Each `IndividualGenes` is an `Array1<f64>`.
+pub type IndividualGenes = Array1<f64>;
+pub type IndividualGenesMut<'a> = ArrayViewMut1<'a, f64>;
 
 /// Represents an individual with genes, fitness, constraints (if any),
 /// rank, and an optional diversity metric.
 pub struct Individual {
-    pub genes: Genes,
+    pub genes: IndividualGenes,
     pub fitness: Array1<f64>,
     pub constraints: Option<Array1<f64>>,
     pub rank: usize,
-    pub diversity_metric: Option<f64>,
+    pub survival_score: Option<f64>,
 }
 
 impl Individual {
     pub fn new(
-        genes: Genes,
+        genes: IndividualGenes,
         fitness: Array1<f64>,
         constraints: Option<Array1<f64>>,
         rank: usize,
-        diversity_metric: Option<f64>,
+        survival_score: Option<f64>,
     ) -> Self {
         Self {
             genes,
             fitness,
             constraints,
             rank,
-            diversity_metric,
+            survival_score,
         }
     }
 
@@ -53,7 +53,7 @@ pub struct Population {
     pub fitness: PopulationFitness,
     pub constraints: Option<PopulationConstraints>,
     pub rank: Array1<usize>,
-    pub diversity_metric: Option<Array1<f64>>,
+    pub survival_score: Option<Array1<f64>>,
 }
 
 impl Clone for Population {
@@ -63,14 +63,14 @@ impl Clone for Population {
             fitness: self.fitness.clone(),
             constraints: self.constraints.clone(),
             rank: self.rank.clone(),
-            diversity_metric: self.diversity_metric.clone(),
+            survival_score: self.survival_score.clone(),
         }
     }
 }
 
 impl Population {
     /// Creates a new `Population` instance with the given genes, fitness, constraints, and rank.
-    /// The `diversity_metric` field is set to `None` by default.
+    /// The `survival_score` field is set to `None` by default.
     pub fn new(
         genes: PopulationGenes,
         fitness: PopulationFitness,
@@ -82,14 +82,14 @@ impl Population {
             fitness,
             constraints,
             rank,
-            diversity_metric: None, // Initialized to None by default.
+            survival_score: None, // Initialized to None by default.
         }
     }
 
     /// Retrieves an `Individual` from the population by index.
     pub fn get(&self, idx: usize) -> Individual {
         let constraints = self.constraints.as_ref().map(|c| c.row(idx).to_owned());
-        let diversity = self.diversity_metric.as_ref().map(|dm| dm[idx]);
+        let diversity = self.survival_score.as_ref().map(|dm| dm[idx]);
         Individual::new(
             self.genes.row(idx).to_owned(),
             self.fitness.row(idx).to_owned(),
@@ -104,8 +104,8 @@ impl Population {
         let genes = self.genes.select(Axis(0), indices);
         let fitness = self.fitness.select(Axis(0), indices);
         let rank = self.rank.select(Axis(0), indices);
-        let diversity_metric = self
-            .diversity_metric
+        let survival_score = self
+            .survival_score
             .as_ref()
             .map(|dm| dm.select(Axis(0), indices));
         let constraints = self
@@ -113,7 +113,7 @@ impl Population {
             .as_ref()
             .map(|c| c.select(Axis(0), indices));
 
-        Population::new(genes, fitness, constraints, rank).with_diversity(diversity_metric)
+        Population::new(genes, fitness, constraints, rank).with_diversity(survival_score)
     }
 
     /// Returns the number of individuals in the population.
@@ -132,17 +132,17 @@ impl Population {
         self.selected(&indices)
     }
 
-    /// Auxiliary method to chain the assignment of `diversity_metric` in the `selected` method.
-    fn with_diversity(mut self, diversity_metric: Option<Array1<f64>>) -> Self {
-        self.diversity_metric = diversity_metric;
+    /// Auxiliary method to chain the assignment of `survival_score` in the `selected` method.
+    fn with_diversity(mut self, survival_score: Option<Array1<f64>>) -> Self {
+        self.survival_score = survival_score;
         self
     }
 
-    /// Updates the population's `diversity_metric` field.
+    /// Updates the population's `survival_score` field.
     ///
     /// This method validates that the provided `diversity` vector has the same number of elements
     /// as individuals in the population. If not, it returns an error.
-    pub fn set_diversity(&mut self, diversity: Array1<f64>) -> Result<(), String> {
+    pub fn set_survival_score(&mut self, diversity: Array1<f64>) -> Result<(), String> {
         if diversity.len() != self.len() {
             return Err(format!(
                 "The diversity vector has length {} but the population contains {} individuals.",
@@ -150,7 +150,7 @@ impl Population {
                 self.len()
             ));
         }
-        self.diversity_metric = Some(diversity);
+        self.survival_score = Some(diversity);
         Ok(())
     }
 }
@@ -171,7 +171,7 @@ impl FrontsExt for Vec<Population> {
         }
 
         let has_constraints = self[0].constraints.is_some();
-        let has_diversity = self[0].diversity_metric.is_some();
+        let has_diversity = self[0].survival_score.is_some();
 
         let mut genes_views = Vec::new();
         let mut fitness_views = Vec::new();
@@ -185,9 +185,9 @@ impl FrontsExt for Vec<Population> {
             rank_views.push(front.rank.view());
             if has_diversity {
                 let dm = front
-                    .diversity_metric
+                    .survival_score
                     .as_ref()
-                    .expect("Inconsistent diversity_metric among fronts");
+                    .expect("Inconsistent survival_score among fronts");
                 diversity_views.push(dm.view());
             }
             if has_constraints {
@@ -229,7 +229,7 @@ impl FrontsExt for Vec<Population> {
             fitness: merged_fitness,
             constraints: merged_constraints,
             rank: merged_rank,
-            diversity_metric: merged_diversity,
+            survival_score: merged_diversity,
         }
     }
 }

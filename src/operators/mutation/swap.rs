@@ -1,6 +1,6 @@
 use pymoors_macros::py_operator;
 
-use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::operators::{GeneticOperator, IndividualGenesMut, MutationOperator};
 use crate::random::RandomGenerator;
 
 #[py_operator("mutation")]
@@ -23,7 +23,7 @@ impl GeneticOperator for SwapMutation {
 /// In a typical permutation-based setup, each row is an array of distinct values.
 /// The "swap" mutation picks two indices at random and swaps them.
 impl MutationOperator for SwapMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
+    fn mutate<'a>(&self, mut individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator) {
         let length = individual.len();
         // If there is at most one element, there's nothing to swap.
         if length > 1 {

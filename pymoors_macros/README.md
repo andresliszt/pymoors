@@ -3,7 +3,7 @@
 This repository contains macros necessary to avoid code duplication in the pymoors project. They aim to register operators and algorithms defined in Rust in Python using pyo3. An example of how to register is as follows:
 
 ```rust
-use crate::operators::{GenesMut, GeneticOperator, MutationOperator};
+use crate::operators::{IndividualGenesMut, GeneticOperator, MutationOperator};
 use crate::random::RandomGenerator;
 
 use pymoors_macros::py_operator;
@@ -28,7 +28,7 @@ impl GeneticOperator for BitFlipMutation {
 }
 
 impl MutationOperator for BitFlipMutation {
-    fn mutate<'a>(&self, mut individual: GenesMut<'a>, rng: &mut dyn RandomGenerator) {
+    fn mutate<'a>(&self, mut individual: IndividualGenesMut<'a>, rng: &mut dyn RandomGenerator) {
         for gene in individual.iter_mut() {
             if rng.gen_bool(self.gene_mutation_rate) {
                 *gene = if *gene == 0.0 { 1.0 } else { 0.0 };

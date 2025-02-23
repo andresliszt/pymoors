@@ -126,6 +126,7 @@ impl Evolve {
             // Create offspring from these parents (crossover + mutation)
             let mut new_offsprings = self.mating_batch(&parents_a.genes, &parents_b.genes, rng);
             // Clean duplicates within the new offspring (internal cleaning)
+            println!("New OFFSPRING {}", new_offsprings);
             new_offsprings = self.clean_duplicates(new_offsprings, None);
             // Clean duplicates between new offspring and the current population
             new_offsprings = self.clean_duplicates(new_offsprings, Some(&population.genes));

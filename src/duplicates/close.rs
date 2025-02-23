@@ -1,11 +1,10 @@
 use std::fmt::Debug;
 
-use ndarray::linalg::general_mat_mul;
-use ndarray::Axis;
 use pymoors_macros::py_operator;
 
 use crate::duplicates::PopulationCleaner;
 use crate::genetic::PopulationGenes;
+use crate::helpers::linalg::cross_euclidean_distances;
 
 #[py_operator("duplicates")]
 #[derive(Clone, Debug)]
@@ -23,33 +22,6 @@ impl CloseDuplicatesCleaner {
     pub fn new(epsilon: f64) -> Self {
         Self { epsilon }
     }
-    /// Computes the cross squared Euclidean distance matrix between `data` and `reference`
-    /// using matrix algebra.
-    ///
-    /// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
-    /// where the (i,j) element is the squared Euclidean distance between the i-th row of data
-    /// and the j-th row of reference.
-    fn cross_squared_distances(
-        &self,
-        data: &PopulationGenes,
-        reference: &PopulationGenes,
-    ) -> PopulationGenes {
-        let n = data.nrows();
-        let m = reference.nrows();
-        // Compute the squared norms for data and reference.
-        let data_norms = data.map_axis(Axis(1), |row| row.dot(&row));
-        let ref_norms = reference.map_axis(Axis(1), |row| row.dot(&row));
-
-        let data_norms_col = data_norms.insert_axis(Axis(1)); // shape (n, 1)
-        let ref_norms_row = ref_norms.insert_axis(Axis(0)); // shape (1, m)
-
-        let mut dot: PopulationGenes = PopulationGenes::zeros((n, m));
-        general_mat_mul(1.0, data, &reference.t(), 0.0, &mut dot);
-
-        // Use the formula: d² = ||x||² + ||y||² - 2 * (x dot y)
-        let dists_sq = &data_norms_col + &ref_norms_row - 2.0 * dot;
-        dists_sq
-    }
 }
 
 impl PopulationCleaner for CloseDuplicatesCleaner {
@@ -61,8 +33,16 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
         let ref_array = reference.unwrap_or(population);
         let n = population.nrows();
         let num_cols = population.ncols();
-        let dists_sq = self.cross_squared_distances(population, ref_array);
-        let eps_sq = self.epsilon * self.epsilon;
+        let dists_sq = cross_euclidean_distances(population, ref_array);
+        println!("POPULATION {} REF ARRAY {}", population, ref_array);
+        println!(
+            "LA MATRIZ DE DISTANCE ES {} CUYO FIL ES {}, COL {}",
+            dists_sq,
+            dists_sq.nrows(),
+            dists_sq.ncols()
+        );
+        let eps_sq = self.epsilon;
+        println!("EPSILON QLIAOO {}", eps_sq);
         let mut keep = vec![true; n];
         // Note: when reference_array = population there is no need to loop through the full
         // array, just use the upper triangle matrix logic
@@ -70,7 +50,7 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
             // Mark each row in the population as duplicate if its distance to any row in reference is below eps_sq.
             for i in 0..n {
                 for j in 0..ref_pop.nrows() {
-                    if dists_sq[(i, j)] < eps_sq {
+                    if dists_sq[(i, j)] <= eps_sq {
                         keep[i] = false;
                         break;
                     }
@@ -93,6 +73,7 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
             .enumerate()
             .filter_map(|(i, row)| if keep[i] { Some(row.to_owned()) } else { None })
             .collect();
+        println!("KEPT len ROWS {}", kept_rows.len());
         let data_flat: Vec<f64> = kept_rows.into_iter().flatten().collect();
         PopulationGenes::from_shape_vec((data_flat.len() / num_cols, num_cols), data_flat)
             .expect("Failed to create deduplicated Array2")

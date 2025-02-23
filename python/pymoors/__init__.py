@@ -4,6 +4,7 @@ import textwrap
 from ._pymoors import (
     Nsga2,
     Nsga3,
+    AgeMoea,
     BitFlipMutation,
     SwapMutation,
     GaussianMutation,
@@ -114,6 +115,7 @@ def available_operators(
 __all__ = (
     "Nsga2",
     "Nsga3",
+    "AgeMoea",
     "BitFlipMutation",
     "SwapMutation",
     "GaussianMutation",

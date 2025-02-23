@@ -6,40 +6,40 @@ use crate::random::RandomGenerator;
 
 /// Controls how the diversity (crowding) metric is compared during tournament selection.
 #[derive(Clone, Debug)]
-pub enum DiversityComparison {
-    /// Larger diversity (crowding) metric is preferred.
+pub enum SurvivalScoringComparison {
+    /// Larger survival scoring (e.g crowding sitance) is preferred.
     Maximize,
-    /// Smaller diversity (crowding) metric is preferred.
+    /// Smaller survival scoring (crowding) metric is preferred.
     Minimize,
 }
 
 #[derive(Clone, Debug)]
-pub struct RankAndCrowdingSelection {
-    diversity_comparison: DiversityComparison,
+pub struct RankAndScoringSelection {
+    diversity_comparison: SurvivalScoringComparison,
 }
 
-impl RankAndCrowdingSelection {
-    /// Creates a new RankAndCrowdingSelection with the default diversity comparison (Maximize).
+impl RankAndScoringSelection {
+    /// Creates a new RankAndScoringSelection with the default diversity comparison (Maximize).
     pub fn new() -> Self {
         Self {
-            diversity_comparison: DiversityComparison::Maximize,
+            diversity_comparison: SurvivalScoringComparison::Maximize,
         }
     }
-    /// Creates a new RankAndCrowdingSelection with the specified diversity comparison.
-    pub fn new_with_comparison(comparison: DiversityComparison) -> Self {
+    /// Creates a new RankAndScoringSelection with the specified diversity comparison.
+    pub fn new_with_comparison(comparison: SurvivalScoringComparison) -> Self {
         Self {
             diversity_comparison: comparison,
         }
     }
 }
 
-impl GeneticOperator for RankAndCrowdingSelection {
+impl GeneticOperator for RankAndScoringSelection {
     fn name(&self) -> String {
-        "RankAndCrowdingSelection".to_string()
+        "RankAndScoringSelection".to_string()
     }
 }
 
-impl SelectionOperator for RankAndCrowdingSelection {
+impl SelectionOperator for RankAndScoringSelection {
     /// Runs tournament selection on the given population and returns the duel result.
     /// This example assumes binary tournaments (pressure = 2).
     fn tournament_duel(
@@ -55,8 +55,8 @@ impl SelectionOperator for RankAndCrowdingSelection {
         let p1_rank = p1.rank;
         let p2_rank = p2.rank;
         // Retrieve diversity (crowding) metric.
-        let p1_cd = p1.diversity_metric;
-        let p2_cd = p2.diversity_metric;
+        let p1_cd = p1.survival_score;
+        let p2_cd = p2.survival_score;
 
         let winner = if p1_feasible && !p2_feasible {
             DuelResult::LeftWins
@@ -71,7 +71,7 @@ impl SelectionOperator for RankAndCrowdingSelection {
             } else {
                 // When ranks are equal, compare the diversity metric.
                 match self.diversity_comparison {
-                    DiversityComparison::Maximize => {
+                    SurvivalScoringComparison::Maximize => {
                         if p1_cd > p2_cd {
                             DuelResult::LeftWins
                         } else if p1_cd < p2_cd {
@@ -80,7 +80,7 @@ impl SelectionOperator for RankAndCrowdingSelection {
                             DuelResult::Tie
                         }
                     }
-                    DiversityComparison::Minimize => {
+                    SurvivalScoringComparison::Minimize => {
                         if p1_cd < p2_cd {
                             DuelResult::LeftWins
                         } else if p1_cd > p2_cd {
@@ -112,10 +112,10 @@ mod tests {
 
     #[test]
     fn test_default_diversity_comparison_maximize() {
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         match selector.diversity_comparison {
-            DiversityComparison::Maximize => assert!(true),
-            DiversityComparison::Minimize => panic!("Default should be Maximize"),
+            SurvivalScoringComparison::Maximize => assert!(true),
+            SurvivalScoringComparison::Minimize => panic!("Default should be Maximize"),
         }
     }
 
@@ -128,8 +128,8 @@ mod tests {
         // In Maximize mode, the individual with the higher diversity (10.0) should win.
         let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
         let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
-        let selector = RankAndCrowdingSelection::new(); // Default: Maximize
-        assert_eq!(selector.name(), "RankAndCrowdingSelection");
+        let selector = RankAndScoringSelection::new(); // Default: Maximize
+        assert_eq!(selector.name(), "RankAndScoringSelection");
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
         assert_eq!(result, DuelResult::LeftWins);
     }
@@ -142,7 +142,8 @@ mod tests {
         // In Minimize mode, the individual with the lower diversity (5.0) should win.
         let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
         let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
-        let selector = RankAndCrowdingSelection::new_with_comparison(DiversityComparison::Minimize);
+        let selector =
+            RankAndScoringSelection::new_with_comparison(SurvivalScoringComparison::Minimize);
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
         assert_eq!(result, DuelResult::RightWins);
     }
@@ -163,7 +164,7 @@ mod tests {
         // n_crossovers = 2 → total_needed = 8 participants → 4 tournaments → 4 winners.
         // After splitting: pop_a = 2 winners, pop_b = 2 winners.
         let n_crossovers = 2;
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         assert_eq!(pop_a.len(), 2);
@@ -185,7 +186,7 @@ mod tests {
         // n_crossovers = 1 → total_needed = 4 participants → 2 tournaments → 2 winners total.
         // After splitting: pop_a = 1 winner, pop_b = 1 winner.
         let n_crossovers = 1;
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // The feasible individual should be one of the winners.
@@ -208,7 +209,7 @@ mod tests {
         // n_crossovers = 1 → total_needed = 4 participants → 2 tournaments → 2 winners.
         // After splitting: pop_a = 1 winner, pop_b = 1 winner.
         let n_crossovers = 1;
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // In a tie, the overall selection process must eventually choose winners.
@@ -237,7 +238,7 @@ mod tests {
         // n_crossovers = 50 → total_needed = 200 participants → 100 tournaments → 100 winners.
         // After splitting: pop_a = 50 winners, pop_b = 50 winners.
         let n_crossovers = 50;
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         assert_eq!(pop_a.len(), 50);
@@ -258,7 +259,7 @@ mod tests {
         let population = Population::new(genes, fitness, constraints, rank);
 
         let n_crossovers = 1;
-        let selector = RankAndCrowdingSelection::new();
+        let selector = RankAndScoringSelection::new();
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         // The individual with the better rank should win one tournament.
