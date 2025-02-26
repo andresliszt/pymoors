@@ -19,7 +19,8 @@ ndarray = "0.16.1"
 ordered-float = "4.6.0"
 rand_distr = "0.4.3"
 rayon = "1.10.0"
-ndarray-linalg = { version = "0.17"}
+ndarray-linalg = { version = "0.17", features = ["openblas-static"]}
+ndarray-stats = "0.6.0"
 pymoors_macros = { path = "pymoors_macros"}
 
 [features]

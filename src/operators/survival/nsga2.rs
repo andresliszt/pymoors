@@ -5,6 +5,7 @@ use ndarray::Array1;
 use crate::diversity_metrics::crowding_distance;
 use crate::genetic::PopulationFitness;
 use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
+use crate::random::RandomGenerator;
 
 #[derive(Clone, Debug)]
 pub struct RankCrowdingSurvival;
@@ -26,6 +27,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
         &self,
         front_fitness: &PopulationFitness,
         _context: FrontContext,
+        _rng: &mut dyn RandomGenerator,
     ) -> Array1<f64> {
         crowding_distance(&front_fitness)
     }
@@ -35,8 +37,10 @@ impl SurvivalOperator for RankCrowdingSurvival {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use crate::genetic::{Fronts, Population};
     use numpy::ndarray::{arr1, arr2, Array2};
+
+    use crate::genetic::{Fronts, Population};
+    use crate::random::NoopRandomGenerator;
 
     #[test]
     fn test_survival_selection_all_survive_single_front() {
@@ -57,7 +61,8 @@ mod tests {
         let n_survive = 3;
         let selector = RankCrowdingSurvival;
         assert_eq!(selector.name(), "RankCrowdingSurvival");
-        let new_population = selector.operate(&mut fronts, n_survive);
+        let mut _rng = NoopRandomGenerator::new();
+        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng);
 
         // All three should survive unchanged
         assert_eq!(new_population.len(), 3);
@@ -125,7 +130,8 @@ mod tests {
 
         // Use the survival operator (assumed to be RankCrowdingSurvival in NSGA-II classic mode).
         let selector = RankCrowdingSurvival;
-        let new_population = selector.operate(&mut fronts, n_survive);
+        let mut _rng = NoopRandomGenerator::new();
+        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng);
 
         // The final population must have 4 individuals.
         assert_eq!(new_population.len(), n_survive);

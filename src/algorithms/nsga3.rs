@@ -1,6 +1,6 @@
 use crate::define_multiobj_pyclass;
 use crate::operators::selection::RandomSelection;
-use crate::operators::survival::ReferencePointsSurvival;
+use crate::operators::survival::Nsga3ReferencePointsSurvival;
 use pyo3::prelude::*;
 
 use crate::helpers::functions::{
@@ -86,7 +86,7 @@ impl Nsga3 {
 
         // Create an instance of the selection/survival struct
         let selector_box = Box::new(RandomSelection::new());
-        let survivor_box = Box::new(ReferencePointsSurvival::new(reference_points_array));
+        let survivor_box = Box::new(Nsga3ReferencePointsSurvival::new(reference_points_array));
 
         // Create the Rust struct
         let algorithm = MultiObjectiveAlgorithm::new(

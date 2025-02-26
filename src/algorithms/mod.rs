@@ -231,7 +231,9 @@ impl MultiObjectiveAlgorithm {
             return Err(MultiObjectiveAlgorithmError::NoFeasibleIndividuals);
         }
         // Select the new population
-        self.population = self.survivor.operate(&mut fronts, self.pop_size);
+        self.population = self
+            .survivor
+            .operate(&mut fronts, self.pop_size, &mut self.rng);
         Ok(())
     }
 

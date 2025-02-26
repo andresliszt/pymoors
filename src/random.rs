@@ -32,6 +32,13 @@ pub trait RandomGenerator {
     fn shuffle_vec(&mut self, vector: &mut Vec<f64>) {
         vector.shuffle(self.rng())
     }
+    fn shuffle_vec_usize(&mut self, vector: &mut Vec<usize>) {
+        vector.shuffle(self.rng())
+    }
+
+    fn choose_usize<'a>(&mut self, vector: &'a [usize]) -> Option<&'a usize> {
+        vector.choose(self.rng())
+    }
     /// Returns a mutable reference to the underlying RNG implementing `RngCore`.
     fn rng(&mut self) -> &mut dyn RngCore;
 }
@@ -84,6 +91,25 @@ impl RngCore for TestDummyRng {
     /// Not used in tests. This method is unimplemented.
     fn try_fill_bytes(&mut self, _dest: &mut [u8]) -> Result<(), rand::Error> {
         unimplemented!("Not used in this test")
+    }
+}
+
+pub struct NoopRandomGenerator {
+    dummy: TestDummyRng,
+}
+
+impl NoopRandomGenerator {
+    pub fn new() -> Self {
+        Self {
+            dummy: TestDummyRng,
+        }
+    }
+}
+
+impl RandomGenerator for NoopRandomGenerator {
+    /// Returns a mutable reference to the underlying `StdRng`.
+    fn rng(&mut self) -> &mut dyn RngCore {
+        &mut self.dummy
     }
 }
 

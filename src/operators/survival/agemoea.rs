@@ -8,8 +8,8 @@ use numpy::ndarray::{Array1, Array2, ArrayView1, Axis};
 use crate::genetic::PopulationFitness;
 use crate::helpers::extreme_points::{get_nadir, get_nideal};
 use crate::helpers::linalg::{cross_p_distances, lp_norm_arrayview};
-
 use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
+use crate::random::RandomGenerator;
 
 #[derive(Clone, Debug)]
 pub struct AgeMoeaSurvival;
@@ -31,6 +31,7 @@ impl SurvivalOperator for AgeMoeaSurvival {
         &self,
         front_fitness: &PopulationFitness,
         context: FrontContext,
+        _rng: &mut dyn RandomGenerator,
     ) -> Array1<f64> {
         let normalized_front_fitness = normalize_front_with_intercepts(front_fitness);
         let central_point = get_central_point_normalized(&normalized_front_fitness);
@@ -345,8 +346,10 @@ pub fn assign_survival_scores_higher_front(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::genetic::{Fronts, Population};
     use ndarray::{array, Array1, Array2};
+
+    use crate::genetic::{Fronts, Population};
+    use crate::random::NoopRandomGenerator;
 
     /// Helper function for comparing Array1<f64> element-wise.
     fn assert_array1_abs_diff_eq(a: &Array1<f64>, b: &Array1<f64>, epsilon: f64) {
@@ -634,9 +637,9 @@ mod tests {
 
         // Create the AgeMoeaSurvival operator.
         let operator = AgeMoeaSurvival::new();
-
+        let mut _rng = NoopRandomGenerator::new();
         // Call operate to select survivors.
-        let survivors = operator.operate(&mut fronts, n_survive);
+        let survivors = operator.operate(&mut fronts, n_survive, &mut _rng);
 
         // Check that the final merged population contains the desired number of survivors.
         assert_eq!(

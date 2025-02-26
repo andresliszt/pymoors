@@ -1,17 +1,8 @@
 use std::fmt::Debug;
 
 use crate::genetic::Individual;
-use crate::operators::{DuelResult, GeneticOperator, SelectionOperator};
+use crate::operators::{DuelResult, GeneticOperator, SelectionOperator, SurvivalScoringComparison};
 use crate::random::RandomGenerator;
-
-/// Controls how the diversity (crowding) metric is compared during tournament selection.
-#[derive(Clone, Debug)]
-pub enum SurvivalScoringComparison {
-    /// Larger survival scoring (e.g crowding sitance) is preferred.
-    Maximize,
-    /// Smaller survival scoring (crowding) metric is preferred.
-    Minimize,
-}
 
 #[derive(Clone, Debug)]
 pub struct RankAndScoringSelection {

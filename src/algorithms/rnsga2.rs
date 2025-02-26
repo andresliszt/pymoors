@@ -8,8 +8,9 @@ use crate::helpers::parser::{
     unwrap_crossover_operator, unwrap_duplicates_cleaner, unwrap_mutation_operator,
     unwrap_sampling_operator,
 };
-use crate::operators::selection::{RankAndScoringSelection, SurvivalScoringComparison};
-use crate::operators::survival::RankReferencePointsSurvival;
+use crate::operators::selection::RankAndScoringSelection;
+use crate::operators::survival::Rnsga2ReferencePointsSurvival;
+use crate::operators::{SurvivalOperator, SurvivalScoringComparison};
 
 use numpy::{PyArray2, PyArrayMethods};
 
@@ -88,13 +89,11 @@ impl RNsga2 {
         let reference_points_array = reference_points.to_owned_array();
 
         // Create an instance of the selection/survival struct
+        let survival = Rnsga2ReferencePointsSurvival::new(reference_points_array, epsilon);
         let selector_box = Box::new(RankAndScoringSelection::new_with_comparison(
-            SurvivalScoringComparison::Minimize,
+            survival.scoring_comparison(),
         ));
-        let survivor_box = Box::new(RankReferencePointsSurvival::new(
-            reference_points_array,
-            epsilon,
-        ));
+        let survivor_box = Box::new(survival);
 
         // Create the Rust struct
         let algorithm = MultiObjectiveAlgorithm::new(
