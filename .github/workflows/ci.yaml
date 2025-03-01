@@ -31,7 +31,7 @@ jobs:
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
         uv sync --group testing
-        make build-dev
+        make build-prod
 
     - name: Test with pytest
       run: |
