@@ -41,7 +41,7 @@ jobs:
     - name: Get pytest coverage report
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        cargo llvm-cov report --codecov --output-path codecov.json --ignore-filename-regex ".*/tests?/.*"
+        cargo llvm-cov report --codecov --output-path codecov.json
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
