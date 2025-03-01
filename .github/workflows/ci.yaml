@@ -120,7 +120,7 @@ jobs:
           RUST_BACKTRACE: 1
         run: |
           uv sync --group testing
-          make build-dev
+          make build-prod
 
       - name: Test with pytest
         run: uv run pytest --ignore=tests/benchmarks # Benchmarks run in their own flow

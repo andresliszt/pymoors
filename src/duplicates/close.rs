@@ -34,15 +34,8 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
         let n = population.nrows();
         let num_cols = population.ncols();
         let dists_sq = cross_euclidean_distances(population, ref_array);
-        // println!("POPULATION {} REF ARRAY {}", population, ref_array);
-        // println!(
-        //     "LA MATRIZ DE DISTANCE ES {} CUYO FIL ES {}, COL {}",
-        //     dists_sq,
-        //     dists_sq.nrows(),
-        //     dists_sq.ncols()
-        // );
+
         let eps_sq = self.epsilon;
-        // println!("EPSILON QLIAOO {}", eps_sq);
         let mut keep = vec![true; n];
         // Note: when reference_array = population there is no need to loop through the full
         // array, just use the upper triangle matrix logic

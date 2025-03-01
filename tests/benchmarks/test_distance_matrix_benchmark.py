@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from scipy.spatial.distance import cdist
+from scipy.spatial.distance import cdist  # type: ignore
 
 from pymoors._pymoors import cross_euclidean_distances  # type: ignore
 

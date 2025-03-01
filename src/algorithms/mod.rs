@@ -224,7 +224,7 @@ impl MultiObjectiveAlgorithm {
         )
         .expect("Failed to concatenate current population genes with offspring genes");
         // Build fronts from the combined genes.
-        print!("ENTRANDO EN EL EVALUATOR FRONT COMBINED GENES");
+
         let mut fronts = self.evaluator.build_fronts(combined_genes);
 
         // Check if there are no feasible individuals
