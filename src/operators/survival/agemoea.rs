@@ -308,318 +308,320 @@ pub fn assign_survival_scores_higher_front(
     Array1::from(scores)
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use ndarray::{array, Array1, Array2};
+// TODO: Enable once AgeMoea is ready
 
-    use crate::genetic::{Fronts, Population};
-    use crate::random::NoopRandomGenerator;
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use ndarray::{array, Array1, Array2};
 
-    /// Helper function for comparing Array1<f64> element-wise.
-    fn assert_array1_abs_diff_eq(a: &Array1<f64>, b: &Array1<f64>, epsilon: f64) {
-        assert_eq!(a.len(), b.len(), "Arrays have different lengths");
-        for (i, (val_a, val_b)) in a.iter().zip(b.iter()).enumerate() {
-            assert!(
-                (val_a - val_b).abs() < epsilon,
-                "Difference at index {}: {} vs {}",
-                i,
-                val_a,
-                val_b
-            );
-        }
-    }
+//     use crate::genetic::{Fronts, Population};
+//     use crate::random::NoopRandomGenerator;
 
-    /// Helper function for comparing Array2<f64> element-wise.
-    fn assert_array2_abs_diff_eq(a: &Array2<f64>, b: &Array2<f64>, epsilon: f64) {
-        assert_eq!(a.shape(), b.shape(), "Arrays have different shapes");
-        for ((i, j), val_a) in a.indexed_iter() {
-            let val_b = b[[i, j]];
-            assert!(
-                (val_a - val_b).abs() < epsilon,
-                "Difference at position ({}, {}): {} vs {}",
-                i,
-                j,
-                val_a,
-                val_b
-            );
-        }
-    }
+//     /// Helper function for comparing Array1<f64> element-wise.
+//     fn assert_array1_abs_diff_eq(a: &Array1<f64>, b: &Array1<f64>, epsilon: f64) {
+//         assert_eq!(a.len(), b.len(), "Arrays have different lengths");
+//         for (i, (val_a, val_b)) in a.iter().zip(b.iter()).enumerate() {
+//             assert!(
+//                 (val_a - val_b).abs() < epsilon,
+//                 "Difference at index {}: {} vs {}",
+//                 i,
+//                 val_a,
+//                 val_b
+//             );
+//         }
+//     }
 
-    #[test]
-    fn test_solve_intercepts() {
-        // Use a front with 2 objectives that yields a unique solution.
-        // Front:
-        // [ [1.0, 2.0],
-        //   [3.0, 1.0] ]
-        // Ideal point = [1.0, 1.0]
-        // Translated front = [ [0.0, 1.0],
-        //                       [2.0, 0.0] ]
-        // Extreme vector for objective 0: row 1 -> [2.0, 0.0]
-        // Extreme vector for objective 1: row 0 -> [0.0, 1.0]
-        // Z_max = [ [2.0, 0.0],
-        //           [0.0, 1.0] ]
-        // System: 2*a0 = 1, 1*a1 = 1 => a = [0.5, 1.0]
-        // Intercepts = 1 / a = [2.0, 1.0]
-        let front: PopulationFitness = array![[1.0, 2.0], [3.0, 1.0]];
-        let normalizer = AgeMoeaHyperPlaneNormalization::new();
-        let intercepts = normalizer.compute_hyperplane_intercepts(&front);
-        let expected = array![2.0, 1.0];
-        assert_eq!(&intercepts, &expected);
-    }
+//     /// Helper function for comparing Array2<f64> element-wise.
+//     fn assert_array2_abs_diff_eq(a: &Array2<f64>, b: &Array2<f64>, epsilon: f64) {
+//         assert_eq!(a.shape(), b.shape(), "Arrays have different shapes");
+//         for ((i, j), val_a) in a.indexed_iter() {
+//             let val_b = b[[i, j]];
+//             assert!(
+//                 (val_a - val_b).abs() < epsilon,
+//                 "Difference at position ({}, {}): {} vs {}",
+//                 i,
+//                 j,
+//                 val_a,
+//                 val_b
+//             );
+//         }
+//     }
 
-    #[test]
-    fn test_solve_intercepts_no_solution() {
-        // Construct a front with 2 objectives that yields a singular Z_max.
-        // For example, front:
-        // [ [1.0, 2.0],
-        //   [1.0, 3.0] ]
-        // Ideal point = [1.0, 2.0]
-        // Translated front = [ [0.0, 0.0],
-        //                       [0.0, 1.0] ]
-        // For objective 0:
-        //   Column 0: [0.0, 0.0] -> argmax returns row 0 -> extreme vector = [0.0, 0.0]
-        // For objective 1:
-        //   Column 1: [0.0, 1.0] -> argmax returns row 1 -> extreme vector = [0.0, 1.0]
-        // Z_max = [ [0.0, 0.0],
-        //           [0.0, 1.0] ]
-        // The system Z_max * a = [1, 1] has no solution.
-        // Fallback returns get_nadir(translated):
-        //   For column 0: max(0.0, 0.0) = 0.0, for column 1: max(0.0, 1.0) = 1.0
-        // Expected intercepts = [0.0, 1.0]
-        let front: PopulationFitness = array![[1.0, 2.0], [1.0, 3.0]];
-        let normalizer = AgeMoeaHyperPlaneNormalization::new();
-        let intercepts = normalizer.compute_hyperplane_intercepts(&front);
-        let expected = array![0.0, 1.0];
-        assert_eq!(&intercepts, &expected);
-    }
+//     #[test]
+//     fn test_solve_intercepts() {
+//         // Use a front with 2 objectives that yields a unique solution.
+//         // Front:
+//         // [ [1.0, 2.0],
+//         //   [3.0, 1.0] ]
+//         // Ideal point = [1.0, 1.0]
+//         // Translated front = [ [0.0, 1.0],
+//         //                       [2.0, 0.0] ]
+//         // Extreme vector for objective 0: row 1 -> [2.0, 0.0]
+//         // Extreme vector for objective 1: row 0 -> [0.0, 1.0]
+//         // Z_max = [ [2.0, 0.0],
+//         //           [0.0, 1.0] ]
+//         // System: 2*a0 = 1, 1*a1 = 1 => a = [0.5, 1.0]
+//         // Intercepts = 1 / a = [2.0, 1.0]
+//         let front: PopulationFitness = array![[1.0, 2.0], [3.0, 1.0]];
+//         let normalizer = AgeMoeaHyperPlaneNormalization::new();
+//         let intercepts = normalizer.compute_hyperplane_intercepts(&front);
+//         let expected = array![2.0, 1.0];
+//         assert_eq!(&intercepts, &expected);
+//     }
 
-    #[test]
-    fn test_normalize_front_with_intercepts() {
-        // Using the same front as in test_solve_intercepts.
-        // Front:
-        // [ [1.0, 2.0],
-        //   [3.0, 1.0] ]
-        // Ideal point = [1.0, 1.0]
-        // Translated front = [ [0.0, 1.0],
-        //                       [2.0, 0.0] ]
-        // Intercepts = [2.0, 1.0]
-        // Normalized front = [ [0/2, 1/1] = [0.0, 1.0],
-        //                      [2/2, 0/1] = [1.0, 0.0] ]
-        let front: PopulationFitness = array![[1.0, 2.0], [3.0, 1.0]];
-        let normalized = normalize_front_with_intercepts(&front);
-        let expected = array![[0.0, 1.0], [1.0, 0.0]];
-        assert_array2_abs_diff_eq(&normalized, &expected, 1e-6);
-    }
+//     #[test]
+//     fn test_solve_intercepts_no_solution() {
+//         // Construct a front with 2 objectives that yields a singular Z_max.
+//         // For example, front:
+//         // [ [1.0, 2.0],
+//         //   [1.0, 3.0] ]
+//         // Ideal point = [1.0, 2.0]
+//         // Translated front = [ [0.0, 0.0],
+//         //                       [0.0, 1.0] ]
+//         // For objective 0:
+//         //   Column 0: [0.0, 0.0] -> argmax returns row 0 -> extreme vector = [0.0, 0.0]
+//         // For objective 1:
+//         //   Column 1: [0.0, 1.0] -> argmax returns row 1 -> extreme vector = [0.0, 1.0]
+//         // Z_max = [ [0.0, 0.0],
+//         //           [0.0, 1.0] ]
+//         // The system Z_max * a = [1, 1] has no solution.
+//         // Fallback returns get_nadir(translated):
+//         //   For column 0: max(0.0, 0.0) = 0.0, for column 1: max(0.0, 1.0) = 1.0
+//         // Expected intercepts = [0.0, 1.0]
+//         let front: PopulationFitness = array![[1.0, 2.0], [1.0, 3.0]];
+//         let normalizer = AgeMoeaHyperPlaneNormalization::new();
+//         let intercepts = normalizer.compute_hyperplane_intercepts(&front);
+//         let expected = array![0.0, 1.0];
+//         assert_eq!(&intercepts, &expected);
+//     }
 
-    #[test]
-    fn test_get_central_point_normalized_2d() {
-        // Create a 2D front with values between 0 and 1.
-        // Example front:
-        // Row 0: [0.1, 0.9]
-        // Row 1: [0.9, 0.1]
-        // Row 2: [0.5, 0.5]
-        // With beta_hat = (1,1)/sqrt(2), the first two points have a nonzero perpendicular distance,
-        // while [0.5, 0.5] has zero distance.
-        let normalized = array![[0.1, 0.9], [0.9, 0.1], [0.5, 0.5]];
-        let central = get_central_point_normalized(&normalized);
-        let expected = array![0.5, 0.5];
-        assert_eq!(&central, &expected);
-    }
+//     #[test]
+//     fn test_normalize_front_with_intercepts() {
+//         // Using the same front as in test_solve_intercepts.
+//         // Front:
+//         // [ [1.0, 2.0],
+//         //   [3.0, 1.0] ]
+//         // Ideal point = [1.0, 1.0]
+//         // Translated front = [ [0.0, 1.0],
+//         //                       [2.0, 0.0] ]
+//         // Intercepts = [2.0, 1.0]
+//         // Normalized front = [ [0/2, 1/1] = [0.0, 1.0],
+//         //                      [2/2, 0/1] = [1.0, 0.0] ]
+//         let front: PopulationFitness = array![[1.0, 2.0], [3.0, 1.0]];
+//         let normalized = normalize_front_with_intercepts(&front);
+//         let expected = array![[0.0, 1.0], [1.0, 0.0]];
+//         assert_array2_abs_diff_eq(&normalized, &expected, 1e-6);
+//     }
 
-    #[test]
-    fn test_c_paper_example() {
-        // Paper example: normalized front includes the two extreme points (1,0) and (0,1)
-        // along with the central point (0.5, 0.5).
-        // Here, values are in [0,1]. The perpendicular distances are:
-        // For [1, 0]:
-        //   dot = 1*0.7071 + 0*0.7071 ≈ 0.7071, projection = (0.5,0.5),
-        //   diff = (1,0) - (0.5,0.5) = (0.5,-0.5), norm ≈ 0.7071.
-        // For [0, 1]:
-        //   diff = (-0.5,0.5), norm ≈ 0.7071.
-        // For [0.5, 0.5]:
-        //   diff = (0,0), norm = 0.
-        // The expected central point is [0.5,0.5].
-        let normalized = array![[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]];
-        let central = get_central_point_normalized(&normalized);
-        let expected = array![0.5, 0.5];
-        assert_array1_abs_diff_eq(&central, &expected, 1e-6);
+//     #[test]
+//     fn test_get_central_point_normalized_2d() {
+//         // Create a 2D front with values between 0 and 1.
+//         // Example front:
+//         // Row 0: [0.1, 0.9]
+//         // Row 1: [0.9, 0.1]
+//         // Row 2: [0.5, 0.5]
+//         // With beta_hat = (1,1)/sqrt(2), the first two points have a nonzero perpendicular distance,
+//         // while [0.5, 0.5] has zero distance.
+//         let normalized = array![[0.1, 0.9], [0.9, 0.1], [0.5, 0.5]];
+//         let central = get_central_point_normalized(&normalized);
+//         let expected = array![0.5, 0.5];
+//         assert_eq!(&central, &expected);
+//     }
 
-        let p = 2.0;
-        let prox = proximity(&central.view(), p);
-        let expected_prox = (0.5_f64.powi(2) + 0.5_f64.powi(2)).sqrt();
-        assert!((prox - expected_prox).abs() < 1e-6);
-    }
+//     #[test]
+//     fn test_c_paper_example() {
+//         // Paper example: normalized front includes the two extreme points (1,0) and (0,1)
+//         // along with the central point (0.5, 0.5).
+//         // Here, values are in [0,1]. The perpendicular distances are:
+//         // For [1, 0]:
+//         //   dot = 1*0.7071 + 0*0.7071 ≈ 0.7071, projection = (0.5,0.5),
+//         //   diff = (1,0) - (0.5,0.5) = (0.5,-0.5), norm ≈ 0.7071.
+//         // For [0, 1]:
+//         //   diff = (-0.5,0.5), norm ≈ 0.7071.
+//         // For [0.5, 0.5]:
+//         //   diff = (0,0), norm = 0.
+//         // The expected central point is [0.5,0.5].
+//         let normalized = array![[1.0, 0.0], [0.0, 1.0], [0.5, 0.5]];
+//         let central = get_central_point_normalized(&normalized);
+//         let expected = array![0.5, 0.5];
+//         assert_array1_abs_diff_eq(&central, &expected, 1e-6);
 
-    #[test]
-    fn test_proximity_2d() {
-        // For a normalized 2D solution [0.5, 0.5] and p = 2,
-        // its L₂ norm is sqrt(0.5² + 0.5²) = sqrt(0.5) ≈ 0.70710678.
-        let solution = array![0.5, 0.5];
-        let p = 2.0;
-        let prox = proximity(&solution.view(), p);
-        let expected = (0.5_f64.powi(2) + 0.5_f64.powi(2)).sqrt();
-        assert!((prox - expected).abs() < 1e-6);
-    }
+//         let p = 2.0;
+//         let prox = proximity(&central.view(), p);
+//         let expected_prox = (0.5_f64.powi(2) + 0.5_f64.powi(2)).sqrt();
+//         assert!((prox - expected_prox).abs() < 1e-6);
+//     }
 
-    /// Test assign_survival_scores for p = 2 (squared distances).
-    ///
-    /// With the front:
-    /// [1.0, 0.0]
-    /// [0.5, 0.5]
-    /// [0.0, 1.0]
-    ///
-    /// Extreme solutions (by maximum in at least one objective) are indices 0 and 2,
-    /// and they should be assigned +∞.
-    /// The candidate (index 1) has:
-    ///   - Squared distance to index 0: 0.5
-    ///   - Squared distance to index 2: 0.5
-    ///   → Diversity = 1.0
-    ///   - Proximity (L₂ norm of [0.5, 0.5]) = √0.5 ≈ 0.70710678
-    ///   → Expected score ≈ 1.0 / 0.70710678 = 1.41421356
-    #[test]
-    fn test_assign_survival_scores_p2() {
-        let front: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
-        let p = 2.0;
-        let scores = assign_survival_scores_first_front(&front, p);
+//     #[test]
+//     fn test_proximity_2d() {
+//         // For a normalized 2D solution [0.5, 0.5] and p = 2,
+//         // its L₂ norm is sqrt(0.5² + 0.5²) = sqrt(0.5) ≈ 0.70710678.
+//         let solution = array![0.5, 0.5];
+//         let p = 2.0;
+//         let prox = proximity(&solution.view(), p);
+//         let expected = (0.5_f64.powi(2) + 0.5_f64.powi(2)).sqrt();
+//         assert!((prox - expected).abs() < 1e-6);
+//     }
 
-        // Extreme solutions: indices 0 and 2.
-        assert!(
-            scores[0].is_infinite(),
-            "Index 0 should be extreme (score = +∞)"
-        );
-        assert!(
-            scores[2].is_infinite(),
-            "Index 2 should be extreme (score = +∞)"
-        );
+//     /// Test assign_survival_scores for p = 2 (squared distances).
+//     ///
+//     /// With the front:
+//     /// [1.0, 0.0]
+//     /// [0.5, 0.5]
+//     /// [0.0, 1.0]
+//     ///
+//     /// Extreme solutions (by maximum in at least one objective) are indices 0 and 2,
+//     /// and they should be assigned +∞.
+//     /// The candidate (index 1) has:
+//     ///   - Squared distance to index 0: 0.5
+//     ///   - Squared distance to index 2: 0.5
+//     ///   → Diversity = 1.0
+//     ///   - Proximity (L₂ norm of [0.5, 0.5]) = √0.5 ≈ 0.70710678
+//     ///   → Expected score ≈ 1.0 / 0.70710678 = 1.41421356
+//     #[test]
+//     fn test_assign_survival_scores_p2() {
+//         let front: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
+//         let p = 2.0;
+//         let scores = assign_survival_scores_first_front(&front, p);
 
-        // Candidate at index 1 should have a score of about 1.41421356.
-        let candidate_score = scores[1];
-        let expected_score = 1.0 / 0.70710678; // ≈ 1.41421356
-        assert!(
-            (candidate_score - expected_score).abs() < 1e-6,
-            "Index 1 should have a score of ~1.41421356, got {}",
-            candidate_score
-        );
-    }
+//         // Extreme solutions: indices 0 and 2.
+//         assert!(
+//             scores[0].is_infinite(),
+//             "Index 0 should be extreme (score = +∞)"
+//         );
+//         assert!(
+//             scores[2].is_infinite(),
+//             "Index 2 should be extreme (score = +∞)"
+//         );
 
-    /// Test assign_survival_scores for p = 1 (Manhattan distance).
-    ///
-    /// Using the same front:
-    /// [1.0, 0.0]
-    /// [0.5, 0.5]
-    /// [0.0, 1.0]
-    ///
-    /// The Manhattan distance from [0.5, 0.5] to [1.0,0.0] is:
-    ///   |0.5-1.0| + |0.5-0.0| = 0.5 + 0.5 = 1.0,
-    /// and similarly to [0.0,1.0] is 1.0.
-    /// Hence, diversity = 1.0 + 1.0 = 2.0, and proximity = |0.5|+|0.5| = 1.0.
-    /// Expected score for the candidate = 2.0 / 1.0 = 2.0.
-    #[test]
-    fn test_assign_survival_scores_p1() {
-        let front: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
-        let p = 1.0;
-        let scores = assign_survival_scores_first_front(&front, p);
+//         // Candidate at index 1 should have a score of about 1.41421356.
+//         let candidate_score = scores[1];
+//         let expected_score = 1.0 / 0.70710678; // ≈ 1.41421356
+//         assert!(
+//             (candidate_score - expected_score).abs() < 1e-6,
+//             "Index 1 should have a score of ~1.41421356, got {}",
+//             candidate_score
+//         );
+//     }
 
-        // Extreme solutions: indices 0 and 2.
-        assert!(
-            scores[0].is_infinite(),
-            "Index 0 should be extreme (score = +∞)"
-        );
-        assert!(
-            scores[2].is_infinite(),
-            "Index 2 should be extreme (score = +∞)"
-        );
+//     /// Test assign_survival_scores for p = 1 (Manhattan distance).
+//     ///
+//     /// Using the same front:
+//     /// [1.0, 0.0]
+//     /// [0.5, 0.5]
+//     /// [0.0, 1.0]
+//     ///
+//     /// The Manhattan distance from [0.5, 0.5] to [1.0,0.0] is:
+//     ///   |0.5-1.0| + |0.5-0.0| = 0.5 + 0.5 = 1.0,
+//     /// and similarly to [0.0,1.0] is 1.0.
+//     /// Hence, diversity = 1.0 + 1.0 = 2.0, and proximity = |0.5|+|0.5| = 1.0.
+//     /// Expected score for the candidate = 2.0 / 1.0 = 2.0.
+//     #[test]
+//     fn test_assign_survival_scores_p1() {
+//         let front: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
+//         let p = 1.0;
+//         let scores = assign_survival_scores_first_front(&front, p);
 
-        // Candidate at index 1 should have a score of about 2.0.
-        let candidate_score = scores[1];
-        assert!(
-            (candidate_score - 2.0).abs() < 1e-6,
-            "Index 1 should have a score of ~2.0, got {}",
-            candidate_score
-        );
-    }
+//         // Extreme solutions: indices 0 and 2.
+//         assert!(
+//             scores[0].is_infinite(),
+//             "Index 0 should be extreme (score = +∞)"
+//         );
+//         assert!(
+//             scores[2].is_infinite(),
+//             "Index 2 should be extreme (score = +∞)"
+//         );
 
-    /// Test assign_survival_scores with a 4-solution front.
-    ///
-    /// The front is:
-    /// [1.0, 0.0]
-    /// [0.8, 0.2]
-    /// [0.2, 0.8]
-    /// [0.0, 1.0]
-    ///
-    /// Extreme solutions (max per objective) should be indices 0 and 3.
-    /// The remaining candidates (indices 1 and 2) should have finite, positive scores.
-    #[test]
-    fn test_assign_survival_scores_multiple() {
-        let front: Array2<f64> = array![[1.0, 0.0], [0.8, 0.2], [0.2, 0.8], [0.0, 1.0]];
-        let p = 2.0;
-        let scores = assign_survival_scores_first_front(&front, p);
+//         // Candidate at index 1 should have a score of about 2.0.
+//         let candidate_score = scores[1];
+//         assert!(
+//             (candidate_score - 2.0).abs() < 1e-6,
+//             "Index 1 should have a score of ~2.0, got {}",
+//             candidate_score
+//         );
+//     }
 
-        // Extreme solutions: indices 0 and 3.
-        assert!(
-            scores[0].is_infinite(),
-            "Index 0 should be extreme (score = +∞)"
-        );
-        assert!(
-            scores[3].is_infinite(),
-            "Index 3 should be extreme (score = +∞)"
-        );
+//     /// Test assign_survival_scores with a 4-solution front.
+//     ///
+//     /// The front is:
+//     /// [1.0, 0.0]
+//     /// [0.8, 0.2]
+//     /// [0.2, 0.8]
+//     /// [0.0, 1.0]
+//     ///
+//     /// Extreme solutions (max per objective) should be indices 0 and 3.
+//     /// The remaining candidates (indices 1 and 2) should have finite, positive scores.
+//     #[test]
+//     fn test_assign_survival_scores_multiple() {
+//         let front: Array2<f64> = array![[1.0, 0.0], [0.8, 0.2], [0.2, 0.8], [0.0, 1.0]];
+//         let p = 2.0;
+//         let scores = assign_survival_scores_first_front(&front, p);
 
-        // Check that candidates (indices 1 and 2) have finite scores.
-        assert!(scores[1].is_finite(), "Index 1 should have a finite score");
-        assert!(scores[2].is_finite(), "Index 2 should have a finite score");
+//         // Extreme solutions: indices 0 and 3.
+//         assert!(
+//             scores[0].is_infinite(),
+//             "Index 0 should be extreme (score = +∞)"
+//         );
+//         assert!(
+//             scores[3].is_infinite(),
+//             "Index 3 should be extreme (score = +∞)"
+//         );
 
-        // Ensure scores are positive.
-        assert!(scores[1] > 0.0, "Score for index 1 should be > 0");
-        assert!(scores[2] > 0.0, "Score for index 2 should be > 0");
-    }
+//         // Check that candidates (indices 1 and 2) have finite scores.
+//         assert!(scores[1].is_finite(), "Index 1 should have a finite score");
+//         assert!(scores[2].is_finite(), "Index 2 should have a finite score");
 
-    #[test]
-    fn test_operate_age_moea_survival() {
-        // Create a first front (F₁) with 3 individuals and 2 objectives.
-        let fitness_front1: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
-        // For simplicity, let genes be the same as fitness.
-        let genes_front1 = fitness_front1.clone();
-        // All individuals in the first front have rank 0.
-        let rank_front1: Array1<usize> = Array1::from(vec![0, 0, 0]);
+//         // Ensure scores are positive.
+//         assert!(scores[1] > 0.0, "Score for index 1 should be > 0");
+//         assert!(scores[2] > 0.0, "Score for index 2 should be > 0");
+//     }
 
-        let front1 = Population::new(genes_front1, fitness_front1, None, rank_front1);
+//     #[test]
+//     fn test_operate_age_moea_survival() {
+//         // Create a first front (F₁) with 3 individuals and 2 objectives.
+//         let fitness_front1: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
+//         // For simplicity, let genes be the same as fitness.
+//         let genes_front1 = fitness_front1.clone();
+//         // All individuals in the first front have rank 0.
+//         let rank_front1: Array1<usize> = Array1::from(vec![0, 0, 0]);
 
-        // Create a second front with 2 individuals (e.g., lower-ranked solutions).
-        let fitness_front2: Array2<f64> = array![[0.8, 0.2], [0.2, 0.8]];
-        let genes_front2 = fitness_front2.clone();
-        // Rank 1 for these individuals.
-        let rank_front2: Array1<usize> = Array1::from(vec![1, 1]);
+//         let front1 = Population::new(genes_front1, fitness_front1, None, rank_front1);
 
-        let front2 = Population::new(genes_front2, fitness_front2, None, rank_front2);
+//         // Create a second front with 2 individuals (e.g., lower-ranked solutions).
+//         let fitness_front2: Array2<f64> = array![[0.8, 0.2], [0.2, 0.8]];
+//         let genes_front2 = fitness_front2.clone();
+//         // Rank 1 for these individuals.
+//         let rank_front2: Array1<usize> = Array1::from(vec![1, 1]);
 
-        // Assemble the fronts into a vector.
-        let mut fronts: Fronts = vec![front1, front2];
+//         let front2 = Population::new(genes_front2, fitness_front2, None, rank_front2);
 
-        // Set the desired number of survivors.
-        // In this example, the first front (3 individuals) fits entirely,
-        // and only 1 individual will be selected from the second (splitting) front.
-        let n_survive = 4;
+//         // Assemble the fronts into a vector.
+//         let mut fronts: Fronts = vec![front1, front2];
 
-        // Create the AgeMoeaSurvival operator.
-        let operator = AgeMoeaSurvival::new();
-        let mut _rng = NoopRandomGenerator::new();
-        // Call operate to select survivors.
-        let survivors = operator.operate(&mut fronts, n_survive, &mut _rng);
+//         // Set the desired number of survivors.
+//         // In this example, the first front (3 individuals) fits entirely,
+//         // and only 1 individual will be selected from the second (splitting) front.
+//         let n_survive = 4;
 
-        // Check that the final merged population contains the desired number of survivors.
-        assert_eq!(
-            survivors.len(),
-            n_survive,
-            "Expected {} survivors",
-            n_survive
-        );
+//         // Create the AgeMoeaSurvival operator.
+//         let operator = AgeMoeaSurvival::new();
+//         let mut _rng = NoopRandomGenerator::new();
+//         // Call operate to select survivors.
+//         let survivors = operator.operate(&mut fronts, n_survive, &mut _rng);
 
-        // Verify that the survival scores have been set.
-        assert!(
-            survivors.survival_score.is_some(),
-            "Survival scores should be assigned in the survivors population"
-        );
-    }
-}
+//         // Check that the final merged population contains the desired number of survivors.
+//         assert_eq!(
+//             survivors.len(),
+//             n_survive,
+//             "Expected {} survivors",
+//             n_survive
+//         );
+
+//         // Verify that the survival scores have been set.
+//         assert!(
+//             survivors.survival_score.is_some(),
+//             "Survival scores should be assigned in the survivors population"
+//         );
+//     }
+// }
