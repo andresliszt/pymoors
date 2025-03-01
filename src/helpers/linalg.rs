@@ -1,5 +1,9 @@
-use ndarray::linalg::general_mat_mul;
+use faer::Mat;
+use faer_ext::{IntoFaer, IntoNdarray};
+
 use ndarray::{Array2, ArrayView1, Axis};
+use numpy::{PyArray2, PyReadonlyArray2, ToPyArray};
+use pyo3::prelude::*;
 
 use crate::genetic::{PopulationFitness, PopulationGenes};
 
@@ -17,28 +21,29 @@ pub fn lp_norm_arrayview(x: &ArrayView1<f64>, p: f64) -> f64 {
 /// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
 /// where the (i,j) element is the squared Euclidean distance between the i-th row of data
 /// and the j-th row of reference.
-pub fn cross_euclidean_distances(
-    data: &PopulationGenes,
-    reference: &PopulationGenes,
-) -> PopulationGenes {
-    // Compute the squared norms for data and reference.
-    let data_norms = data.map_axis(Axis(1), |row| row.dot(&row));
-    let ref_norms = reference.map_axis(Axis(1), |row| row.dot(&row));
-
-    let data_norms_col = data_norms.insert_axis(Axis(1)); // shape (n, 1)
-    let ref_norms_row = ref_norms.insert_axis(Axis(0)); // shape (1, m)
-    println!("DATA_NORMS_COLS {} ", data_norms_col);
-    println!("DATA_REFS_COLS {} ", ref_norms_row);
-    println!("DATA {} ", data);
-    println!("REF {} ", ref_norms_row);
+pub fn cross_euclidean_distances(data: &PopulationGenes, reference: &PopulationGenes) -> Mat<f64> {
     let n = data.nrows();
     let m = reference.nrows();
-    let mut dot: PopulationGenes = PopulationGenes::zeros((n, m));
-    general_mat_mul(1.0, data, &reference.t(), 0.0, &mut dot);
-    println!("DOT {} ", dot);
-    // Use the formula: d² = ||x||² + ||y||² - 2 * (x dot y)
-    let dists_sq = &data_norms_col + &ref_norms_row - 2.0 * dot;
-    dists_sq.mapv(|x| if x < 0.0 { 0.0 } else { x.sqrt() })
+    let faer_data = data.view().into_faer();
+    let faer_ref = reference.view().into_faer();
+
+    let data_norm = Mat::from_fn(faer_data.nrows(), 1, |i, _| {
+        let row = faer_data.row(i);
+        row * row.transpose()
+    });
+
+    let ref_norm = Mat::from_fn(faer_ref.nrows(), 1, |i, _| {
+        let row = faer_ref.row(i);
+        row * row.transpose()
+    });
+
+    let faer_dot = faer_data * faer_ref.transpose();
+
+    // d²(i,j) = ||x_i||² + ||y_j||² - 2 * (x_i dot y_j)
+    let faer_dist: Mat<f64> = Mat::from_fn(n, m, |i, j| {
+        data_norm.get(i, 0) + ref_norm.get(j, 0) - 2.0 * faer_dot.get(i, j)
+    });
+    faer_dist
 }
 
 pub fn cross_p_distances(
@@ -57,6 +62,21 @@ pub fn cross_p_distances(
     // Compute the sum of |x - y|^p along the feature dimension (axis 2)
     let dists_p = diff.mapv(|x| x.abs().powf(p)).sum_axis(Axis(2));
     dists_p
+}
+
+#[pyfunction]
+#[pyo3(name = "cross_euclidean_distances")]
+/// This function will never be exposed to the users, its going to be used
+/// for benchmarking against scipy cdist method
+pub fn cross_euclidean_distances_py<'py>(
+    py: Python<'py>,
+    data: PyReadonlyArray2<'py, f64>,
+    reference: PyReadonlyArray2<'py, f64>,
+) -> Bound<'py, PyArray2<f64>> {
+    let data = data.as_array().to_owned();
+    let reference = reference.as_array().to_owned();
+    let result = cross_euclidean_distances(&data, &reference);
+    result.as_ref().into_ndarray().to_pyarray(py)
 }
 
 #[cfg(test)]
@@ -78,7 +98,8 @@ mod tests {
         let expected = array![[0.0, 8.0], [2.0, 2.0]];
 
         let result = cross_euclidean_distances(&data, &reference);
-        assert!(result.abs_diff_eq(&expected, 1e-6));
+        let result_ndarray = result.as_ref().into_ndarray();
+        assert_eq!(result_ndarray, expected);
     }
 
     #[test]
@@ -91,7 +112,7 @@ mod tests {
         // which is equivalent to the squared Euclidean distances.
         let expected_p2 = array![[0.0, 8.0], [2.0, 2.0]];
         let result_p2 = cross_p_distances(&data, &reference, 2.0);
-        assert!(result_p2.abs_diff_eq(&expected_p2, 1e-6));
+        assert_eq!(result_p2, expected_p2);
 
         // For p = 1, the function should return the Manhattan distances (without taking any root).
         // Manhattan distances:
@@ -101,6 +122,6 @@ mod tests {
         // - [1,1] vs [2,2]: |1-2| + |1-2| = 2
         let expected_p1 = array![[0.0, 4.0], [2.0, 2.0]];
         let result_p1 = cross_p_distances(&data, &reference, 1.0);
-        assert!(result_p1.abs_diff_eq(&expected_p1, 1e-6));
+        assert_eq!(result_p1, expected_p1);
     }
 }

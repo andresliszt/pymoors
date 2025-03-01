@@ -34,15 +34,15 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
         let n = population.nrows();
         let num_cols = population.ncols();
         let dists_sq = cross_euclidean_distances(population, ref_array);
-        println!("POPULATION {} REF ARRAY {}", population, ref_array);
-        println!(
-            "LA MATRIZ DE DISTANCE ES {} CUYO FIL ES {}, COL {}",
-            dists_sq,
-            dists_sq.nrows(),
-            dists_sq.ncols()
-        );
+        // println!("POPULATION {} REF ARRAY {}", population, ref_array);
+        // println!(
+        //     "LA MATRIZ DE DISTANCE ES {} CUYO FIL ES {}, COL {}",
+        //     dists_sq,
+        //     dists_sq.nrows(),
+        //     dists_sq.ncols()
+        // );
         let eps_sq = self.epsilon;
-        println!("EPSILON QLIAOO {}", eps_sq);
+        // println!("EPSILON QLIAOO {}", eps_sq);
         let mut keep = vec![true; n];
         // Note: when reference_array = population there is no need to loop through the full
         // array, just use the upper triangle matrix logic
@@ -73,7 +73,7 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
             .enumerate()
             .filter_map(|(i, row)| if keep[i] { Some(row.to_owned()) } else { None })
             .collect();
-        println!("KEPT len ROWS {}", kept_rows.len());
+        // println!("KEPT len ROWS {}", kept_rows.len());
         let data_flat: Vec<f64> = kept_rows.into_iter().flatten().collect();
         PopulationGenes::from_shape_vec((data_flat.len() / num_cols, num_cols), data_flat)
             .expect("Failed to create deduplicated Array2")

@@ -5,7 +5,6 @@ use crate::genetic::{
 use crate::random::RandomGenerator;
 use numpy::ndarray::{Array1, Axis};
 use rand::prelude::SliceRandom;
-use std::cmp::Ordering;
 use std::fmt::Debug;
 
 pub mod crossover;
@@ -314,65 +313,69 @@ pub trait SurvivalOperator: GeneticOperator {
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
     ) -> Population {
-        // Drain all fronts (consuming them)
-        let mut drained = fronts.drain(..);
+        // Drain all fronts and enumerate them.
+        let drained = fronts.drain(..).enumerate();
+        let mut survivors: Option<Population> = None;
+        let mut n_survivors = 0;
 
-        // Initialize survivors with the first front.
-        let mut survivors = drained
-            .next()
-            .expect("No fronts available to form survivors");
-        // For the first front, set context as First.
-        let score = self.survival_score(&survivors.fitness, FrontContext::First, rng);
-        survivors
-            .set_survival_score(score)
-            .expect("Failed to set survival score for the first front");
+        for (i, mut front) in drained {
+            // Save the length of the current front before any move.
+            let front_len = front.len();
 
-        let mut n_survivors = survivors.len();
+            // Determine the context: first front is First, later fronts are Inner.
+            let context = if i == 0 {
+                FrontContext::First
+            } else {
+                FrontContext::Inner
+            };
 
-        // Process remaining fronts.
-        for mut front in drained {
-            let front_size = front.len();
-            if n_survivors + front_size <= n_survive {
-                // For complete fronts, use context Inner.
-                let score = self.survival_score(&front.fitness, FrontContext::Inner, rng);
+            if n_survivors + front_len <= n_survive {
+                // The entire front fits.
+                let score = self.survival_score(&front.fitness, context, rng);
                 front
                     .set_survival_score(score)
-                    .expect("Failed to set survival score for inner front");
-                survivors = Population::merge(&survivors, &front);
-                n_survivors += front_size;
+                    .expect("Failed to set survival score");
+                survivors = match survivors {
+                    None => Some(front),
+                    Some(existing) => Some(Population::merge(&existing, &front)),
+                };
+                n_survivors += front_len;
             } else {
-                // Splitting front: only part of this front is needed.
+                // Splitting front: only part of the front is needed.
                 let remaining = n_survive - n_survivors;
                 if remaining > 0 {
-                    // Use Splitting context for the current front.
+                    // Use Splitting context regardless of i.
                     let score = self.survival_score(&front.fitness, FrontContext::Splitting, rng);
                     front
                         .set_survival_score(score)
                         .expect("Failed to set survival score for splitting front");
-
-                    // Here you can perform your partial selection logic.
-                    // For example, sort individuals by their survival score and take exactly `remaining` individuals.
+                    // Clone survival_score vector for sorting.
                     let scores = front
                         .survival_score
                         .clone()
                         .expect("No survival score set for splitting front");
-                    let mut indices: Vec<usize> = (0..front.len()).collect();
+                    // Get indices for the current front.
+                    let mut indices: Vec<usize> = (0..front_len).collect();
                     indices.sort_by(|&i, &j| match self.scoring_comparison() {
-                        SurvivalScoringComparison::Maximize => {
-                            scores[j].partial_cmp(&scores[i]).unwrap_or(Ordering::Equal)
-                        }
-                        SurvivalScoringComparison::Minimize => {
-                            scores[i].partial_cmp(&scores[j]).unwrap_or(Ordering::Equal)
-                        }
+                        SurvivalScoringComparison::Maximize => scores[j]
+                            .partial_cmp(&scores[i])
+                            .unwrap_or(std::cmp::Ordering::Equal),
+                        SurvivalScoringComparison::Minimize => scores[i]
+                            .partial_cmp(&scores[j])
+                            .unwrap_or(std::cmp::Ordering::Equal),
                     });
+                    // Select exactly the required number of individuals.
                     let selected_indices: Vec<usize> =
                         indices.into_iter().take(remaining).collect();
                     let partial = front.selected(&selected_indices);
-                    survivors = Population::merge(&survivors, &partial);
+                    survivors = match survivors {
+                        None => Some(partial),
+                        Some(existing) => Some(Population::merge(&existing, &partial)),
+                    };
                 }
                 break;
             }
         }
-        survivors
+        survivors.expect("No survivors were selected")
     }
 }

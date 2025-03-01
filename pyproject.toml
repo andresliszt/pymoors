@@ -39,6 +39,7 @@ dynamic = [
 [dependency-groups]
 testing = [
     "maturin",
+    "scipy",
     "pytest",
     "pytest-cov",
     "pytest-benchmark",

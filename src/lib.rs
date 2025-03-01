@@ -65,6 +65,11 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         "InvalidParameterError",
         _py.get_type::<InvalidParameterError>(),
     )?;
+    // Functions
+    m.add_function(wrap_pyfunction!(
+        helpers::linalg::cross_euclidean_distances_py,
+        m
+    )?);
 
     Ok(())
 }

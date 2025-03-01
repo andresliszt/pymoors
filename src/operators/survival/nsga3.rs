@@ -1,25 +1,25 @@
 use std::borrow::Cow;
 
 use ndarray::{s, Array1, Array2, Axis};
-use ndarray_linalg::Solve;
 use ndarray_stats::QuantileExt;
-use rand::prelude::SliceRandom;
 
 use crate::genetic::{Fronts, Population, PopulationFitness};
-use crate::helpers::extreme_points::{get_nadir, get_nideal};
+use crate::helpers::extreme_points::get_nideal;
+use crate::operators::survival::helpers::HyperPlaneNormalization;
 use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
+use crate::unwrap_operator;
 
 /// Implementation of the survival operator for the NSGA3 algorithm presented in the paper
 /// An Evolutionary Many-Objective Optimization Algorithm Using Reference-point Based Non-dominated Sorting Approach
 
 #[derive(Clone, Debug)]
-pub struct ReferencePoints {
+pub struct Nsga3ReferencePoints {
     points: Array2<f64>,
     are_aspirational: bool,
 }
 
-impl ReferencePoints {
+impl Nsga3ReferencePoints {
     pub fn new(points: Array2<f64>, are_aspirational: bool) -> Self {
         Self {
             points,
@@ -28,9 +28,54 @@ impl ReferencePoints {
     }
 }
 
+struct Nsga3HyperPlaneNormalization;
+
+impl Nsga3HyperPlaneNormalization {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl HyperPlaneNormalization for Nsga3HyperPlaneNormalization {
+    /// Computes the extreme points (z_max) from the translated population.
+    /// For each objective j, constructs a weight vector:
+    ///   w^j = [eps, ..., 1.0 (at position j), ..., eps],
+    /// then selects the solution that minimizes ASF(s, w^j) using argmin from ndarray-stats.
+    fn compute_extreme_points(&self, translated_population: &PopulationFitness) -> Array2<f64> {
+        let n_objectives = translated_population.ncols();
+        // Initialize an array to hold the extreme vectors; one per objective.
+        let mut extreme_points = Array2::<f64>::zeros((n_objectives, n_objectives));
+
+        // For each objective j, compute the corresponding extreme point.
+        for j in 0..n_objectives {
+            // Build the weight vector for objective j:
+            // All elements are epsilon except for the j-th element which is 1.0.
+            let mut weight = Array1::<f64>::from_elem(n_objectives, 1e-6);
+            weight[j] = 1.0;
+
+            // Compute the ASF value for each solution in the translated population.
+            let asf_values: Vec<f64> = translated_population
+                .outer_iter()
+                .map(|solution| asf(&solution.to_owned(), &weight))
+                .collect();
+            let asf_array = Array1::from(asf_values);
+
+            // Use argmin from ndarray-stats to get the index of the minimum ASF value.
+            let best_idx = asf_array.argmin().unwrap();
+
+            // The extreme point for objective j is the translated objective vector
+            // of the solution that minimized ASF with weight vector w^j.
+            let extreme = translated_population.row(best_idx);
+            // Place this extreme vector in the j-th row of extreme_points.
+            extreme_points.slice_mut(s![j, ..]).assign(&extreme);
+        }
+        extreme_points
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct Nsga3ReferencePointsSurvival {
-    reference_points: ReferencePoints, // Each row is a reference point
+    reference_points: Nsga3ReferencePoints, // Each row is a reference point
 }
 
 impl GeneticOperator for Nsga3ReferencePointsSurvival {
@@ -41,7 +86,7 @@ impl GeneticOperator for Nsga3ReferencePointsSurvival {
 
 impl Nsga3ReferencePointsSurvival {
     pub fn new(reference_points: Array2<f64>) -> Self {
-        let reference_points = ReferencePoints::new(reference_points, true);
+        let reference_points = Nsga3ReferencePoints::new(reference_points, true);
         Self { reference_points }
     }
 }
@@ -53,7 +98,7 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
         _context: FrontContext,
         _rng: &mut dyn RandomGenerator,
     ) -> Array1<f64> {
-        unimplemented!("It doesn't use survival score")
+        unimplemented!("NSGA3 doesn't use survival score. It uses random tournament which doesn't depend on the score")
     }
 
     fn operate(
@@ -63,46 +108,59 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
         rng: &mut dyn RandomGenerator,
     ) -> Population {
         // Drain fronts to consume them and get an iterator of owned Population values.
-        let mut drained = fronts.drain(..);
+        let drained = fronts.drain(..).enumerate();
+        let mut survivors: Option<Population> = None;
+        let mut n_survivors = 0;
 
-        // Initialize survivors with the first front.
-        let mut survivors = drained
-            .next()
-            .expect("No fronts available to form survivors");
-        let mut n_survivors = survivors.len();
+        // Iterate over all fronts with enumerate (we no longer differentiate contexts).
+        for (_i, mut front) in drained {
+            // Save the length of the current front.
+            let front_len = front.len();
 
-        // Iterate over the remaining fronts.
-        for front in drained {
-            let front_size = front.len();
-            if n_survivors + front_size <= n_survive {
-                survivors = Population::merge(&survivors, &front);
-                n_survivors += front_size;
+            if n_survivors + front_len <= n_survive {
+                // The entire front fits.
+                // Use a fixed context (Inner) for computing survival scores.
+                let score = self.survival_score(&front.fitness, FrontContext::Inner, rng);
+                front
+                    .set_survival_score(score)
+                    .expect("Failed to set survival score for front");
+                survivors = match survivors {
+                    None => Some(front),
+                    Some(existing) => Some(Population::merge(&existing, &front)),
+                };
+                n_survivors += front_len;
             } else {
                 // Only part of this front is needed.
                 let remaining = n_survive - n_survivors;
                 if remaining > 0 {
-                    // this is the S_t varaible defined in the Algorithm 1 in the presented paper
-                    let st = Population::merge(&survivors, &front);
-                    let z_min = get_nideal(&st.fitness);
-                    // they are a = (a1, ..., a_m) the intercepts
-                    let intercepts = compute_intercepts(&st.fitness, &z_min);
+                    // this is the S_t variable defined in the Algorithm 1 in the presented paper
+                    let st = Population::merge(survivors.as_ref().expect("No survivors"), &front)
+                        .fitness;
+                    let z_min = get_nideal(&st);
+                    let translated_population = &st - &z_min;
+                    let normalizer = Nsga3HyperPlaneNormalization::new();
+                    let intercepts =
+                        normalizer.compute_hyperplane_intercepts(&translated_population);
                     // This call is the normalize function (Algorithm 2)
-                    let normalized_fitness = normalize(&st.fitness, &z_min, &intercepts);
+                    let normalized_fitness = &translated_population / (&intercepts - &z_min);
                     // Now as the paper says, if the points are aspirational then normalize
                     // Use Cow so that when aspirational is false, we borrow the reference points.
                     let zr: Cow<Array2<f64>> = if self.reference_points.are_aspirational {
-                        Cow::Owned(normalize(
-                            &self.reference_points.points,
-                            &z_min,
-                            &intercepts,
-                        ))
+                        let normalized_zr =
+                            (&self.reference_points.points - &z_min) / (&intercepts - &z_min);
+                        Cow::Owned(normalized_zr)
                     } else {
                         Cow::Borrowed(&self.reference_points.points)
                     };
+                    // Compute survival score for the splitting front using the fixed context.
+                    let score = self.survival_score(&front.fitness, FrontContext::Inner, rng);
+                    front
+                        .set_survival_score(score)
+                        .expect("Failed to set survival score for splitting front");
                     let (assignments, distances) = associate(&normalized_fitness, &zr);
 
                     // Compute niching count for every individual except in the splitting front
-                    let n_complete = survivors.len();
+                    let n_complete = survivors.as_ref().expect("No survivors").len();
                     let survivors_assignments = &assignments[0..n_complete];
                     let mut niche_counts = compute_niche_counts(survivors_assignments, zr.nrows());
 
@@ -119,12 +177,15 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
                         rng,
                     );
                     let selection_from_splitting_front = front.selected(&chosen_indices);
-                    survivors = Population::merge(&survivors, &selection_from_splitting_front);
+                    survivors = Some(Population::merge(
+                        survivors.as_ref().expect("No survivors"),
+                        &selection_from_splitting_front,
+                    ));
                 }
                 break;
             }
         }
-        survivors
+        survivors.expect("No survivors were selected")
     }
 }
 
@@ -137,100 +198,6 @@ fn asf(x: &Array1<f64>, w: &Array1<f64>) -> f64 {
     let ratios = x / w;
     // The ASF is the maximum of these ratios.
     ratios.fold(std::f64::MIN, |acc, &val| acc.max(val))
-}
-
-/// Computes the extreme points (z_max) from the translated population.
-/// For each objective j, constructs a weight vector:
-///   w^j = [eps, ..., 1.0 (at position j), ..., eps],
-/// then selects the solution that minimizes ASF(s, w^j) using argmin from ndarray-stats.
-fn compute_extreme_points(translated_pop: &PopulationFitness, epsilon: f64) -> Array2<f64> {
-    let n_objectives = translated_pop.ncols();
-    // Initialize an array to hold the extreme vectors; one per objective.
-    let mut extreme_points = Array2::<f64>::zeros((n_objectives, n_objectives));
-
-    // For each objective j, compute the corresponding extreme point.
-    for j in 0..n_objectives {
-        // Build the weight vector for objective j:
-        // All elements are epsilon except for the j-th element which is 1.0.
-        let mut weight = Array1::<f64>::from_elem(n_objectives, epsilon);
-        weight[j] = 1.0;
-
-        // Compute the ASF value for each solution in the translated population.
-        let asf_values: Vec<f64> = translated_pop
-            .outer_iter()
-            .map(|solution| asf(&solution.to_owned(), &weight))
-            .collect();
-        let asf_array = Array1::from(asf_values);
-
-        // Use argmin from ndarray-stats to get the index of the minimum ASF value.
-        let best_idx = asf_array.argmin().unwrap();
-
-        // The extreme point for objective j is the translated objective vector
-        // of the solution that minimized ASF with weight vector w^j.
-        let extreme = translated_pop.row(best_idx);
-        // Place this extreme vector in the j-th row of extreme_points.
-        extreme_points.slice_mut(s![j, ..]).assign(&extreme);
-    }
-    extreme_points
-}
-
-/// Computes the intercepts vector `a` by solving the linear system:
-/// Z_max * b = 1, where 1 is a vector of ones.
-/// then the intercepts in the objective axis are given by a = 1/b
-fn compute_intercepts(population_fitness: &PopulationFitness, z_min: &Array1<f64>) -> Array1<f64> {
-    // Create a vector of ones with length equal to the number of rows (or objectives)
-    let translated = population_fitness - z_min;
-    let z_max = compute_extreme_points(&translated, 1e-6);
-    let m = z_max.nrows();
-    let ones = Array1::ones(m);
-    let solution = z_max.solve_into(ones);
-    // Solve the system Z_max * b = ones using the ndarray-linalg's solve_into method.
-    // The method returns Result<Array1<f64>, _>.
-    match solution {
-        Ok(a) => {
-            // Check if any component of a is nearly zero.
-            if a.iter().any(|&val| val.abs() < 1e-6) {
-                // Fallback: use min-max normalization by returning the column-wise maximums.
-                get_nadir(&translated)
-            } else {
-                // Calculate intercepts as 1 / a.
-                let intercept = a.mapv(|val| 1.0 / val);
-                // Additional check: if the computed intercept is less than the observed maximum,
-                // use the observed maximum (fallback to min-max).
-                let fallback = get_nadir(&translated);
-                // Replace zip_map with an iterator-based elementwise combination.
-                let combined: Vec<f64> = intercept
-                    .iter()
-                    .zip(fallback.iter())
-                    .map(|(&calc, &fb)| if calc < fb { fb } else { calc })
-                    .collect();
-                Array1::from(combined)
-            }
-        }
-        Err(_) => {
-            // If solving the system fails, fallback to min-max normalization.
-            get_nadir(&translated)
-        }
-    }
-}
-
-/// Normalizes given the ideal point (zmin) and the intercepts (a).
-/// For each xi, the normalization is defined as:
-///
-///   xⁿ_i = (x_i - zmin_i) / (a_i - zmin_i)
-///
-/// # Arguments
-///
-/// * `x` - A 2D array where each row is going to be normalized to the hyperplane
-/// * `zmin` - An Array1 representing the ideal point for each objective.
-/// * `intercepts` - An Array1 with the intercepts a for each objective.
-///
-/// This and compute_intercepts conforms the Algorithm 2 in the presented paper
-fn normalize(x: &Array2<f64>, z_min: &Array1<f64>, intercepts: &Array1<f64>) -> Array2<f64> {
-    // Calculate the denominators (a_i - zmin_i) for each objective.
-    let denom = intercepts - z_min;
-    let translated = x - z_min;
-    translated / denom
 }
 
 /// Associates each solution s (each row in st) with the reference w (each row in zr)
@@ -433,8 +400,8 @@ mod tests {
         //   Solution A: [1.0, 10.0]
         //   Solution B: [10.0, 1.0]
         let pop = array![[1.0, 10.0], [10.0, 1.0]];
-        let epsilon = 1e-6;
-        let extreme = compute_extreme_points(&pop, epsilon);
+        let normalizer = Nsga3HyperPlaneNormalization::new();
+        let extreme = normalizer.compute_extreme_points(&pop);
 
         // For objective 0, we expect the extreme point to be B: [10.0, 1.0]
         // For objective 1, we expect the extreme point to be A: [1.0, 10.0]
@@ -444,36 +411,6 @@ mod tests {
             extreme, expected,
             "Computed extreme points do not match expected values"
         );
-    }
-
-    // Test compute_intercepts using a simple two-solution case.
-    #[test]
-    fn test_compute_intercepts() {
-        // Using the same pop: A = [1, 10], B = [10, 1]
-        let pop = array![[1.0, 10.0], [10.0, 1.0]];
-        // Ideal point: column-wise minimum is [1, 1]
-        let z_min = array![1.0, 1.0];
-        let intercepts = compute_intercepts(&pop, &z_min);
-        // For our simple case, expected intercepts are roughly 9 for both objectives.
-        assert!((intercepts[0] - 9.0).abs() < 1e-2);
-        assert!((intercepts[1] - 9.0).abs() < 1e-2);
-    }
-
-    // Test normalize with a simple 2x2 matrix.
-    #[test]
-    fn test_normalize() {
-        // Let x be a 2x2 matrix.
-        let x = array![[2.0, 3.0], [4.0, 5.0]];
-        let z_min = array![1.0, 2.0];
-        let intercepts = array![9.0, 9.0];
-        // denom = intercepts - z_min = [8, 7]
-        // Row0 normalized: [(2-1)/8, (3-2)/7] = [0.125, 0.142857...]
-        // Row1 normalized: [(4-1)/8, (5-2)/7] = [0.375, 0.428571...]
-        let normalized = normalize(&x, &z_min, &intercepts);
-        let expected = array![[0.125, 0.142857], [0.375, 0.428571]];
-        for (a, b) in normalized.iter().zip(expected.iter()) {
-            assert!((a - b).abs() < 1e-5, "Expected {}, got {}", b, a);
-        }
     }
 
     // Test associate: simple case with two solutions and two reference points.

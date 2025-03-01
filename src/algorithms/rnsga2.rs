@@ -10,7 +10,7 @@ use crate::helpers::parser::{
 };
 use crate::operators::selection::RankAndScoringSelection;
 use crate::operators::survival::Rnsga2ReferencePointsSurvival;
-use crate::operators::{SurvivalOperator, SurvivalScoringComparison};
+use crate::operators::SurvivalOperator;
 
 use numpy::{PyArray2, PyArrayMethods};
 

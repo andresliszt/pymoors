@@ -1,15 +1,48 @@
 use std::collections::HashSet;
 use std::fmt::Debug;
 
-use ndarray_linalg::Solve;
 use ndarray_stats::QuantileExt;
 use numpy::ndarray::{Array1, Array2, ArrayView1, Axis};
 
 use crate::genetic::PopulationFitness;
-use crate::helpers::extreme_points::{get_nadir, get_nideal};
+use crate::helpers::extreme_points::get_nideal;
 use crate::helpers::linalg::{cross_p_distances, lp_norm_arrayview};
-use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
+use crate::operators::{
+    survival::helpers::HyperPlaneNormalization, FrontContext, GeneticOperator, SurvivalOperator,
+};
 use crate::random::RandomGenerator;
+
+struct AgeMoeaHyperPlaneNormalization;
+
+impl AgeMoeaHyperPlaneNormalization {
+    pub fn new() -> Self {
+        Self
+    }
+}
+impl HyperPlaneNormalization for AgeMoeaHyperPlaneNormalization {
+    fn compute_extreme_points(&self, population_fitness: &PopulationFitness) -> Array2<f64> {
+        // Number of objectives (columns)
+        let n_objectives = population_fitness.shape()[1];
+        // Initialize the Z_max matrix with dimensions (num_objectives x num_objectives)
+        let mut z_max = Array2::<f64>::zeros((n_objectives, n_objectives));
+
+        // For each objective i, identify the extreme vector.
+        for i in 0..n_objectives {
+            // Get the i-th column as a 1D array view.
+            let col = population_fitness.column(i);
+            // Use ndarray-stats argmax to find the row index of the maximum element in the column.
+            let max_row_index = col.argmax().expect("Column must have at least one element");
+
+            // The extreme vector is the row at max_row_index.
+            let extreme_vector = population_fitness.row(max_row_index);
+            // Place the extreme vector as the i-th row of Z_max.
+            for j in 0..n_objectives {
+                z_max[[i, j]] = extreme_vector[j];
+            }
+        }
+        z_max
+    }
+}
 
 #[derive(Clone, Debug)]
 pub struct AgeMoeaSurvival;
@@ -52,75 +85,6 @@ impl SurvivalOperator for AgeMoeaSurvival {
     }
 }
 
-/// Implementation of the survival operator for the AGEMOEA algorithm presented in the paper
-/// An Adaptive Evolutionary Algorithm based on Non-Euclidean Geometry for Many-objective Optimization
-
-/// Solves the linear system (derived from equation (4) of the presented paper):
-///     Z_max * a = 1
-/// where Z_max is constructed from the extreme vectors of the translated fitness matrix.
-/// For each objective i, we:
-///   1. Extract the i-th column from the translated matrix.
-///   2. Find the row index where this column attains its maximum value using `argmax`.
-///   3. Use that row (extreme vector) as the i-th row of Z_max.
-/// Returns the intercepts computed as 1 / a (with a fallback to min-max normalization if needed).
-fn solve_intercepts(front_fitness: &PopulationFitness) -> Array1<f64> {
-    // Compute the ideal point z_min and translate the front.
-    let z_min = get_nideal(front_fitness);
-    let translated = front_fitness - &z_min;
-
-    // Number of objectives (columns)
-    let num_objectives = translated.shape()[1];
-
-    // Initialize the Z_max matrix with dimensions (num_objectives x num_objectives)
-    let mut z_max = Array2::<f64>::zeros((num_objectives, num_objectives));
-
-    // For each objective i, identify the extreme vector.
-    for i in 0..num_objectives {
-        // Get the i-th column as a 1D array view.
-        let col = translated.column(i);
-        // Use ndarray-stats argmax to find the row index of the maximum element in the column.
-        let max_row_index = col.argmax().expect("Column must have at least one element");
-
-        // The extreme vector is the row at max_row_index.
-        let extreme_vector = translated.row(max_row_index);
-        // Place the extreme vector as the i-th row of Z_max.
-        for j in 0..num_objectives {
-            z_max[[i, j]] = extreme_vector[j];
-        }
-    }
-
-    // Create a vector of ones (right-hand side of the equation)
-    let ones = Array1::<f64>::from_elem(num_objectives, 1.0);
-    let solution = z_max.solve_into(ones);
-    // Solve the system Z_max * a = ones.
-    match solution {
-        Ok(a) => {
-            // Check if any component of a is nearly zero.
-            if a.iter().any(|&val| val.abs() < 1e-6) {
-                // Fallback: use min-max normalization by returning the column-wise maximums.
-                get_nadir(&translated)
-            } else {
-                // Calculate intercepts as 1 / a.
-                let intercept = a.mapv(|val| 1.0 / val);
-                // Additional check: if the computed intercept is less than the observed maximum,
-                // use the observed maximum (fallback to min-max).
-                let fallback = get_nadir(&translated);
-                // Replace zip_map with an iterator-based elementwise combination.
-                let combined: Vec<f64> = intercept
-                    .iter()
-                    .zip(fallback.iter())
-                    .map(|(&calc, &fb)| if calc < fb { fb } else { calc })
-                    .collect();
-                Array1::from(combined)
-            }
-        }
-        Err(_) => {
-            // If solving the system fails, fallback to min-max normalization.
-            get_nadir(&translated)
-        }
-    }
-}
-
 /// Normalizes the first non-dominated front (F1) using intercepts obtained by solving
 /// the system Z_max * a = 1.
 /// The normalization is performed by translating the front by subtracting the ideal point
@@ -133,8 +97,9 @@ pub fn normalize_front_with_intercepts(front_fitness: &PopulationFitness) -> Pop
     if translated.iter().all(|&value| value == 0.0) {
         return translated;
     }
+    let normalizer = AgeMoeaHyperPlaneNormalization::new();
     // Obtain the intercepts by solving the linear system.
-    let intercepts = solve_intercepts(front_fitness);
+    let intercepts = normalizer.compute_hyperplane_intercepts(&translated);
 
     // Normalize each solution element-wise by the intercepts (using broadcasting).
     translated / &intercepts
@@ -397,9 +362,10 @@ mod tests {
         // System: 2*a0 = 1, 1*a1 = 1 => a = [0.5, 1.0]
         // Intercepts = 1 / a = [2.0, 1.0]
         let front: PopulationFitness = array![[1.0, 2.0], [3.0, 1.0]];
-        let intercepts = solve_intercepts(&front);
+        let normalizer = AgeMoeaHyperPlaneNormalization::new();
+        let intercepts = normalizer.compute_hyperplane_intercepts(&front);
         let expected = array![2.0, 1.0];
-        assert_array1_abs_diff_eq(&intercepts, &expected, 1e-6);
+        assert_eq!(&intercepts, &expected);
     }
 
     #[test]
@@ -422,9 +388,10 @@ mod tests {
         //   For column 0: max(0.0, 0.0) = 0.0, for column 1: max(0.0, 1.0) = 1.0
         // Expected intercepts = [0.0, 1.0]
         let front: PopulationFitness = array![[1.0, 2.0], [1.0, 3.0]];
-        let intercepts = solve_intercepts(&front);
+        let normalizer = AgeMoeaHyperPlaneNormalization::new();
+        let intercepts = normalizer.compute_hyperplane_intercepts(&front);
         let expected = array![0.0, 1.0];
-        assert_array1_abs_diff_eq(&intercepts, &expected, 1e-6);
+        assert_eq!(&intercepts, &expected);
     }
 
     #[test]
@@ -457,7 +424,7 @@ mod tests {
         let normalized = array![[0.1, 0.9], [0.9, 0.1], [0.5, 0.5]];
         let central = get_central_point_normalized(&normalized);
         let expected = array![0.5, 0.5];
-        assert_array1_abs_diff_eq(&central, &expected, 1e-6);
+        assert_eq!(&central, &expected);
     }
 
     #[test]
@@ -654,8 +621,5 @@ mod tests {
             survivors.survival_score.is_some(),
             "Survival scores should be assigned in the survivors population"
         );
-
-        // (Optional) You can print or further inspect the survivors for debugging.
-        // e.g., println!("Survivors: {:?}", survivors);
     }
 }
