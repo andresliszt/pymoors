@@ -1,5 +1,5 @@
 pub mod agemoea;
-mod helpers;
+pub mod helpers;
 pub mod nsga2;
 pub mod nsga3;
 pub mod rnsga2;

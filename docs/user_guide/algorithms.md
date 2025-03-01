@@ -92,7 +92,7 @@ algorithm = Nsga2(
     constraints_fn=constraints,  # Pass the constraints function
     duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
     n_vars=2,
-    pop_size=200,
+    population_size=200,
     n_offsprings=200,
     num_iterations=200,
     mutation_rate=0.1,

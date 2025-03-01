@@ -17,7 +17,7 @@ def valid_algorithm_params():
         "mutation": GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         "fitness_fn": lambda genes: genes,  # Mock function for fitness evaluation
         "n_vars": 10,
-        "pop_size": 100,
+        "population_size": 100,
         "n_offsprings": 50,
         "num_iterations": 50,
         "mutation_rate": 0.1,
@@ -74,7 +74,7 @@ def test_invalid_n_vars(valid_algorithm_params):
 # ❌ **Test that population size must be greater than 0**
 def test_invalid_population_size(valid_algorithm_params):
     """Population size must be greater than 0."""
-    valid_algorithm_params["pop_size"] = 0
+    valid_algorithm_params["population_size"] = 0
     with pytest.raises(
         InvalidParameterError, match="Population size must be greater than 0"
     ):

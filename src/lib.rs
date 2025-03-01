@@ -6,7 +6,6 @@ mod evaluator;
 mod genetic;
 
 mod algorithms;
-pub mod diversity_metrics;
 mod duplicates;
 mod helpers;
 pub mod non_dominated_sorting;
@@ -20,7 +19,7 @@ pub use algorithms::nsga2::Nsga2;
 pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::InvalidParameterError;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
-pub use algorithms::rnsga2::RNsga2;
+pub use algorithms::rnsga2::Rnsga2;
 pub use duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
     PyBitFlipMutation, PyDisplacementMutation, PyExponentialCrossover, PyGaussianMutation,
@@ -35,8 +34,8 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     // Add classes from algorithms
     m.add_class::<Nsga2>()?;
     m.add_class::<Nsga3>()?;
-    m.add_class::<RNsga2>()?;
-    m.add_class::<AgeMoea>()?;
+    m.add_class::<Rnsga2>()?;
+    // m.add_class::<AgeMoea>()?; TODO: Enable it once survival issues are fixed
 
     // Add classes from operators
     m.add_class::<PyBitFlipMutation>()?;
@@ -66,10 +65,13 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
         _py.get_type::<InvalidParameterError>(),
     )?;
     // Functions
-    m.add_function(wrap_pyfunction!(
+    let _ = m.add_function(wrap_pyfunction!(
         helpers::linalg::cross_euclidean_distances_py,
         m
     )?);
+
+    // Rerefence points
+    m.add_class::<operators::survival::helpers::PyDanAndDenisReferencePoints>()?;
 
     Ok(())
 }

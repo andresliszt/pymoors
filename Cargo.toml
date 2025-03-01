@@ -11,7 +11,7 @@ crate-type = ["cdylib", "rlib"]
 python-source = "python"
 
 [dependencies]
-pyo3 = { version = "0.23.0", features = ["multiple-pymethods"]}
+pyo3 = { version = "0.23.5", features = ["multiple-pymethods"]}
 numpy = "0.23.0"
 rand = "0.8.5"
 num-traits = "0.2.19"

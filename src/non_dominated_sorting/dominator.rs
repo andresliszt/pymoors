@@ -22,27 +22,27 @@ fn dominates(f1: &ArrayView1<f64>, f2: &ArrayView1<f64>) -> bool {
 /// Parallel Fast Non-Dominated Sorting.
 /// Returns a vector of fronts, each front is a list of indices.
 pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec<Vec<usize>> {
-    let pop_size = population_fitness.shape()[0];
+    let population_size = population_fitness.shape()[0];
 
     // Thread-safe data structures
-    let domination_count = (0..pop_size)
+    let domination_count = (0..population_size)
         .map(|_| AtomicUsize::new(0))
         .collect::<Vec<_>>();
-    let dominated_sets = (0..pop_size)
+    let dominated_sets = (0..population_size)
         .map(|_| Mutex::new(Vec::new()))
         .collect::<Vec<_>>();
 
     // Precompute row views to avoid repeated indexing
-    let fitness_rows: Vec<ArrayView1<f64>> = (0..pop_size)
+    let fitness_rows: Vec<ArrayView1<f64>> = (0..population_size)
         .map(|i| population_fitness.index_axis(Axis(0), i))
         .collect();
 
     // Parallel pairwise comparisons: p < q, each thread updates local data
-    (0..pop_size).into_par_iter().for_each(|p| {
+    (0..population_size).into_par_iter().for_each(|p| {
         // We'll accumulate changes locally to reduce locking overhead
         let mut local_updates = Vec::new();
 
-        for q in (p + 1)..pop_size {
+        for q in (p + 1)..population_size {
             let p_dominates_q = dominates(&fitness_rows[p], &fitness_rows[q]);
             let q_dominates_p = dominates(&fitness_rows[q], &fitness_rows[p]);
 
@@ -78,7 +78,7 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
     // Build first front
     let mut fronts = Vec::new();
     let mut first_front = Vec::new();
-    for i in 0..pop_size {
+    for i in 0..population_size {
         if domination_count[i].load(Ordering::Relaxed) == 0 {
             first_front.push(i);
         }

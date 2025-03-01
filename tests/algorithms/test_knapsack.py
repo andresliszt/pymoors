@@ -40,12 +40,12 @@ def fitness_knapsack(population_genes: TwoDArray) -> TwoDArray:
 
     Parameters
     ----------
-    population_genes : np.ndarray of shape (pop_size, n_items)
+    population_genes : np.ndarray of shape (population_size, n_items)
         Binary matrix representing the population (1 = item included).
 
     Returns
     -------
-    np.ndarray of shape (pop_size, 2)
+    np.ndarray of shape (population_size, 2)
         Each row contains: [ -total_value, total_weight ]
     """
     total_values = population_genes @ VALUES
@@ -64,7 +64,7 @@ def constraints_knapsack(population_genes: TwoDArray) -> TwoDArray:
 
     Returns
     -------
-    np.ndarray of shape (pop_size, 1)
+    np.ndarray of shape (population_size, 1)
         [ total_weight - CAPACITY ]
     Constraint is satisfied if <= 0.
     """
@@ -165,7 +165,7 @@ def test_knapsack(algorithm_class, extra_kw, compare_exact_front):
         constraints_fn=constraints_knapsack,
         duplicates_cleaner=ExactDuplicatesCleaner(),
         n_vars=5,  # 5 items
-        pop_size=100,  # population size
+        population_size=100,  # population size
         n_offsprings=32,  # offsprings per generation
         num_iterations=2,  # Note that with only 2 iteration we reach the opt
         mutation_rate=0.1,

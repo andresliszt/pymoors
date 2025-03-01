@@ -36,8 +36,8 @@ pub fn create_population_fitness_closure(
 }
 
 /// Creates a closure that calls the given Python function (constraints_fn)
-/// with a 2D NumPy array of shape `(pop_size, genome_length)`
-/// and returns another 2D float array of shape `(pop_size, constraints_dimension)`.
+/// with a 2D NumPy array of shape `(population_size, genome_length)`
+/// and returns another 2D float array of shape `(population_size, constraints_dimension)`.
 pub fn create_population_constraints_closure(
     py_constraints_fn: PyObject,
 ) -> PyResult<Box<dyn Fn(&PopulationGenes) -> PopulationConstraints>> {

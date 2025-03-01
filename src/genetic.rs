@@ -210,76 +210,14 @@ pub type Fronts = Vec<Population>;
 /// An extension trait for `Fronts` that adds a `.to_population()` method
 /// which flattens multiple fronts into a single `Population`.
 pub trait FrontsExt {
-    fn to_population(&self) -> Population;
+    fn to_population(self) -> Population;
 }
 
 impl FrontsExt for Vec<Population> {
-    fn to_population(&self) -> Population {
-        if self.is_empty() {
-            panic!("Cannot flatten empty fronts!");
-        }
-
-        let has_constraints = self[0].constraints.is_some();
-        let has_diversity = self[0].survival_score.is_some();
-
-        let mut genes_views = Vec::new();
-        let mut fitness_views = Vec::new();
-        let mut rank_views = Vec::new();
-        let mut diversity_views = Vec::new();
-        let mut constraints_views = Vec::new();
-
-        for front in self.iter() {
-            genes_views.push(front.genes.view());
-            fitness_views.push(front.fitness.view());
-            rank_views.push(front.rank.view());
-            if has_diversity {
-                let dm = front
-                    .survival_score
-                    .as_ref()
-                    .expect("Inconsistent survival_score among fronts");
-                diversity_views.push(dm.view());
-            }
-            if has_constraints {
-                let c = front
-                    .constraints
-                    .as_ref()
-                    .expect("Inconsistent constraints among fronts");
-                constraints_views.push(c.view());
-            }
-        }
-
-        let merged_genes =
-            concatenate(Axis(0), &genes_views[..]).expect("Error concatenating genes");
-        let merged_fitness =
-            concatenate(Axis(0), &fitness_views[..]).expect("Error concatenating fitness");
-        let merged_rank =
-            concatenate(Axis(0), &rank_views[..]).expect("Error concatenating rank arrays");
-
-        let merged_diversity = if has_diversity {
-            Some(
-                concatenate(Axis(0), &diversity_views[..])
-                    .expect("Error concatenating diversity arrays"),
-            )
-        } else {
-            None
-        };
-
-        let merged_constraints = if has_constraints {
-            Some(
-                concatenate(Axis(0), &constraints_views[..])
-                    .expect("Error concatenating constraints"),
-            )
-        } else {
-            None
-        };
-
-        Population {
-            genes: merged_genes,
-            fitness: merged_fitness,
-            constraints: merged_constraints,
-            rank: merged_rank,
-            survival_score: merged_diversity,
-        }
+    fn to_population(self) -> Population {
+        self.into_iter()
+            .reduce(|pop1, pop2| Population::merge(&pop1, &pop2))
+            .expect("Error when merging population vector")
     }
 }
 

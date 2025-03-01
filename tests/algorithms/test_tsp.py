@@ -5,7 +5,6 @@ from itertools import permutations
 from pymoors import (
     Nsga2,
     Nsga3,
-    AgeMoea,
     PermutationSampling,
     SwapMutation,
     OrderCrossover,
@@ -73,18 +72,18 @@ def fitness_tsp_multiobjective(population_genes: np.ndarray) -> TwoDArray:
 
     Parameters
     ----------
-    population_genes : np.ndarray of shape (pop_size, n_cities)
+    population_genes : np.ndarray of shape (population_size, n_cities)
         Each row is a route (permutation of [0,1,2,3]).
 
     Returns
     -------
-    np.ndarray of shape (pop_size, 2)
+    np.ndarray of shape (population_size, 2)
         Each row: [distance, toll].
         Minimizing both distance and toll.
     """
-    pop_size = population_genes.shape[0]
-    fitness = np.zeros((pop_size, 2), dtype=float)
-    for i in range(pop_size):
+    population_size = population_genes.shape[0]
+    fitness = np.zeros((population_size, 2), dtype=float)
+    for i in range(population_size):
         route = population_genes[i].astype(int)
         dist = route_distance(route)
         tl = route_toll(route)
@@ -134,7 +133,6 @@ def get_real_pareto_front() -> list[Individual]:
     "algorithm_class, extra_kw",
     [
         (Nsga2, {}),
-        (AgeMoea, {}),
         (
             Nsga3,
             {
@@ -164,7 +162,7 @@ def test_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
         mutation=SwapMutation(),
         fitness_fn=fitness_tsp_multiobjective,
         n_vars=4,  # 4 cities (the route length)
-        pop_size=100,
+        population_size=100,
         n_offsprings=24,
         num_iterations=20,
         mutation_rate=0.1,

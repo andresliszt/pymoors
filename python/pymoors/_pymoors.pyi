@@ -25,7 +25,9 @@ class SamplingOperator:
             **kwargs: Arbitrary keyword arguments.
         """
 
-    def sample(self, pop_size: int, n_vars: int, seed: Optional[int]) -> TwoDArray: ...
+    def sample(
+        self, population_size: int, n_vars: int, seed: Optional[int]
+    ) -> TwoDArray: ...
 
 class MutationOperator:
     """
@@ -253,6 +255,38 @@ class CloseDuplicatesCleaner(DuplicatesCleaner):
 
     def __init__(self, epsilon: float) -> None: ...
 
+# Reference Points
+
+class StructuredReferencePoints:
+    def generate(self) -> TwoDArray: ...
+
+class DanAndDenisReferencePoints(StructuredReferencePoints):
+    """Generates reference points for multi-objective optimization using the Das–Dennis procedure.
+    This class implements the reference point generation method as described by Das and Dennis,
+    which is widely used in algorithms such as NSGA-III. The procedure partitions the objective
+    space by generating a uniformly distributed set of points on the simplex.
+
+    The process is as follows:
+    1. Determine a parameter H (number of divisions) such that the total number of generated
+        reference points (given by the binomial coefficient C(H + m - 1, m - 1)) is at least the
+        desired number of reference points.
+    2. Generate all combinations of nonnegative integers (h1, h2, ..., hm) that sum to H.
+    3. Normalize each combination by dividing each component by H so that the resulting point lies
+        on the m-dimensional simplex (i.e., the components sum to 1).
+
+    Parameters:
+    n_of_reference_points (int): The desired number of reference points (controls the granularity).
+    n_objectives (int): The number of objectives in the optimization problem.
+
+    Reference:
+    Das, I. and Dennis, B. (1998). "Normal Boundary Intersection: A New Method for Generating
+    the Pareto Surface in Multiple Objective Optimization." Evolutionary Computation, 8(3),
+    377–400.
+    """
+    def __init__(self, n_of_reference_points: int, n_objectives: int) -> None: ...
+
+# Algorithms
+
 class _MooAlgorithmKwargs(TypedDict, total=False):
     """
     It exists for Multi-Objective Optimization (MOO) algorithms kwargs.
@@ -265,7 +299,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
         mutation (MutationOperator): Operator to perform mutation.
         fitness_fn (FitnessPopuAgeMoealationCallable): Function to evaluate the fitness of the population.
         n_vars (int): Number of variables in the optimization problem.
-        pop_size (int): Population size.
+        population_size (int): Population size.
         n_offsprings (int): Number of offsprings generated in each generation.
         num_iterations (int): Number of generations to run the algorithm.
         mutation_rate (float): Probability of mutation.
@@ -284,7 +318,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     mutation: MutationOperator
     fitness_fn: FitnessPopulationCallable
     n_vars: int
-    pop_size: int
+    population_size: int
     n_offsprings: int
     num_iterations: int
     mutation_rate: float
@@ -322,7 +356,7 @@ class Nsga2:
     def run(self) -> None: ...
 
 class _Nsga3Kwargs(_MooAlgorithmKwargs, total=False):
-    reference_points: TwoDArray
+    reference_points: TwoDArray | StructuredReferencePoints
 
 class Nsga3:
     """
@@ -349,16 +383,16 @@ class Nsga3:
     def run(self) -> None: ...
 
 class _RNsg2Kwargs(_MooAlgorithmKwargs, total=False):
-    reference_points: TwoDArray
+    reference_points: TwoDArray | StructuredReferencePoints
     epsilon: float
 
-class RNsga2:
+class Rnsga2:
     """
-    Implementation of RNsga2 (Reference-based NSGA-II).
+    Implementation of Rnsga2 (Reference-based NSGA-II).
 
-    RNsga2 is a variant of NSGA-II that incorporates reference points into the selection process
+    Rnsga2 is a variant of NSGA-II that incorporates reference points into the selection process
     to enhance diversity in many-objective optimization problems. By integrating a reference
-    point–based ranking into the survival operator, RNsga2 aims to obtain a well-distributed
+    point–based ranking into the survival operator, Rnsga2 aims to obtain a well-distributed
     approximation of the Pareto front even in high-dimensional objective spaces.
 
     References:
@@ -386,6 +420,18 @@ class RNsga2:
     def run(self) -> None: ...
 
 class AgeMoea:
+    """
+    Adaptive Evolutionary Algorithm for Many-Objective Optimization based on Non-Euclidean Geometry.
+
+    The algorithm employs adaptive strategies based on non-Euclidean geometry to effectively maintain diversity
+    and drive convergence in many-objective optimization problems.
+
+    References:
+      Annibale Panichella, (2019).
+        An adaptive evolutionary algorithm based on non-euclidean geometry for many-objective optimization.
+        Evolutionary Computation Conference, GECCO, New York, NY, USA.
+
+    """
     def __init__(self, **kwargs: Unpack[_MooAlgorithmKwargs]): ...
     @property
     def population(self) -> Population:

@@ -77,7 +77,7 @@ algorithm = Nsga2(
     constraints_fn=knapsack_constraint,
     duplicates_cleaner=ExactDuplicatesCleaner(),
     n_vars=5,
-    pop_size=32,
+    population_size=32,
     n_offsprings=32,
     num_iterations=100,
     mutation_rate=0.1,
@@ -165,7 +165,7 @@ array([0.])
 
 !!! note "Population Size and Duplicates"
 
-    Note that although the specified <code>pop_size</code> was 32, the final population ended up being 13 individuals,
+    Note that although the specified <code>population_size</code> was 32, the final population ended up being 13 individuals,
     of which 1 had <code>rank = 0</code>.
     This is because we used the <code>keep_infeasible=False</code> argument,
     removing any individual that did not satisfy the constraints (in this case, the weight constraint).
@@ -174,11 +174,11 @@ array([0.])
 
 !!! tip "Variable Types in pymoors"
 
-    In **pymoors**, there is no strict enforcement of whether variables are integer, binary, or real.  
-    The core Rust implementation works with `f64` ndarrays.  
-    To preserve a specific variable type—binary, integer, or real—you must ensure that the genetic operators themselves maintain it.  
+    In **pymoors**, there is no strict enforcement of whether variables are integer, binary, or real.
+    The core Rust implementation works with `f64` ndarrays.
+    To preserve a specific variable type—binary, integer, or real—you must ensure that the genetic operators themselves maintain it.
 
-    It is **the user's responsibility** to choose the appropriate genetic operators for the variable type in question.  
+    It is **the user's responsibility** to choose the appropriate genetic operators for the variable type in question.
     In the knapsack example, we use binary-style genetic operators, which is why the solutions are arrays of 0s and 1s.
 
 
@@ -245,7 +245,7 @@ algorithm = Nsga2(
     fitness_fn=fitness,
     duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
     n_vars=2,
-    pop_size=200,
+    population_size=200,
     n_offsprings=200,
     num_iterations=200,
     mutation_rate=0.1,

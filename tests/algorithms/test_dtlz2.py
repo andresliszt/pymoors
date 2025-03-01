@@ -64,7 +64,7 @@ def test_drop_duplicates_dtlz2(duplicates_cleaner):
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_dtlz2,
         n_vars=50,
-        pop_size=1000,
+        population_size=1000,
         n_offsprings=100,
         num_iterations=50,
         mutation_rate=0.1,

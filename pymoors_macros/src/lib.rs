@@ -161,16 +161,16 @@ pub fn py_operator(attr: TokenStream, item: TokenStream) -> TokenStream {
         }
     } else if operator_type == "sampling" {
         quote! {
-            #[pyo3(signature = (pop_size, n_vars, seed=None))]
+            #[pyo3(signature = (population_size, n_vars, seed=None))]
             pub fn sample<'py>(
                 &self,
                 py: pyo3::prelude::Python<'py>,
-                pop_size: usize,
+                population_size: usize,
                 n_vars: usize,
                 seed: Option<u64>,
             ) -> pyo3::prelude::PyResult<pyo3::prelude::Bound<'py, numpy::PyArray2<f64>>> {
                 let mut rng = crate::random::MOORandomGenerator::new_from_seed(seed);
-                let sampled_population = self.inner.operate(pop_size, n_vars, &mut rng);
+                let sampled_population = self.inner.operate(population_size, n_vars, &mut rng);
                 Ok(numpy::ToPyArray::to_pyarray(&sampled_population, py))
             }
         }

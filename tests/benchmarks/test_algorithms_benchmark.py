@@ -24,9 +24,9 @@ def f2(x: OneDArray) -> float:
 
 
 def fitness_biobjective(population_genes: TwoDArray) -> TwoDArray:
-    pop_size = population_genes.shape[0]
-    fitness = np.zeros((pop_size, 2), dtype=float)
-    for i in range(pop_size):
+    population_size = population_genes.shape[0]
+    fitness = np.zeros((population_size, 2), dtype=float)
+    for i in range(population_size):
         x = population_genes[i]
         fitness[i, 0] = f1(x)
         fitness[i, 1] = f2(x)
@@ -40,7 +40,7 @@ def test_small_real_biobjective_nsag2(benchmark):
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
         n_vars=N_VARS,
-        pop_size=1000,
+        population_size=1000,
         n_offsprings=1000,
         num_iterations=100,
         mutation_rate=0.1,

@@ -8,7 +8,6 @@ use crate::helpers::extreme_points::get_nideal;
 use crate::operators::survival::helpers::HyperPlaneNormalization;
 use crate::operators::{FrontContext, GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
-use crate::unwrap_operator;
 
 /// Implementation of the survival operator for the NSGA3 algorithm presented in the paper
 /// An Evolutionary Many-Objective Optimization Algorithm Using Reference-point Based Non-dominated Sorting Approach
@@ -85,8 +84,7 @@ impl GeneticOperator for Nsga3ReferencePointsSurvival {
 }
 
 impl Nsga3ReferencePointsSurvival {
-    pub fn new(reference_points: Array2<f64>) -> Self {
-        let reference_points = Nsga3ReferencePoints::new(reference_points, true);
+    pub fn new(reference_points: Nsga3ReferencePoints) -> Self {
         Self { reference_points }
     }
 }
@@ -107,37 +105,36 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
     ) -> Population {
-        // Drain fronts to consume them and get an iterator of owned Population values.
-        let drained = fronts.drain(..).enumerate();
+        // Accumulator for the merged population.
         let mut survivors: Option<Population> = None;
         let mut n_survivors = 0;
-
+        // Drain fronts to consume them and get an iterator of owned Population values.
+        let drained = fronts.drain(..).enumerate();
         // Iterate over all fronts with enumerate (we no longer differentiate contexts).
-        for (_i, mut front) in drained {
+        for (_i, front) in drained {
             // Save the length of the current front.
             let front_len = front.len();
 
             if n_survivors + front_len <= n_survive {
-                // The entire front fits.
-                // Use a fixed context (Inner) for computing survival scores.
-                let score = self.survival_score(&front.fitness, FrontContext::Inner, rng);
-                front
-                    .set_survival_score(score)
-                    .expect("Failed to set survival score for front");
-                survivors = match survivors {
-                    None => Some(front),
-                    Some(existing) => Some(Population::merge(&existing, &front)),
-                };
+                // If the whole front fits, merge it with the accumulator.
+                survivors = Some(match survivors {
+                    Some(acc) => Population::merge(&acc, &front),
+                    None => front,
+                });
                 n_survivors += front_len;
             } else {
                 // Only part of this front is needed.
                 let remaining = n_survive - n_survivors;
                 if remaining > 0 {
                     // this is the S_t variable defined in the Algorithm 1 in the presented paper
-                    let st = Population::merge(survivors.as_ref().expect("No survivors"), &front)
-                        .fitness;
-                    let z_min = get_nideal(&st);
-                    let translated_population = &st - &z_min;
+                    // Determine the base population for the splitting front.
+                    // If no accumulated population exists, use the current front as st.
+                    let (st, n_complete) = match &survivors {
+                        Some(acc) => (Population::merge(&acc, &front), acc.len()),
+                        None => (front, 0),
+                    };
+                    let z_min = get_nideal(&st.fitness);
+                    let translated_population = &st.fitness - &z_min;
                     let normalizer = Nsga3HyperPlaneNormalization::new();
                     let intercepts =
                         normalizer.compute_hyperplane_intercepts(&translated_population);
@@ -152,15 +149,8 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
                     } else {
                         Cow::Borrowed(&self.reference_points.points)
                     };
-                    // Compute survival score for the splitting front using the fixed context.
-                    let score = self.survival_score(&front.fitness, FrontContext::Inner, rng);
-                    front
-                        .set_survival_score(score)
-                        .expect("Failed to set survival score for splitting front");
                     let (assignments, distances) = associate(&normalized_fitness, &zr);
-
                     // Compute niching count for every individual except in the splitting front
-                    let n_complete = survivors.as_ref().expect("No survivors").len();
                     let survivors_assignments = &assignments[0..n_complete];
                     let mut niche_counts = compute_niche_counts(survivors_assignments, zr.nrows());
 
@@ -176,16 +166,17 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
                         &mut splitting_indices,
                         rng,
                     );
-                    let selection_from_splitting_front = front.selected(&chosen_indices);
-                    survivors = Some(Population::merge(
-                        survivors.as_ref().expect("No survivors"),
-                        &selection_from_splitting_front,
-                    ));
+                    let selection_from_splitting_front = st.selected(&chosen_indices);
+                    // Merge the partial selection with the accumulator.
+                    survivors = Some(match survivors {
+                        Some(acc) => Population::merge(&acc, &selection_from_splitting_front),
+                        None => selection_from_splitting_front,
+                    });
                 }
                 break;
             }
         }
-        survivors.expect("No survivors were selected")
+        survivors.expect("Failed to build survivors")
     }
 }
 
@@ -468,7 +459,7 @@ mod tests {
     }
 
     #[test]
-    fn test_niching_with_dummy_rng() {
+    fn test_niching() {
         // Inputs for the niching function.
         let assignments = vec![0, 1, 0, 1]; // Each solution's assigned reference point.
         let distances = vec![10.0, 20.0, 30.0, 40.0]; // Perpendicular distances.
@@ -488,5 +479,113 @@ mod tests {
         );
         // Expected: first iteration picks index 0, second iteration picks index 1.
         assert_eq!(chosen, vec![0, 1]);
+    }
+
+    // Helper to create a minimal Population with given fitness.
+    // For simplicity, genes = fitness and rank = zeros.
+    fn create_population_from_fitness(fitness: Array2<f64>) -> Population {
+        let num_individuals = fitness.nrows();
+        let rank = Array1::from_vec(vec![0; num_individuals]);
+        // Here we set genes equal to fitness (for testing) and leave constraints as None.
+        Population::new(fitness.clone(), fitness, None, rank)
+    }
+
+    /// Test the operate method when the first (and only) front is larger than n_survive.
+    /// In this case splitting occurs with no previously accumulated survivors.
+    #[test]
+    fn test_operate_split_first_front_content() {
+        // Create one front with 5 individuals having distinct fitness values.
+        let fitness = array![[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0], [5.0, 5.0]];
+        let front = create_population_from_fitness(fitness.clone());
+        let mut fronts: Fronts = vec![front];
+
+        // Use a simple reference points matrix: for 2 objectives we use the 2x2 identity.
+        let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
+        let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
+        let mut rng = FakeRandomGenerator::new();
+
+        // Set n_survive to 3 so that splitting must occur on the single front.
+        let survivors = survival_operator.operate(&mut fronts, 3, &mut rng);
+        assert_eq!(survivors.len(), 3, "Final survivors count should be 3");
+
+        // Verify that each selected individual comes from the original front.
+        // (Since there is only one front, every survivor's fitness should match one of the rows in the original matrix.)
+        for survivor in survivors.fitness.outer_iter() {
+            let mut found = false;
+            for orig in fitness.outer_iter() {
+                if survivor == orig {
+                    found = true;
+                    break;
+                }
+            }
+            assert!(
+                found,
+                "Survivor row {:?} not found in original front",
+                survivor
+            );
+        }
+    }
+
+    /// Test the operate method when multiple fronts are provided and splitting occurs on a later front.
+    /// In this scenario the complete first front is preserved and a part of the second front is selected.
+    #[test]
+    fn test_operate_split_later_front_content() {
+        // Front 1: 3 individuals.
+        let fitness1 = array![[1.0, 1.0], [1.1, 1.1], [1.2, 1.2]];
+        let front1 = create_population_from_fitness(fitness1.clone());
+
+        // Front 2: 4 individuals with higher fitness values.
+        let fitness2 = array![[2.0, 2.0], [2.1, 2.1], [2.2, 2.2], [2.3, 2.3]];
+        let front2 = create_population_from_fitness(fitness2.clone());
+
+        // Combine fronts into a vector.
+        let mut fronts: Fronts = vec![front1, front2];
+
+        // Use the identity as reference points for 2 objectives.
+        let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
+        let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
+        let mut rng = FakeRandomGenerator::new();
+
+        // Total individuals if merged completely would be 7.
+        // Set n_survive to 5 so that the first front (3 individuals) is completely taken
+        // and 2 individuals are selected from the second front.
+        let survivors = survival_operator.operate(&mut fronts, 5, &mut rng);
+        assert_eq!(survivors.len(), 5, "Final survivors count should be 5");
+
+        // Check that the survivors include all individuals from the first front.
+        // Since Population::merge concatenates rows, we expect that the first 3 survivors
+        // come from front1.
+        let survivors_fitness = survivors.fitness;
+        for i in 0..3 {
+            // Compare each row of survivors with the corresponding row in fitness1.
+            let survivor_row = survivors_fitness.slice(s![i, ..]);
+            let expected_row = fitness1.slice(s![i, ..]);
+            assert!(
+                survivor_row.eq(&expected_row),
+                "Survivor row {} does not match expected front1 row: got {:?}, expected {:?}",
+                i,
+                survivor_row,
+                expected_row
+            );
+        }
+
+        // For the remaining survivors (from the splitting front), verify that their fitness values
+        // come from front2. Since the niching procedure selects from the merged front,
+        // these rows should appear in fitness2.
+        for i in 3..5 {
+            let survivor_row = survivors_fitness.slice(s![i, ..]);
+            let mut found = false;
+            for orig in fitness2.outer_iter() {
+                if survivor_row.eq(&orig) {
+                    found = true;
+                    break;
+                }
+            }
+            assert!(
+                found,
+                "Survivor row {} from splitting front not found in front2. Row: {:?}",
+                i, survivor_row
+            );
+        }
     }
 }

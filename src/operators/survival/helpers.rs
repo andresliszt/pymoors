@@ -2,6 +2,7 @@ use faer::prelude::*;
 use faer_ext::{IntoFaer, IntoNdarray};
 use ndarray::{Array1, Array2, ArrayView1};
 use numpy::{IntoPyArray, PyArray2};
+use pyo3::exceptions::PyTypeError;
 use pyo3::prelude::*;
 
 use crate::genetic::PopulationFitness;
@@ -51,12 +52,12 @@ pub trait HyperPlaneNormalization {
 }
 
 /// Returns the smallest value of H such that the number of Das-Dennis reference points
-/// (computed as binom(H + m - 1, m - 1)) is greater than or equal to `number_of_reference_points`.
-fn choose_h(number_of_reference_points: usize, n_objectives: usize) -> usize {
+/// (computed as binom(H + m - 1, m - 1)) is greater than or equal to `n_of_reference_points`.
+fn choose_h(n_of_reference_points: usize, n_objectives: usize) -> usize {
     let mut h = 1;
     loop {
         let n_points = binomial_coefficient(h + n_objectives - 1, n_objectives - 1);
-        if n_points >= number_of_reference_points {
+        if n_points >= n_of_reference_points {
             return h;
         }
         h += 1;
@@ -101,12 +102,18 @@ fn generate_combinations(
     }
 }
 
-struct DanAndDenisReferencePoints {
-    number_of_reference_points: usize,
+/// A common trait for structured reference points.
+pub trait StructuredReferencePoints {
+    fn generate(&self) -> Array2<f64>;
+}
+
+#[derive(Clone, Debug)]
+pub struct DanAndDenisReferencePoints {
+    n_of_reference_points: usize,
     n_objectives: usize,
 }
 
-impl DanAndDenisReferencePoints {
+impl StructuredReferencePoints for DanAndDenisReferencePoints {
     /// Generates all Das-Dennis reference points given a population size and number of objectives.
     ///
     /// The procedure is:
@@ -116,9 +123,9 @@ impl DanAndDenisReferencePoints {
     /// 3. Normalize each combination by dividing each component by H to get a point on the simplex.
     ///
     /// The function returns an Array2<f64> where each row is a reference point.
-    pub fn generate_dan_dennis_reference_points(&self) -> Array2<f64> {
+    fn generate(&self) -> Array2<f64> {
         // Step 1: Estimate H using the population size and number of objectives.
-        let h = choose_h(self.number_of_reference_points, self.n_objectives);
+        let h = choose_h(self.n_of_reference_points, self.n_objectives);
 
         // Step 2: Generate all combinations (h₁, h₂, …, hₘ) such that h₁ + h₂ + ... + hₘ = H.
         let mut points: Vec<Vec<usize>> = Vec::new();
@@ -137,30 +144,54 @@ impl DanAndDenisReferencePoints {
     }
 }
 
+/// An enum that can hold any supported structured reference points type.
+pub enum PyStructuredReferencePointsEnum {
+    DanAndDenis(PyDanAndDenisReferencePoints),
+}
+
+/// Implement extraction for the enum.
+impl<'py> FromPyObject<'py> for PyStructuredReferencePointsEnum {
+    fn extract_bound(ob: &Bound<'py, PyAny>) -> PyResult<Self> {
+        if let Ok(dan) = ob.extract::<PyDanAndDenisReferencePoints>() {
+            Ok(PyStructuredReferencePointsEnum::DanAndDenis(dan))
+        } else {
+            Err(PyTypeError::new_err(
+                "reference_points must be one of the supported structured reference point types.",
+            ))
+        }
+    }
+}
+
+/// Implement the trait for the enum.
+impl PyStructuredReferencePointsEnum {
+    pub fn generate(&self) -> Array2<f64> {
+        match self {
+            PyStructuredReferencePointsEnum::DanAndDenis(d) => d.inner.generate(),
+        }
+    }
+}
+
 /// Expose the DanAndDenisReferencePoints struct to Python.
-#[pyclass]
-struct PyDanAndDenisReferencePoints {
-    inner: DanAndDenisReferencePoints,
+#[pyclass(name = "DanAndDenisReferencePoints")]
+#[derive(Clone, Debug)]
+pub struct PyDanAndDenisReferencePoints {
+    pub inner: DanAndDenisReferencePoints,
 }
 
 #[pymethods]
 impl PyDanAndDenisReferencePoints {
     #[new]
-    pub fn new(number_of_reference_points: usize, n_objectives: usize) -> Self {
+    pub fn new(n_of_reference_points: usize, n_objectives: usize) -> Self {
         PyDanAndDenisReferencePoints {
             inner: DanAndDenisReferencePoints {
-                number_of_reference_points,
+                n_of_reference_points,
                 n_objectives,
             },
         }
     }
-    /// Exposes a hidden attribute to signal that this is a structured reference point.
-    #[classattr]
-    const __is_structured_ref_point__: bool = true;
-
     /// Returns the reference points as a NumPy array.
-    fn to_array<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray2<f64>> {
-        let array = self.inner.generate_dan_dennis_reference_points();
+    fn generate<'py>(&self, py: Python<'py>) -> Bound<'py, PyArray2<f64>> {
+        let array = self.inner.generate();
         array.into_pyarray(py)
     }
 }

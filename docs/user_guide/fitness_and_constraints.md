@@ -1,6 +1,6 @@
 # Fitness Function in pymoors
 
-In **pymoors**, the way to define objective functions for optimization is through a NumPy-based function that operates on an entire population. This means that the provided function, `f(genes)`, expects `genes` to be a 2D NumPy array with dimensions `(pop_size, n_vars)`. It must then return a 2D NumPy array of shape `(pop_size, n_objectives)`, where each row corresponds to the evaluation of a single individual.
+In **pymoors**, the way to define objective functions for optimization is through a NumPy-based function that operates on an entire population. This means that the provided function, `f(genes)`, expects `genes` to be a 2D NumPy array with dimensions `(population_size, n_vars)`. It must then return a 2D NumPy array of shape `(population_size, n_objectives)`, where each row corresponds to the evaluation of a single individual.
 
 This population-level evaluation is very important—it allows the algorithm to efficiently process and compare many individuals at once. When writing your fitness function, make sure it is vectorized and returns one row per individual, where each row contains the evaluated objective values.
 
@@ -49,12 +49,12 @@ This method ensures a consistent and streamlined optimization process within `py
 
 # Constraints
 
-Constraints in an optimization problem are optional. They are defined using a similar approach to the fitness function. In pymoors, you define a constraint function `g(genes)` where `genes` is a 2D array of shape `(pop_size, n_vars)`, and the function must return a 2D array of shape `(pop_size, n_constraints)`. Each row of the output corresponds to the constraint evaluations for an individual in the population.
+Constraints in an optimization problem are optional. They are defined using a similar approach to the fitness function. In pymoors, you define a constraint function `g(genes)` where `genes` is a 2D array of shape `(population_size, n_vars)`, and the function must return a 2D array of shape `(population_size, n_constraints)`. Each row of the output corresponds to the constraint evaluations for an individual in the population.
 
 !!! warning "Feasibility of an Individual"
 
-    In **pymoors**, an individual in the population is considered **feasible** if and only if all constraints are less than or equal to 0.  
-    
+    In **pymoors**, an individual in the population is considered **feasible** if and only if all constraints are less than or equal to 0.
+
     In the following subsections, we will explain how to consider other types of inequalities.
 
 
@@ -82,7 +82,7 @@ def constraints(genes: TwoDArray) -> TwoDArray:
 ### Key points
 
 - **Input:**
-The function receives `genes`, a 2D array with shape `(pop_size, n_vars)`, where each row represents an individual in the population.
+The function receives `genes`, a 2D array with shape `(population_size, n_vars)`, where each row represents an individual in the population.
 
 - **Constraint Calculation:**
 For each individual, the function calculates the sum of its decision variables. The constraint is defined such that the sum must be less than or equal to a specified threshold (10 in this example).
@@ -90,7 +90,7 @@ For each individual, the function calculates the sum of its decision variables. 
 - If the sum exceeds the threshold, the resulting positive value indicates the magnitude of the violation.
 
 - **Output:**
-The function returns a 2D array of shape `(pop_size, 1)`, where each element represents the constraint evaluation for the corresponding individual.
+The function returns a 2D array of shape `(population_size, 1)`, where each element represents the constraint evaluation for the corresponding individual.
 
 - **Note:**
 The use of `reshape(-1, 1)` is crucial for ensuring that the output always has the correct dimensions, even when there is only one constraint. This guarantees consistency in the dimensionality of the constraint evaluations.
@@ -121,6 +121,6 @@ def constraints_equality(genes: TwoDArray) -> TwoDArray:
     row_sums = np.sum(genes, axis=1)
     # Compute the squared error from the equality constraint with tolerance epsilon.
     error = (row_sums - threshold - TOL)**2
-    # The reshape ensures the output is a 2D array of shape (pop_size, 1)
+    # The reshape ensures the output is a 2D array of shape (population_size, 1)
     return error.reshape(-1, 1)
 ```

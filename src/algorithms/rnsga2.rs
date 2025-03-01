@@ -15,11 +15,11 @@ use crate::operators::SurvivalOperator;
 use numpy::{PyArray2, PyArrayMethods};
 
 // Define the NSGA-II algorithm using the macro
-define_multiobj_pyclass!(RNsga2);
+define_multiobj_pyclass!(Rnsga2);
 
 // Implement PyO3 methods
 #[pymethods]
-impl RNsga2 {
+impl Rnsga2 {
     #[new]
     #[pyo3(signature = (
         reference_points,
@@ -28,7 +28,7 @@ impl RNsga2 {
         mutation,
         fitness_fn,
         n_vars,
-        pop_size,
+        population_size,
         n_offsprings,
         num_iterations,
         epsilon = 0.001,
@@ -49,7 +49,7 @@ impl RNsga2 {
         mutation: PyObject,
         fitness_fn: PyObject,
         n_vars: usize,
-        pop_size: usize,
+        population_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
         epsilon: f64,
@@ -105,7 +105,7 @@ impl RNsga2 {
             duplicates_box,
             fitness_closure,
             n_vars,
-            pop_size,
+            population_size,
             n_offsprings,
             num_iterations,
             mutation_rate,

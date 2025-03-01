@@ -2,18 +2,16 @@ import pytest
 import numpy as np
 
 from pymoors import (
-    Nsga2,
-    AgeMoea,
     RandomSamplingFloat,
     GaussianMutation,
     CloseDuplicatesCleaner,
     SimulatedBinaryCrossover,
-    ExponentialCrossover,
+    Nsga2,
+    Nsga3,
+    Rnsga2,
+    DanAndDenisReferencePoints,
 )
 from pymoors.typing import TwoDArray
-
-# FIXME: Once RNsga2 is exposed to the users, change the import
-from pymoors._pymoors import RNsga2
 
 
 def f1(x: float, y: float) -> float:
@@ -32,17 +30,17 @@ def fitness_biobjective(population_genes: TwoDArray) -> TwoDArray:
 
     Parameters
     ----------
-    population_genes: np.ndarray of shape (pop_size, 2)
+    population_genes: np.ndarray of shape (population_size, 2)
       Each row is (x,y).
 
     Returns
     -------
-    fitness: np.ndarray of shape (pop_size, 2)
+    fitness: np.ndarray of shape (population_size, 2)
       Each row is [f1, f2], the two objectives to minimize.
     """
-    pop_size = population_genes.shape[0]
-    fitness = np.zeros((pop_size, 2), dtype=float)
-    for i in range(pop_size):
+    population_size = population_genes.shape[0]
+    fitness = np.zeros((population_size, 2), dtype=float)
+    for i in range(population_size):
         x, y = population_genes[i]  # shape (2,)
         fitness[i, 0] = f1(x, y)
         fitness[i, 1] = f2(x, y)
@@ -66,14 +64,29 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
     [
         (Nsga2, {"seed": 42}),
         (Nsga2, {"seed": None}),
-        (AgeMoea, {"seed": 42}),
         (
-            RNsga2,
+            Nsga3,
             {
-                "reference_points": np.column_stack(
-                    (np.linspace(0, 1, 10), np.linspace(0, 1, 10))
+                "reference_points": DanAndDenisReferencePoints(
+                    n_of_reference_points=200, n_objectives=2
                 )
             },
+        ),
+        (
+            Nsga3,
+            {
+                "reference_points": DanAndDenisReferencePoints(
+                    n_of_reference_points=200, n_objectives=2
+                ).generate()
+            },
+        ),
+        (
+            Rnsga2,
+            {"reference_points": np.array([[0.8, 0.0], [0.0, 0.9]]), "epsilon": 0.1},
+        ),
+        (
+            Rnsga2,
+            {"reference_points": np.array([[0.8, 0.0], [0.0, 0.9]]), "epsilon": 0.001},
         ),
     ],
 )
@@ -82,25 +95,28 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
     Test a 2D real-valued problem:
       f1 = x^2 + y^2
       f2 = (x-1)^2 + (y-1)^2
+
     with x,y in [0,1].
 
     The real front is (x, y) in (0,1): x = y
 
     """
+
     algorithm = algorithm_class(
         sampler=RandomSamplingFloat(min=0.0, max=1.0),
-        crossover=ExponentialCrossover(exponential_crossover_rate=0.5),
+        crossover=SimulatedBinaryCrossover(distribution_index=2),
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
-        constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
-        pop_size=50,
-        n_offsprings=10,
-        num_iterations=10,
+        population_size=600,
+        n_offsprings=600,
+        num_iterations=100,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-6),
         keep_infeasible=False,
+        lower_bound=0,
+        upper_bound=1,
         **extra_kw,
     )
     algorithm.run()
@@ -109,8 +125,9 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
     best = final_population.best
     for i in best:  # FIXME: Fix the abs in the tests --- Should be 0.05
         assert i.genes[0] == pytest.approx(i.genes[1], abs=0.2)
-
     assert len(final_population) == 200
+    # In this test all algorithms have to reach full pareto front
+    assert len(np.unique(np.array([b.genes for b in best]), axis=0)) == 200
 
 
 @pytest.mark.xfail(
@@ -124,7 +141,7 @@ def test_same_seed_same_result():
         fitness_fn=fitness_biobjective,
         constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
-        pop_size=50,
+        population_size=50,
         n_offsprings=50,
         num_iterations=20,
         mutation_rate=0.1,
@@ -142,7 +159,7 @@ def test_same_seed_same_result():
         fitness_fn=fitness_biobjective,
         constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
-        pop_size=50,
+        population_size=50,
         n_offsprings=50,
         num_iterations=20,
         mutation_rate=0.1,

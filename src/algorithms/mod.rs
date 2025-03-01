@@ -102,7 +102,7 @@ pub struct MultiObjectiveAlgorithm {
     survivor: Box<dyn SurvivalOperator>,
     evolve: Evolve,
     evaluator: Evaluator,
-    pop_size: usize,
+    population_size: usize,
     n_offsprings: usize,
     num_iterations: usize,
     verbose: bool,
@@ -121,7 +121,7 @@ impl MultiObjectiveAlgorithm {
         duplicates_cleaner: Option<Box<dyn PopulationCleaner>>,
         fitness_fn: Box<dyn Fn(&PopulationGenes) -> PopulationFitness>,
         n_vars: usize,
-        pop_size: usize,
+        population_size: usize,
         n_offsprings: usize,
         num_iterations: usize,
         mutation_rate: f64,
@@ -140,7 +140,7 @@ impl MultiObjectiveAlgorithm {
 
         // Validate positive values
         validate_positive(n_vars, "Number of variables")?;
-        validate_positive(pop_size, "Population size")?;
+        validate_positive(population_size, "Population size")?;
         validate_positive(n_offsprings, "Number of offsprings")?;
         validate_positive(num_iterations, "Number of iterations")?;
 
@@ -156,7 +156,7 @@ impl MultiObjectiveAlgorithm {
 
         let mut rng =
             MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
-        let mut genes = sampler.operate(pop_size, n_vars, &mut rng);
+        let mut genes = sampler.operate(population_size, n_vars, &mut rng);
 
         // Create the evolution operator.
         let evolve = Evolve::new(
@@ -192,7 +192,7 @@ impl MultiObjectiveAlgorithm {
             survivor,
             evolve,
             evaluator,
-            pop_size,
+            population_size,
             n_offsprings,
             num_iterations,
             verbose,
@@ -234,7 +234,7 @@ impl MultiObjectiveAlgorithm {
         // Select the new population
         self.population = self
             .survivor
-            .operate(&mut fronts, self.pop_size, &mut self.rng);
+            .operate(&mut fronts, self.population_size, &mut self.rng);
         Ok(())
     }
 

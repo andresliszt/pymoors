@@ -213,13 +213,13 @@ mod tests {
     fn test_tournament_selection_large_population() {
         let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // Large population test to ensure stability.
-        let pop_size = 100;
+        let population_size = 100;
         let n_genes = 5;
-        let genes = Array2::from_shape_fn((pop_size, n_genes), |(i, _)| i as f64);
-        let fitness = Array2::from_shape_fn((pop_size, 1), |(i, _)| i as f64 / 100.0);
+        let genes = Array2::from_shape_fn((population_size, n_genes), |(i, _)| i as f64);
+        let fitness = Array2::from_shape_fn((population_size, 1), |(i, _)| i as f64 / 100.0);
         let constraints = None;
 
-        let rank_vec: Vec<usize> = (0..pop_size)
+        let rank_vec: Vec<usize> = (0..population_size)
             .map(|_| rng.gen_range_usize(0, n_genes))
             .collect();
         let rank = arr1(&rank_vec);

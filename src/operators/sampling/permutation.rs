@@ -77,15 +77,15 @@ mod tests {
         // Use our fake RNG.
         let mut rng = FakeRandomGenerator::new();
 
-        let pop_size = 5;
+        let population_size = 5;
         let n_vars = 4; // For example, 4 variables
 
         // Generate the population. It is assumed that `operate` (defined via
-        // the SamplingOperator trait) generates pop_size individuals.
-        let population = sampler.operate(pop_size, n_vars, &mut rng);
+        // the SamplingOperator trait) generates population_size individuals.
+        let population = sampler.operate(population_size, n_vars, &mut rng);
 
         // Check the population shape.
-        assert_eq!(population.nrows(), pop_size);
+        assert_eq!(population.nrows(), population_size);
         assert_eq!(population.ncols(), n_vars);
 
         let expected = vec![3.0, 2.0, 1.0, 0.0];
