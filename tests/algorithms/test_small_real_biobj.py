@@ -68,7 +68,7 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
             Nsga3,
             {
                 "reference_points": DanAndDenisReferencePoints(
-                    n_of_reference_points=200, n_objectives=2
+                    n_reference_points=200, n_objectives=2
                 )
             },
         ),
@@ -76,7 +76,7 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
             Nsga3,
             {
                 "reference_points": DanAndDenisReferencePoints(
-                    n_of_reference_points=200, n_objectives=2
+                    n_reference_points=200, n_objectives=2
                 ).generate()
             },
         ),

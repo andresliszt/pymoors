@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import Union, List, overload, Iterator
 
 import numpy as np
@@ -48,6 +49,7 @@ class Population:
         self.constraints = constraints
         # Set private attribute for whose individuals with rank = 0
         self._best = None
+        self._best_as_population = None
 
     @overload
     def __getitem__(self, index: int) -> Individual: ...
@@ -93,3 +95,20 @@ class Population:
         if self._best is None:
             self._best = [i for i in self if i.is_best]
         return self._best
+
+    @property
+    def best_as_population(self) -> Population:
+        if self._best_as_population is None:
+            # Create a boolean mask where rank == 0
+            mask = self.rank == 0
+            best_genes = self.genes[mask]
+            best_fitness = self.fitness[mask]
+            best_rank = self.rank[mask]
+            best_constraints = (
+                self.constraints[mask] if self.constraints is not None else None
+            )
+
+            self._best_as_population = Population(
+                best_genes, best_fitness, best_rank, best_constraints
+            )
+        return self._best_as_population

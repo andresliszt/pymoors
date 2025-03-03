@@ -52,12 +52,12 @@ pub trait HyperPlaneNormalization {
 }
 
 /// Returns the smallest value of H such that the number of Das-Dennis reference points
-/// (computed as binom(H + m - 1, m - 1)) is greater than or equal to `n_of_reference_points`.
-fn choose_h(n_of_reference_points: usize, n_objectives: usize) -> usize {
+/// (computed as binom(H + m - 1, m - 1)) is greater than or equal to `n_reference_points`.
+fn choose_h(n_reference_points: usize, n_objectives: usize) -> usize {
     let mut h = 1;
     loop {
         let n_points = binomial_coefficient(h + n_objectives - 1, n_objectives - 1);
-        if n_points >= n_of_reference_points {
+        if n_points >= n_reference_points {
             return h;
         }
         h += 1;
@@ -109,7 +109,7 @@ pub trait StructuredReferencePoints {
 
 #[derive(Clone, Debug)]
 pub struct DanAndDenisReferencePoints {
-    n_of_reference_points: usize,
+    n_reference_points: usize,
     n_objectives: usize,
 }
 
@@ -125,7 +125,7 @@ impl StructuredReferencePoints for DanAndDenisReferencePoints {
     /// The function returns an Array2<f64> where each row is a reference point.
     fn generate(&self) -> Array2<f64> {
         // Step 1: Estimate H using the population size and number of objectives.
-        let h = choose_h(self.n_of_reference_points, self.n_objectives);
+        let h = choose_h(self.n_reference_points, self.n_objectives);
 
         // Step 2: Generate all combinations (h₁, h₂, …, hₘ) such that h₁ + h₂ + ... + hₘ = H.
         let mut points: Vec<Vec<usize>> = Vec::new();
@@ -181,10 +181,10 @@ pub struct PyDanAndDenisReferencePoints {
 #[pymethods]
 impl PyDanAndDenisReferencePoints {
     #[new]
-    pub fn new(n_of_reference_points: usize, n_objectives: usize) -> Self {
+    pub fn new(n_reference_points: usize, n_objectives: usize) -> Self {
         PyDanAndDenisReferencePoints {
             inner: DanAndDenisReferencePoints {
-                n_of_reference_points,
+                n_reference_points,
                 n_objectives,
             },
         }

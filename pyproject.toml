@@ -51,7 +51,9 @@ linting = [
     "pytest"
 ]
 docs = [
+    "matplotlib",
     "mkdocs",
+    "mkdocs-jupyter",
     "mkdocs-material",
     "pymdown-extensions",
     "neoteroi-mkdocs"

@@ -1,7 +1,7 @@
 use std::cmp::Ordering;
 use std::fmt::Debug;
 
-use ndarray::{Array1, Array2, Axis, Zip};
+use ndarray::{Array1, Array2, ArrayView1, Axis};
 
 use crate::genetic::PopulationFitness;
 use crate::helpers::extreme_points::{get_nadir, get_nideal};
@@ -33,16 +33,6 @@ impl Rnsga2ReferencePointsSurvival {
         }
     }
 }
-
-/// This function computes the weighted, normalized Euclidean distance matrix between each solution
-/// in the front (fitness matrix) and a set of reference points.
-/// (It is already defined in your diversity_metrics module.)
-/// Here we assume it is available as:
-///    weighted_distance_matrix(fitness: &PopulationFitness, reference: &Array2<f64>) -> Array2<f64>
-/// and that reference_points_rank_distance calls it to compute a ranking.
-///
-/// The splitting front procedure below uses weighted_distance_matrix(fitness, fitness)
-/// to compute the internal distances among solutions.
 
 impl SurvivalOperator for Rnsga2ReferencePointsSurvival {
     fn scoring_comparison(&self) -> SurvivalScoringComparison {
@@ -86,8 +76,8 @@ impl SurvivalOperator for Rnsga2ReferencePointsSurvival {
 /// If for any objective the range (nadir - nideal) is zero, the normalized difference is set to 0.0.
 /// This is the equation (3) in the presented paper
 fn weighted_normalized_euclidean_distance(
-    f1: &Array1<f64>,
-    f2: &Array1<f64>,
+    f1: &ArrayView1<f64>,
+    f2: &ArrayView1<f64>,
     weights: &Array1<f64>,
     nideal: &Array1<f64>,
     nadir: &Array1<f64>,
@@ -97,45 +87,21 @@ fn weighted_normalized_euclidean_distance(
     // Compute the range for normalization.
     let ranges = nadir - nideal;
     // Allocate an array to store the normalized differences.
-    let mut normalized_diff = Array1::<f64>::zeros(diff.len());
-    // Populate normalized_diff: if the range is zero, set the value to 0.0.
-    Zip::from(&mut normalized_diff)
-        .and(&diff)
-        .and(&ranges)
-        .for_each(|out, &d, &r| {
-            *out = if r == 0.0 { 0.0 } else { d / r };
-        });
+    // let mut normalized_diff = Array1::<f64>::zeros(diff.len());
+    // // Populate normalized_diff: if the range is zero, set the value to 0.0.
+    // Zip::from(&mut normalized_diff)
+    //     .and(&diff)
+    //     .and(&ranges)
+    //     .for_each(|out, &d, &r| {
+    //         *out = if r == 0.0 { 0.0 } else { d / r };
+    //     });
+
+    let normalized_diff = diff / &ranges;
 
     // Compute the weighted sum of squared normalized differences.
     let weighted_sum_sq: f64 = normalized_diff.mapv(|x| x * x).dot(weights);
     // Return the square root of the weighted sum.
-    weighted_sum_sq.sqrt()
-}
-
-/// Computes the sum of normalized absolute differences between two solutions.
-/// For each objective, it calculates:
-///    |sol1[j] - sol2[j]| / (nadir[j] - nideal[j])
-/// and returns the sum over all objectives.
-fn sum_normalized_difference(
-    sol1: &Array1<f64>,
-    sol2: &Array1<f64>,
-    nideal: &Array1<f64>,
-    nadir: &Array1<f64>,
-) -> f64 {
-    let ranges = nadir - nideal;
-    sol1.iter()
-        .zip(sol2.iter())
-        .zip(ranges.iter())
-        .map(
-            |((a, b), &r)| {
-                if r == 0.0 {
-                    0.0
-                } else {
-                    (a - b).abs() / r
-                }
-            },
-        )
-        .sum()
+    (weighted_sum_sq * weights.len() as f64).sqrt()
 }
 
 fn distance_to_reference(
@@ -155,14 +121,8 @@ fn distance_to_reference(
             .axis_iter(Axis(0))
             .enumerate()
             .map(|(i, sol)| {
-                // Convert the row view into an Array1 for distance computation.
-                let distance = weighted_normalized_euclidean_distance(
-                    &sol.to_owned(),
-                    &rp.to_owned(),
-                    weights,
-                    nideal,
-                    nadir,
-                );
+                let distance =
+                    weighted_normalized_euclidean_distance(&sol, &rp, weights, nideal, nadir);
                 (i, distance)
             })
             .collect();
@@ -239,11 +199,13 @@ fn assign_crowding_distance_splitting_front(
         }
         let mut group = vec![i];
         visited[i] = true;
-        let sol_i = front_fitness.row(i).to_owned();
+        let sol_i = front_fitness.row(i);
         for j in (i + 1)..num_front_individuals {
             if !visited[j] {
-                let sol_j = front_fitness.row(j).to_owned();
-                let sum_diff = sum_normalized_difference(&sol_i, &sol_j, nideal, nadir);
+                let sol_j = front_fitness.row(j);
+                let sum_diff = weighted_normalized_euclidean_distance(
+                    &sol_i, &sol_j, &weights, &nideal, &nadir,
+                );
                 if sum_diff <= epsilon {
                     group.push(j);
                     visited[j] = true;
@@ -282,7 +244,13 @@ mod tests {
         let weights = array![1.0, 1.0];
         let nideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
-        let distance = weighted_normalized_euclidean_distance(&f1, &f2, &weights, &nideal, &nadir);
+        let distance = weighted_normalized_euclidean_distance(
+            &f1.view(),
+            &f2.view(),
+            &weights,
+            &nideal,
+            &nadir,
+        );
         assert_eq!(distance, 0.0);
     }
 
@@ -299,7 +267,13 @@ mod tests {
         let weights = array![1.0, 1.0];
         let nideal = array![1.0, 2.0];
         let nadir = array![5.0, 6.0];
-        let distance = weighted_normalized_euclidean_distance(&f1, &f2, &weights, &nideal, &nadir);
+        let distance = weighted_normalized_euclidean_distance(
+            &f1.view(),
+            &f2.view(),
+            &weights,
+            &nideal,
+            &nadir,
+        );
         let expected = (0.25_f64 + 0.25).sqrt();
         assert!((distance - expected).abs() < 1e-6);
     }
@@ -314,9 +288,106 @@ mod tests {
         let weights = array![1.0, 1.0];
         let nideal = array![1.0, 2.0];
         let nadir = array![1.0, 6.0];
-        let distance: f64 =
-            weighted_normalized_euclidean_distance(&f1, &f2, &weights, &nideal, &nadir);
+        let distance: f64 = weighted_normalized_euclidean_distance(
+            &f1.view(),
+            &f2.view(),
+            &weights,
+            &nideal,
+            &nadir,
+        );
         let expected: f64 = (0.0_f64 * 0.0 + 0.5 * 0.5).sqrt();
         assert!((distance - expected).abs() < 1e-6);
+    }
+
+    #[test]
+    fn test_single_solution_single_reference() {
+        let front_fitness = array![[0.5, 0.5]];
+        let reference_points = array![[0.5, 0.5]];
+        let weights = array![1.0, 1.0];
+        let nideal = array![0.0, 0.0];
+        let nadir = array![1.0, 1.0];
+
+        let result =
+            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+        let expected = array![1.0];
+        assert_eq!(result, expected);
+    }
+
+    /// Test 2: Two solutions with a single reference point.
+    /// Calculation:
+    /// - For [0.5, 0.5] vs [0.5, 0.5]: distance = 0.0, rank 1.
+    /// - For [0.2, 0.8] vs [0.5, 0.5]: distance > 0.0, rank 2.
+    #[test]
+    fn test_two_solutions_single_reference() {
+        let front_fitness = array![[0.5, 0.5], [0.2, 0.8]];
+        let reference_points = array![[0.5, 0.5]];
+        let weights = array![1.0, 1.0];
+        let nideal = array![0.0, 0.0];
+        let nadir = array![1.0, 1.0];
+
+        let result =
+            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+        // Expected: the first solution gets rank 1 and the second gets rank 2.
+        let expected = array![1.0, 2.0];
+        assert_eq!(result, expected);
+    }
+
+    /// Test 3: Two solutions with two reference points.
+    /// Reference Points:
+    ///   - Ref1: [0.0, 1.0]
+    ///   - Ref2: [1.0, 0.0]
+    /// Calculations:
+    /// - For Ref1: solution 1 is closer (rank 1) and solution 2 is farther (rank 2).
+    /// - For Ref2: solution 2 is closer (rank 1) and solution 1 is farther (rank 2).
+    /// Final crowding values are the minimum rank per solution:
+    ///   solution1: min(1, 2) = 1, solution2: min(2, 1) = 1.
+    #[test]
+    fn test_two_solutions_two_references() {
+        let front_fitness = array![[0.2, 0.8], [0.8, 0.2]];
+        let reference_points = array![[0.0, 1.0], [1.0, 0.0]];
+        let weights = array![1.0, 1.0];
+        let nideal = array![0.0, 0.0];
+        let nadir = array![1.0, 1.0];
+
+        let result =
+            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+        let expected = array![1.0, 1.0];
+        assert_eq!(result, expected);
+    }
+
+    /// Test 4: Multiple solutions with multiple reference points.
+    /// Three solutions and two reference points:
+    /// Front fitness:
+    ///   - Solution 1: [0.1, 0.9]
+    ///   - Solution 2: [0.4, 0.6]
+    ///   - Solution 3: [0.9, 0.1]
+    /// Reference points:
+    ///   - Ref1: [0.0, 1.0]
+    ///   - Ref2: [1.0, 0.0]
+    /// Calculations:
+    /// For Ref1:
+    ///   - Distance(solution1) ≈ 0.1414 → rank 1.
+    ///   - Distance(solution2) ≈ 0.5657 → rank 2.
+    ///   - Distance(solution3) ≈ 1.2728 → rank 3.
+    /// For Ref2:
+    ///   - Distance(solution1) ≈ 1.2728 → rank 3.
+    ///   - Distance(solution2) ≈ 0.8485 → rank 2.
+    ///   - Distance(solution3) ≈ 0.1414 → rank 1.
+    /// Final crowding values:
+    ///   - Solution 1: min(1, 3) = 1.
+    ///   - Solution 2: min(2, 2) = 2.
+    ///   - Solution 3: min(3, 1) = 1.
+    #[test]
+    fn test_multiple_solutions_multiple_references() {
+        let front_fitness = array![[0.1, 0.9], [0.4, 0.6], [0.9, 0.1]];
+        let reference_points = array![[0.0, 1.0], [1.0, 0.0]];
+        let weights = array![1.0, 1.0];
+        let nideal = array![0.0, 0.0];
+        let nadir = array![1.0, 1.0];
+
+        let result =
+            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+        let expected = array![1.0, 2.0, 1.0];
+        assert_eq!(result, expected);
     }
 }

@@ -31,3 +31,4 @@ node_modules/
 /worktree/
 .DS_Store
 .codspeed
+.ipynb_checkpoints/

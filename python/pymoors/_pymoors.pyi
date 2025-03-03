@@ -275,7 +275,7 @@ class DanAndDenisReferencePoints(StructuredReferencePoints):
         on the m-dimensional simplex (i.e., the components sum to 1).
 
     Parameters:
-    n_of_reference_points (int): The desired number of reference points (controls the granularity).
+    n_reference_points (int): The desired number of reference points (controls the granularity).
     n_objectives (int): The number of objectives in the optimization problem.
 
     Reference:
@@ -283,7 +283,7 @@ class DanAndDenisReferencePoints(StructuredReferencePoints):
     the Pareto Surface in Multiple Objective Optimization." Evolutionary Computation, 8(3),
     377–400.
     """
-    def __init__(self, n_of_reference_points: int, n_objectives: int) -> None: ...
+    def __init__(self, n_reference_points: int, n_objectives: int) -> None: ...
 
 # Algorithms
 

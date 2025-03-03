@@ -49,7 +49,8 @@ markdown_extensions:
   - pymdownx.arithmatex:
       generic: true
 extra_javascript:
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js
+  - js/custom_mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
 extra_css:
   - stylesheets/extra.css
@@ -62,4 +63,11 @@ nav:
       - Fitness and Constraints: user_guide/fitness_and_constraints.md
       - Genetic Operators: user_guide/operators.md
       - Duplicates Cleaner: user_guide/duplicates.md
-      - Algorithms: user_guide/algorithms.md
+      - Algorithms:
+        - Introduction: user_guide/algorithms/algorithms.ipynb
+        - NSGA-II: user_guide/algorithms/nsga2.ipynb
+        - RNSGA-II: user_guide/algorithms/rnsga2.ipynb
+        - NSGA-III: user_guide/algorithms/nsga3.ipynb
+
+plugins:
+    - mkdocs-jupyter
