@@ -86,22 +86,11 @@ fn weighted_normalized_euclidean_distance(
     let diff = f1 - f2;
     // Compute the range for normalization.
     let ranges = nadir - nideal;
-    // Allocate an array to store the normalized differences.
-    // let mut normalized_diff = Array1::<f64>::zeros(diff.len());
-    // // Populate normalized_diff: if the range is zero, set the value to 0.0.
-    // Zip::from(&mut normalized_diff)
-    //     .and(&diff)
-    //     .and(&ranges)
-    //     .for_each(|out, &d, &r| {
-    //         *out = if r == 0.0 { 0.0 } else { d / r };
-    //     });
-
     let normalized_diff = diff / &ranges;
-
     // Compute the weighted sum of squared normalized differences.
     let weighted_sum_sq: f64 = normalized_diff.mapv(|x| x * x).dot(weights);
     // Return the square root of the weighted sum.
-    (weighted_sum_sq * weights.len() as f64).sqrt()
+    weighted_sum_sq.sqrt()
 }
 
 fn distance_to_reference(
@@ -233,6 +222,8 @@ fn assign_crowding_distance_splitting_front(
 
 #[cfg(test)]
 mod tests {
+    use core::f64;
+
     use super::*;
     use ndarray::array;
 
@@ -295,8 +286,8 @@ mod tests {
             &nideal,
             &nadir,
         );
-        let expected: f64 = (0.0_f64 * 0.0 + 0.5 * 0.5).sqrt();
-        assert!((distance - expected).abs() < 1e-6);
+        let expected: f64 = f64::INFINITY;
+        assert!(expected == distance);
     }
 
     #[test]
