@@ -73,6 +73,7 @@ def test_drop_duplicates_dtlz2(duplicates_cleaner):
         keep_infeasible=False,
         lower_bound=0,
         upper_bound=1,
+        verbose=False,
     )
     algorithm.run()
     # We check duplicates

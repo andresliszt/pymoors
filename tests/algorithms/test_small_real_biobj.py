@@ -110,13 +110,14 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
         n_vars=2,  # We have 2 variables: x,y
         population_size=200,
         n_offsprings=200,
-        num_iterations=100,
+        num_iterations=300,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-6),
         keep_infeasible=False,
         lower_bound=0,
         upper_bound=1,
+        verbose=False,
         **extra_kw,
     )
     algorithm.run()

@@ -63,6 +63,7 @@ def test_keep_infeasible():
         crossover_rate=0.9,
         duplicates_cleaner=None,
         keep_infeasible=True,
+        verbose=False,
     )
     algorithm.run()
 

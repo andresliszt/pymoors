@@ -169,6 +169,7 @@ def test_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
         crossover_rate=0.9,
         duplicates_cleaner=ExactDuplicatesCleaner(),
         keep_infeasible=False,
+        verbose=False,
         **extra_kw,
     )
 
