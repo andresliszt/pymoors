@@ -54,7 +54,7 @@ impl Evaluator {
     /// individuals are filtered out if they do not satisfy:
     ///   - The provided constraints function (all constraint values must be ≤ 0), and
     ///   - The optional lower and upper bounds (each gene must satisfy lower_bound <= gene <= upper_bound).
-    pub fn build_fronts(&self, mut genes: PopulationGenes) -> Fronts {
+    pub fn build_fronts(&self, mut genes: PopulationGenes, n_survive: usize) -> Fronts {
         let mut fitness = self.evaluate_fitness(&genes);
         let mut constraints = self.evaluate_constraints(&genes);
 
@@ -99,7 +99,7 @@ impl Evaluator {
             return Vec::new();
         }
 
-        let sorted_fronts = fast_non_dominated_sorting(&fitness);
+        let sorted_fronts = fast_non_dominated_sorting(&fitness, n_survive);
         let mut results: Fronts = Vec::new();
 
         // For each front (with rank = front_index), extract the sub-population.
@@ -222,7 +222,7 @@ mod tests {
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
 
         // Build fronts.
-        let fronts = evaluator.build_fronts(population_genes);
+        let fronts = evaluator.build_fronts(population_genes, 3);
 
         // Verify total number of individuals across all fronts equals 3.
         let total_individuals: usize = fronts.iter().map(|f| f.genes.nrows()).sum();
@@ -274,7 +274,7 @@ mod tests {
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [6.0, 1.0]];
 
         // Build fronts.
-        let fronts = evaluator.build_fronts(population_genes);
+        let fronts = evaluator.build_fronts(population_genes, 3);
 
         // Expecting only 2 feasible individuals due to bounds filtering.
         let total_individuals: usize = fronts.iter().map(|f| f.genes.nrows()).sum();

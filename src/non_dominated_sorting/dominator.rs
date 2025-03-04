@@ -21,7 +21,14 @@ fn dominates(f1: &ArrayView1<f64>, f2: &ArrayView1<f64>) -> bool {
 
 /// Parallel Fast Non-Dominated Sorting.
 /// Returns a vector of fronts, each front is a list of indices.
-pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec<Vec<usize>> {
+/// The individuals are grouped into fronts in order of non-dominance.
+/// If during the construction of fronts the cumulative count of individuals reaches or exceeds
+/// `min_survivors`, the entire last front is included (even if it causes the total to exceed `min_survivors`)
+/// and no further fronts are added.
+pub fn fast_non_dominated_sorting(
+    population_fitness: &PopulationFitness,
+    min_survivors: usize,
+) -> Vec<Vec<usize>> {
     let population_size = population_fitness.shape()[0];
 
     // Thread-safe data structures
@@ -37,9 +44,9 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
         .map(|i| population_fitness.index_axis(Axis(0), i))
         .collect();
 
-    // Parallel pairwise comparisons: p < q, each thread updates local data
+    // Parallel pairwise comparisons: for each pair (p, q) with p < q, each thread updates local data
     (0..population_size).into_par_iter().for_each(|p| {
-        // We'll accumulate changes locally to reduce locking overhead
+        // Accumulate changes locally to reduce locking overhead
         let mut local_updates = Vec::new();
 
         for q in (p + 1)..population_size {
@@ -56,26 +63,26 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
             // else -> neither dominates
         }
 
-        // Apply local updates to shared data
+        // Apply local updates to shared data:
         // For each (dominator, dominated) pair:
         for (dominator, dominated) in local_updates {
-            // push dominated into dominator's list
             {
+                // Push dominated into the dominator's list
                 let mut lock = dominated_sets[dominator].lock().unwrap();
                 lock.push(dominated);
             }
-            // increment atomic domination_count of "dominated"
+            // Increment the atomic domination_count of the dominated individual
             domination_count[dominated].fetch_add(1, Ordering::Relaxed);
         }
     });
 
-    // Convert to normal Vec<Vec<usize>>
+    // Convert to a normal Vec<Vec<usize>>
     let dominated_sets_vec: Vec<Vec<usize>> = dominated_sets
         .into_iter()
         .map(|m| m.into_inner().unwrap())
         .collect();
 
-    // Build first front
+    // Build the first front
     let mut fronts = Vec::new();
     let mut first_front = Vec::new();
     for i in 0..population_size {
@@ -84,6 +91,11 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
         }
     }
     fronts.push(first_front.clone());
+    let mut count = first_front.len();
+    // If the first front already reaches min_survivors, return immediately.
+    if count >= min_survivors {
+        return fronts;
+    }
 
     // Construct subsequent fronts
     let mut current_front = first_front;
@@ -101,8 +113,16 @@ pub fn fast_non_dominated_sorting(population_fitness: &PopulationFitness) -> Vec
         if next_front.is_empty() {
             break;
         }
-        fronts.push(next_front.clone());
-        current_front = next_front;
+        // If adding the next front reaches or exceeds min_survivors,
+        // include the entire front and stop the construction.
+        if count + next_front.len() >= min_survivors {
+            fronts.push(next_front);
+            break;
+        } else {
+            count += next_front.len();
+            fronts.push(next_front.clone());
+            current_front = next_front;
+        }
     }
 
     fronts
@@ -116,17 +136,17 @@ mod tests {
 
     #[test]
     fn test_dominates() {
-        // Test case 1: First vector _dominates the second
+        // Test case 1: The first vector dominates the second
         let a = array![1.0, 2.0, 3.0];
         let b = array![2.0, 3.0, 4.0];
         assert_eq!(dominates(&a.view(), &b.view()), true);
 
-        // Test case 2: Second vector _dominates the first
+        // Test case 2: The second vector dominates the first
         let a = array![3.0, 3.0, 3.0];
         let b = array![2.0, 4.0, 5.0];
         assert_eq!(dominates(&a.view(), &b.view()), false);
 
-        // Test case 3: Neither vector _dominates the other
+        // Test case 3: Neither vector dominates the other
         let a = array![1.0, 2.0, 3.0];
         let b = array![2.0, 1.0, 3.0];
         assert_eq!(dominates(&a.view(), &b.view()), false);
@@ -137,67 +157,23 @@ mod tests {
         assert_eq!(dominates(&a.view(), &b.view()), false);
     }
 
-    // #[test]
-    // fn test_get_current_front() {
-    //     // Define the fitness values of the population
-    //     let population_fitness = array![
-    //         [1.0, 2.0], // IndividualGenes 0
-    //         [2.0, 1.0], // IndividualGenes 1
-    //         [1.5, 1.5], // IndividualGenes 2
-    //         [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
-    //     ];
-
-    //     // All individuals are initially considered
-    //     let remainder_indexes = vec![0, 1, 2, 3];
-
-    //     // Compute the current Pareto front
-    //     let current_front = _get_current_front(&population_fitness, &remainder_indexes);
-
-    //     // Expected front: individuals 0, 1, and 2 (not dominated by anyone in this set)
-    //     let expected_front = vec![0, 1, 2];
-
-    //     assert_eq!(current_front, expected_front);
-    // }
-
-    // #[test]
-    // fn test_get_current_front_partial_population() {
-    //     // Define the fitness values of the population
-    //     let population_fitness = array![
-    //         [1.0, 2.0], // IndividualGenes 0
-    //         [2.0, 1.0], // IndividualGenes 1
-    //         [1.5, 1.5], // IndividualGenes 2
-    //         [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
-    //     ];
-
-    //     // Consider only a subset of individuals (partial population)
-    //     let remainder_indexes = vec![1, 2, 3];
-
-    //     // Compute the current Pareto front
-    //     let current_front = _get_current_front(&population_fitness, &remainder_indexes);
-
-    //     // Expected front: individual   s 1 and 2 (within the subset)
-    //     let expected_front = vec![1, 2];
-
-    //     assert_eq!(current_front, expected_front);
-    // }
-
     #[test]
     fn test_fast_non_dominated_sorting() {
         // Define the fitness values of the population
         let population_fitness = array![
-            [1.0, 2.0], // IndividualGenes 0
-            [2.0, 1.0], // IndividualGenes 1
-            [1.5, 1.5], // IndividualGenes 2
-            [3.0, 4.0], // IndividualGenes 3 (dominated by everyone)
-            [4.0, 3.0]  // IndividualGenes 4 (dominated by everyone)
+            [1.0, 2.0], // Individual 0
+            [2.0, 1.0], // Individual 1
+            [1.5, 1.5], // Individual 2
+            [3.0, 4.0], // Individual 3 (dominated by everyone)
+            [4.0, 3.0]  // Individual 4 (dominated by everyone)
         ];
 
-        // Perform fast non-dominated sorting
-        let fronts = fast_non_dominated_sorting(&population_fitness);
+        // Perform fast non-dominated sorting with min_survivors = 5
+        let fronts = fast_non_dominated_sorting(&population_fitness, 5);
 
         // Expected Pareto fronts:
         // Front 1: Individuals 0, 1, 2
-        // Front 2: Individuals 3, 4
+        // Front 2: Individuals 3, 4 (the entire front is included when min_survivors is reached)
         let expected_fronts = vec![
             vec![0, 1, 2], // Front 1
             vec![3, 4],    // Front 2
@@ -210,17 +186,18 @@ mod tests {
     fn test_fast_non_dominated_sorting_single_front() {
         // Define a population where no individual dominates another
         let population_fitness = array![
-            [1.0, 2.0], // IndividualGenes 0
-            [2.0, 1.0], // IndividualGenes 1
-            [1.5, 1.5], // IndividualGenes 2
+            [1.0, 2.0], // Individual 0
+            [2.0, 1.0], // Individual 1
+            [1.5, 1.5], // Individual 2
         ];
 
-        // Perform fast non-dominated sorting
-        let fronts = fast_non_dominated_sorting(&population_fitness);
+        // Perform fast non-dominated sorting with min_survivors = 3
+        let fronts = fast_non_dominated_sorting(&population_fitness, 3);
 
-        // Expected Pareto front: All individuals belong to the same front
+        // Expected Pareto front: All individuals belong to the same front.
+        // The front is returned in its entirety when min_survivors is reached.
         let expected_fronts = vec![
-            vec![0, 1, 2], // All individuals in Front 1
+            vec![0, 1, 2], // Front 1
         ];
 
         assert_eq!(fronts, expected_fronts);
@@ -231,11 +208,35 @@ mod tests {
         // Define an empty population
         let population_fitness: Array2<f64> = Array2::zeros((0, 0));
 
-        // Perform fast non-dominated sorting
-        let fronts = fast_non_dominated_sorting(&population_fitness);
+        // Perform fast non-dominated sorting with min_survivors = 0
+        let fronts = fast_non_dominated_sorting(&population_fitness, 0);
 
         // Expected: No fronts
         let expected_fronts: Vec<Vec<usize>> = vec![vec![]];
+
+        assert_eq!(fronts, expected_fronts);
+    }
+
+    #[test]
+    fn test_fast_non_dominated_sorting_n_survive_cut() {
+        // Define a population with clear dominance relationships and duplicate fitness values
+        // to force multiple individuals in a front.
+        let population_fitness = array![
+            [1.0, 1.0], // Individual 0: best, not dominated by anyone
+            [2.0, 2.0], // Individual 1: dominated by 0
+            [2.0, 2.0], // Individual 2: duplicate of 1, same front as 1
+            [3.0, 3.0], // Individual 3: dominated by 0,1,2
+            [4.0, 4.0]  // Individual 4: dominated by 0,1,2,3
+        ];
+
+        // Set min_survivors = 2. The first front is [0] (1 individual).
+        // The next front is [1, 2] (2 individuals). Adding this front reaches min_survivors (1 + 2 > 2)
+        // so the algorithm should include the entire second front and stop.
+        let fronts = fast_non_dominated_sorting(&population_fitness, 2);
+        let expected_fronts = vec![
+            vec![0],    // Front 1
+            vec![1, 2], // Front 2 (included entirely when min_survivors is reached)
+        ];
 
         assert_eq!(fronts, expected_fronts);
     }

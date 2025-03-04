@@ -37,7 +37,8 @@ fn bench_fast_non_dominated_sorting(c: &mut Criterion) {
     c.bench_function("fast_non_dominated_sorting", |b| {
         b.iter(|| {
             // Use black_box to prevent the compiler from optimizing away computations.
-            let fronts = fast_non_dominated_sorting(black_box(&population_fitness));
+            let fronts =
+                fast_non_dominated_sorting(black_box(&population_fitness), population_size);
             black_box(fronts);
         })
     });

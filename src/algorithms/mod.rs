@@ -179,7 +179,7 @@ impl MultiObjectiveAlgorithm {
             upper_bound,
         );
 
-        let fronts = evaluator.build_fronts(genes);
+        let fronts = evaluator.build_fronts(genes, population_size);
 
         if fronts.is_empty() {
             return Err(MultiObjectiveAlgorithmError::NoFeasibleIndividuals);
@@ -225,7 +225,9 @@ impl MultiObjectiveAlgorithm {
         .expect("Failed to concatenate current population genes with offspring genes");
         // Build fronts from the combined genes.
 
-        let mut fronts = self.evaluator.build_fronts(combined_genes);
+        let mut fronts = self
+            .evaluator
+            .build_fronts(combined_genes, self.population_size);
 
         // Check if there are no feasible individuals
         if fronts.is_empty() {
