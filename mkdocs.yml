@@ -1,6 +1,8 @@
 site_name: pymoors
 site_author: Andrés Sandoval
 site_description: A Python library for multi-objective optimization using genetic algorithms.
+use_directory_urls: false
+
 theme:
   language: en
   logo: images/logo2.png
