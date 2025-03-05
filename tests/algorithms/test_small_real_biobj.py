@@ -119,7 +119,7 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
         keep_infeasible=False,
         lower_bound=0,
         upper_bound=1,
-        verbose=False,
+        verbose=True,
         **extra_kw,
     )
     algorithm.run()
