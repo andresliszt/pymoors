@@ -33,28 +33,28 @@ jobs:
       - name: sync uv environment
         run: uv sync --group testing
 
-      - name: build pymoors optimized wheel
-        id: build
-        uses: PyO3/maturin-action@v1
-        with:
-          manylinux: auto
-          args: --release --out dist --interpreter  ${{ env.DEFAULT_PYTHON }}
-          rust-toolchain: stable
+      # - name: build pymoors optimized wheel
+      #   id: build
+      #   uses: PyO3/maturin-action@v1
+      #   with:
+      #     manylinux: auto
+      #     args: --release --out dist --interpreter  ${{ env.DEFAULT_PYTHON }}
+          # rust-toolchain: stable
 
-      - name: Debug built wheel directory
-        run: |
-          echo "Listando archivos en el directorio 'dist':"
-          ls -la dist/
-        shell: bash
+      # - name: Debug built wheel directory
+      #   run: |
+      #     echo "Listando archivos en el directorio 'dist':"
+      #     ls -la dist/
+      #   shell: bash
 
-      - name: find built wheel
-        id: find_wheel
-        run: |
-          echo "Intentando encontrar la wheel..."
-          WHEEL_PATH=$(ls dist/*.whl)
-          echo "Wheel encontrada: $WHEEL_PATH"
-          echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
-        shell: bash
+      # - name: find built wheel
+      #   id: find_wheel
+      #   run: |
+      #     echo "Intentando encontrar la wheel..."
+      #     WHEEL_PATH=$(ls dist/*.whl)
+      #     echo "Wheel encontrada: $WHEEL_PATH"
+      #     echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
+      #   shell: bash
 
       - name: install built wheel
         run: uv run pip install pymoors==0.1.2 --force-reinstall
