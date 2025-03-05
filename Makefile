@@ -32,20 +32,12 @@ rebuild-lockfiles: .uv
 .PHONY: build-dev
 build-dev:
 	@rm -f python/pymoors/*.so
-ifneq ($(USE_MATURIN),)
 	uv run maturin develop --uv
-else
-	uv pip install --force-reinstall -v -e . --config-settings=build-args='--profile dev'
-endif
 
 .PHONY: build-prod
 build-prod:
 	@rm -f python/pymoors/*.so
-ifneq ($(USE_MATURIN),)
 	uv run maturin develop --uv --release
-else
-	uv pip install -v -e .
-endif
 
 .PHONY: format
 format:
