@@ -32,8 +32,8 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          make build-prod
           uv pip install pytest-codspeed
+          make build-prod
 
       # FIXME: Looks like is not running in an optimized mode in the runner
       - name: Run benchmarks
