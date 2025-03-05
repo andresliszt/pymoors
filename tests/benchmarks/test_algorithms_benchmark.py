@@ -42,7 +42,7 @@ def test_small_real_biobjective_nsag2(benchmark):
         n_vars=N_VARS,
         population_size=2,
         n_offsprings=2,
-        num_iterations=1,
+        num_iterations=100,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
