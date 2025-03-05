@@ -40,10 +40,15 @@ jobs:
           args: >
             --release
             --out pymoors-wheel
-            --interpreter ${{  env.DEFAULT_PYTHON }}
+            --interpreter ${{ env.DEFAULT_PYTHON }}
+
+      - name: find built wheel
+        id: find_wheel
+        run: echo "wheel=$(ls pymoors-wheel/*.whl)" | tee -a "$GITHUB_OUTPUT"
+        shell: bash
 
       - name: install built wheel
-        run: uv run pip install ${{ steps.build.outputs.wheel }}
+        run: uv run pip install ${{ steps.find_wheel.outputs.wheel }}
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
