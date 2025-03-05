@@ -43,6 +43,7 @@ testing = [
     "pytest",
     "pytest-cov",
     "pytest-benchmark",
+    "pytest-codspeed",
     "pre-commit"
 ]
 linting = [
