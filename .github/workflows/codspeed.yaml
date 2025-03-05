@@ -37,28 +37,26 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           manylinux: auto
-          args: >
-            --release
-            --out pymoors-wheel
-            --interpreter ${{ env.DEFAULT_PYTHON }}
+          args: --release --out dist --interpreter  ${{ env.DEFAULT_PYTHON }}
+          rust-toolchain: stable
 
       - name: Debug built wheel directory
         run: |
-          echo "Listando archivos en el directorio 'pymoors-wheel':"
-          ls -la pymoors-wheel/
+          echo "Listando archivos en el directorio 'dist':"
+          ls -la dist/
         shell: bash
 
       - name: find built wheel
         id: find_wheel
         run: |
           echo "Intentando encontrar la wheel..."
-          WHEEL_PATH=$(ls pymoors-wheel/*.whl)
+          WHEEL_PATH=$(ls dist/*.whl)
           echo "Wheel encontrada: $WHEEL_PATH"
           echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: install built wheel
-        run: uv run pip install ${{ steps.find_wheel.outputs.wheel }}
+        run: uv run pip install ${{ steps.find_wheel.outputs.wheel }} --force-reinstall
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
