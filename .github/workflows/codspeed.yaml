@@ -32,7 +32,7 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          maturin develop --release
+          uv run maturin develop --release
 
       # FIXME: Looks like is not running in an optimized mode in the runner
       - name: Run benchmarks
