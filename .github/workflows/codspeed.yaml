@@ -32,8 +32,8 @@ jobs:
       - name: Install pymoors
         run: |
           uv sync --group testing
-          uv pip install pytest-codspeed maturin
-          make build-prod
+          pip install pytest-codspeed maturin
+          maturin develop --release
 
       # FIXME: Looks like is not running in an optimized mode in the runner
       - name: Run benchmarks
