@@ -42,9 +42,19 @@ jobs:
             --out pymoors-wheel
             --interpreter ${{ env.DEFAULT_PYTHON }}
 
+      - name: Debug built wheel directory
+        run: |
+          echo "Listando archivos en el directorio 'pymoors-wheel':"
+          ls -la pymoors-wheel/
+        shell: bash
+
       - name: find built wheel
         id: find_wheel
-        run: echo "wheel=$(ls pymoors-wheel/*.whl)" | tee -a "$GITHUB_OUTPUT"
+        run: |
+          echo "Intentando encontrar la wheel..."
+          WHEEL_PATH=$(ls pymoors-wheel/*.whl)
+          echo "Wheel encontrada: $WHEEL_PATH"
+          echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
         shell: bash
 
       - name: install built wheel
