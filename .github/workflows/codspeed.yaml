@@ -20,7 +20,6 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
 
-
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
 
@@ -30,12 +29,18 @@ jobs:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
 
-      - name: Install pymoors
-        run: |
-          uv sync --group testing
-          make build-prod
+      - name: sync uv environment
+        run: uv sync --group testing
 
-      # FIXME: Looks like is not running in an optimized mode in the runner
+      - name: build pymoors optimized wheel
+        id: build
+        uses: PyO3/maturin-action@v1
+        with:
+          release: true
+
+      - name: install built wheel
+        run: uv run pip install ${{ steps.build.outputs.wheel_path }}
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
