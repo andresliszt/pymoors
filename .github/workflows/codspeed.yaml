@@ -26,7 +26,7 @@ jobs:
       - name: install uv
         uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: ${{ env.DEFAULT_PYTHON }}
           enable-cache: true
 
       - name: sync uv environment
@@ -36,10 +36,14 @@ jobs:
         id: build
         uses: PyO3/maturin-action@v1
         with:
-          release: true
+          manylinux: auto
+          args: >
+            --release
+            --out pymoors-wheel
+            --interpreter ${{  env.DEFAULT_PYTHON }}
 
       - name: install built wheel
-        run: uv run pip install ${{ steps.build.outputs.wheel_path }}
+        run: uv run pip install ${{ steps.build.outputs.wheel }}
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
