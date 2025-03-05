@@ -31,7 +31,7 @@ jobs:
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
         uv sync --group testing
-        make build-dev
+        make build-prod
 
     - name: Test with pytest
       run: |
@@ -41,7 +41,7 @@ jobs:
     - name: Get pytest coverage report
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        cargo llvm-cov report --codecov --output-path codecov.json
+        RUSTFLAGS="-C debuginfo=2" cargo llvm-cov --release --codecov --output-path codecov.json
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
