@@ -128,7 +128,7 @@ jobs:
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          run: uv run --group=codspeed pytest -s -vvv tests/benchmarks --codspeed
+          run: uv run pytest -s -vvv tests/benchmarks --codspeed
 
   lint:
     runs-on: ubuntu-latest
