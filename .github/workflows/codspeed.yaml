@@ -31,7 +31,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
-          architecture: 'x64'
+          architecture: 'x86_64'
 
       - name: sync uv environment
         run: uv sync --group testing
