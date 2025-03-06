@@ -37,7 +37,7 @@ jobs:
       - name: Install dependencies (testing extras)
         run: |
           . .venv/bin/activate
-          pip install .[testing]
+          pip install maturin scipy pytest pytest-cov pytest-benchmark pytest-codspeed
 
       - name: Reinstall built wheel (si aplica)
         run: |
