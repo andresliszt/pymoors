@@ -51,4 +51,5 @@ jobs:
           token: ${{ secrets.CODSPEED_TOKEN }}
           run: |
             . .venv/bin/activate
+            pip install pymoors==0.1.2 --force-reinstall
             pytest -s -vvv tests/benchmarks --codspeed
