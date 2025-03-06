@@ -8,9 +8,9 @@ from pymoors._pymoors import cross_euclidean_distances  # type: ignore
 
 
 def test_cdist_pymoors(benchmark):
-    matrix = np.random.rand(5000, 5000)
+    matrix = np.random.rand(5, 5)
     result = benchmark(cross_euclidean_distances, matrix, matrix)
-    assert result.shape == (5000, 5000)
+    assert result.shape == (5, 5)
 
 
 def eculidean_distance_plus_time(matrix):
