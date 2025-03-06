@@ -60,7 +60,7 @@ jobs:
       #   shell: bash
 
       - name: install built wheel
-        run:
+        run: |
           uv run pip uninstall pymoors
           uv run pip install pymoors==0.1.2 --force-reinstall
 
