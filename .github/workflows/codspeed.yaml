@@ -43,7 +43,7 @@ jobs:
         run: |
           . .venv/bin/activate
           pip uninstall -y pymoors
-          pip install pymoors==0.1.2 --force-reinstall
+          # pip install pymoors==0.1.2 --force-reinstall
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
