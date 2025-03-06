@@ -46,6 +46,9 @@ jobs:
           pip install pymoors==0.1.2 --force-reinstall
 
       - name: Run benchmarks
-        run: |
-          . .venv/bin/activate
-          pytest -s -vvv tests/benchmarks --codspeed
+        uses: CodSpeedHQ/action@v3
+        with:
+          token: ${{ secrets.CODSPEED_TOKEN }}
+          run: |
+            . .venv/bin/activate
+            pytest -s -vvv tests/benchmarks --codspeed
