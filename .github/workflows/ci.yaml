@@ -125,6 +125,11 @@ jobs:
       - name: Test with pytest
         run: uv run pytest --ignore=tests/benchmarks # Benchmarks run in their own flow
 
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: uv run --group=codspeed pytest -s -vvv tests/benchmarks --codspeed
+
   lint:
     runs-on: ubuntu-latest
 
