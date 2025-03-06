@@ -49,7 +49,7 @@ def test_small_real_biobjective_nsag2(benchmark):
         keep_infeasible=False,
         lower_bound=0,
         upper_bound=1,
-        verbose=True,
+        verbose=False,
     )
     benchmark(algorithm.run)
 
