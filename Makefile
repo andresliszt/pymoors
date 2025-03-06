@@ -42,7 +42,7 @@ endif
 build-prod:
 	@rm -f python/pymoors/*.so
 ifneq ($(USE_MATURIN),)
-	uv run maturin develop --uv --release
+	uv run maturin develop --release --uv
 else
 	uv pip install -v -e .
 endif

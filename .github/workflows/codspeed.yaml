@@ -8,35 +8,66 @@ on:
   workflow_dispatch:
 
 env:
-  DEFAULT_PYTHON: 3.12
+  DEFAULT_PYTHON: 3.13
 
 jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
+          architecture: 'x64'
+
+      - name: install rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools
+
 
       - name: install uv
         uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ matrix.python-version }}
-          enable-cache: true
+          python-version: ${{ env.DEFAULT_PYTHON }}
 
-      - name: install rust stable
-        uses: dtolnay/rust-toolchain@stable
+      - name: sync uv environment
+        run: uv sync --group testing
 
-      - name: Install pymoors
-        run: |
-          uv sync --group testing
-          uv run maturin develop --release --uv
-          uv pip install pytest-codspeed
-
-      # FIXME: Looks like is not running in an optimized mode in the runner
-      # - name: Run benchmarks
-      #   uses: CodSpeedHQ/action@v3
+      # - name: build pymoors optimized wheel
+      #   id: build
+      #   uses: PyO3/maturin-action@v1
       #   with:
-      #     run: uv run pytest tests/benchmarks --codspeed
+      #     manylinux: auto
+      #     args: --release --out dist --interpreter  ${{ env.DEFAULT_PYTHON }}
+          # rust-toolchain: stable
+
+      # - name: Debug built wheel directory
+      #   run: |
+      #     echo "Listando archivos en el directorio 'dist':"
+      #     ls -la dist/
+      #   shell: bash
+
+      # - name: find built wheel
+      #   id: find_wheel
+      #   run: |
+      #     echo "Intentando encontrar la wheel..."
+      #     WHEEL_PATH=$(ls dist/*.whl)
+      #     echo "Wheel encontrada: $WHEEL_PATH"
+      #     echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
+      #   shell: bash
+
+      - name: install built wheel
+        run: |
+          uv run pip uninstall pymoors
+          uv run pip install pymoors==0.1.2 --force-reinstall
+
+
+        ## run: uv run pip install ${{ steps.find_wheel.outputs.wheel }} --force-reinstall
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@v3
+        with:
+          run: uv run --group=codspeed pytest -s -vvv tests/benchmarks --codspeed
