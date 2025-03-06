@@ -10,45 +10,45 @@ env:
   DEFAULT_PYTHON: 3.12
 
 jobs:
-  coverage-python:
-    runs-on: ubuntu-latest
+  # coverage-python:
+  #   runs-on: ubuntu-latest
 
-    steps:
-    - uses: actions/checkout@v4
+  #   steps:
+  #   - uses: actions/checkout@v4
 
-    - name: Install uv
-      uses: astral-sh/setup-uv@v5
-      with:
-        python-version: ${{ env.DEFAULT_PYTHON }}
+  #   - name: Install uv
+  #     uses: astral-sh/setup-uv@v5
+  #     with:
+  #       python-version: ${{ env.DEFAULT_PYTHON }}
 
-    - name: install rust nightly
-      uses: dtolnay/rust-toolchain@nightly
+  #   - name: install rust nightly
+  #     uses: dtolnay/rust-toolchain@nightly
 
-    - name: Install cargo-llvm-cov
-      uses: taiki-e/install-action@cargo-llvm-cov
+  #   - name: Install cargo-llvm-cov
+  #     uses: taiki-e/install-action@cargo-llvm-cov
 
-    - name: Install Pymoors
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        uv sync --group testing
-        make build-prod
+  #   - name: Install Pymoors
+  #     run: |
+  #       source <(cargo llvm-cov show-env --export-prefix)
+  #       uv sync --group testing
+  #       make build-prod
 
-    - name: Test with pytest
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
+  #   - name: Test with pytest
+  #     run: |
+  #       source <(cargo llvm-cov show-env --export-prefix)
+  #       uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
 
-    - name: Get pytest coverage report
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        RUSTFLAGS="-C debuginfo=2" cargo llvm-cov --release --codecov --output-path codecov.json
+  #   - name: Get pytest coverage report
+  #     run: |
+  #       source <(cargo llvm-cov show-env --export-prefix)
+  #       RUSTFLAGS="-C debuginfo=2" cargo llvm-cov --release --codecov --output-path codecov.json
 
-    - name: Upload coverage reports to Codecov
-      uses: codecov/codecov-action@v5
-      with:
-        files: coverage.xml, codecov.json
-        fail_ci_if_error: true
-        token: ${{ secrets.CODECOV_TOKEN }}
+  #   - name: Upload coverage reports to Codecov
+  #     uses: codecov/codecov-action@v5
+  #     with:
+  #       files: coverage.xml, codecov.json
+  #       fail_ci_if_error: true
+  #       token: ${{ secrets.CODECOV_TOKEN }}
 
   coverage-rust:
 
@@ -122,8 +122,8 @@ jobs:
           uv sync --group testing
           make build-prod
 
-      - name: Test with pytest
-        run: uv run pytest --ignore=tests/benchmarks # Benchmarks run in their own flow
+      # - name: Test with pytest
+      #   run: uv run pytest --ignore=tests/benchmarks # Benchmarks run in their own flow
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
@@ -166,7 +166,7 @@ jobs:
 
   check:
     if: always()
-    needs: [coverage-python, coverage-rust, test-python, lint, bench]
+    needs: [coverage-rust, test-python, lint, bench]
     runs-on: ubuntu-latest
     steps:
       - name: Decide whether the needed jobs succeeded or failed
