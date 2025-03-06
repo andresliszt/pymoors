@@ -20,6 +20,7 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
+          architecture: 'x86_64'
 
       - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
@@ -31,7 +32,6 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
-          architecture: 'x86_64'
 
       - name: sync uv environment
         run: uv sync --group testing
