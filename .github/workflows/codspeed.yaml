@@ -8,48 +8,53 @@ on:
   workflow_dispatch:
 
 env:
-  DEFAULT_PYTHON: 3.13
+  DEFAULT_PYTHON: 3.12
 
 jobs:
   benchmarks:
     name: Run benchmarks
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
-          architecture: 'arm64'
 
-      - name: Install rust stable
+      - name: install rust stable
         uses: dtolnay/rust-toolchain@stable
+
+      - name: install uv
+        uses: astral-sh/setup-uv@v5
         with:
-          components: llvm-tools
+          python-version: ${{ env.DEFAULT_PYTHON }}
+          enable-cache: true
 
-      - name: Set up virtual environment
-        run: |
-          python -m venv .venv
-          . .venv/bin/activate
-          pip install --upgrade pip
+      - name: sync uv environment
+        run: uv sync --group testing
 
-      - name: Install dependencies (testing extras)
-        run: |
-          . .venv/bin/activate
-          pip install maturin scipy pytest pytest-cov pytest-benchmark pytest-codspeed
+      - name: build pymoors optimized wheel
+        id: build
+        uses: PyO3/maturin-action@v1
+        with:
+          manylinux: auto
+          args: --release --out dist --interpreter  ${{ env.DEFAULT_PYTHON }}
+          rust-toolchain: stable
 
-      - name: Reinstall built wheel (si aplica)
+      - name: find built wheel
+        id: find_wheel
         run: |
-          . .venv/bin/activate
-          pip uninstall -y pymoors
-          # pip install pymoors==0.1.2 --force-reinstall
+          echo "Finding wheel"
+          WHEEL_PATH=$(ls dist/*.whl)
+          echo "Found wheel: $WHEEL_PATH"
+          echo "wheel=$WHEEL_PATH" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: install built wheel
+        run: uv run pip install ${{ steps.find_wheel.outputs.wheel }} --force-reinstall
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
-          token: ${{ secrets.CODSPEED_TOKEN }}
-          run: |
-            . .venv/bin/activate
-            pip install pymoors==0.1.2 --force-reinstall
-            pytest -s -vvv tests/benchmarks --codspeed
+          run: uv run pytest -s -vvv tests/benchmarks --codspeed
+        env:
+          CODSPEED_RUNNER_MODE: "walltime"
