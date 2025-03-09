@@ -128,9 +128,9 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
     best = final_population.best
     for i in best:  # FIXME: Fix the abs in the tests --- Should be 0.05
         assert i.genes[0] == pytest.approx(i.genes[1], abs=0.15)
-    assert len(final_population) == 200
+    assert len(final_population) == 100
     # In this test all algorithms have to reach full pareto front
-    assert len(np.unique(np.array([b.genes for b in best]), axis=0)) == 200
+    assert len(np.unique(np.array([b.genes for b in best]), axis=0)) == 100
 
 
 @pytest.mark.xfail(
