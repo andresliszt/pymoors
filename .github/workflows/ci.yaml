@@ -31,23 +31,24 @@ jobs:
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
         uv sync --group testing
-        make build-prod
+        make build-dev
 
     - name: Test with pytest
       run: |
-        uv run pytest --ignore=tests/benchmarks
+        source <(cargo llvm-cov show-env --export-prefix)
+        uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
 
-    # - name: Get pytest coverage report
-    #   run: |
-    #     source <(cargo llvm-cov show-env --export-prefix)
-    #     RUSTFLAGS="-C debuginfo=2" cargo llvm-cov --release --codecov --output-path codecov.json
+    - name: Get pytest coverage report
+      run: |
+        source <(cargo llvm-cov show-env --export-prefix)
+        cargo llvm-cov report --codecov --output-path codecov.json
 
-    # - name: Upload coverage reports to Codecov
-    #   uses: codecov/codecov-action@v5
-    #   with:
-    #     files: coverage.xml, codecov.json
-    #     fail_ci_if_error: true
-    #     token: ${{ secrets.CODECOV_TOKEN }}
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
+      with:
+        files: coverage.xml, codecov.json
+        fail_ci_if_error: true
+        token: ${{ secrets.CODECOV_TOKEN }}
 
   coverage-rust:
 

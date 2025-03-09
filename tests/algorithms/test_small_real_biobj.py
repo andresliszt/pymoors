@@ -110,8 +110,8 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
         n_vars=2,  # We have 2 variables: x,y
-        population_size=200,
-        n_offsprings=200,
+        population_size=100,
+        n_offsprings=100,
         num_iterations=100,
         mutation_rate=0.1,
         crossover_rate=0.9,
