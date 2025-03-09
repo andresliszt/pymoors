@@ -53,5 +53,5 @@ def test_small_real_biobjective_nsag2(benchmark):
     )
     benchmark(algorithm.run)
 
-    # assert len(algorithm.population) == 1000
-    # assert len(algorithm.population.best) == 1000
+    assert len(algorithm.population) == 1000
+    assert len(algorithm.population.best) == 1000

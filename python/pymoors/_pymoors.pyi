@@ -1,4 +1,6 @@
-from typing import Optional, TypedDict, Unpack
+from typing import Optional, TypedDict
+
+from typing_extensions import Unpack
 
 from pymoors.schemas import Population
 from pymoors.typing import (
