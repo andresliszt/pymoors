@@ -7,7 +7,7 @@ use pyo3::prelude::*;
 
 use crate::genetic::{PopulationFitness, PopulationGenes};
 
-/// Computes the Lₚ norm of a array view vector.
+/// Computes the Lp norm of a array view vector.
 pub fn lp_norm_arrayview(x: &ArrayView1<f64>, p: f64) -> f64 {
     x.iter()
         .map(|&val| val.abs().powf(p))
@@ -15,16 +15,11 @@ pub fn lp_norm_arrayview(x: &ArrayView1<f64>, p: f64) -> f64 {
         .powf(1.0 / p)
 }
 
-/// Computes the cross squared Euclidean distance matrix between `data` and `reference`
-/// using matrix algebra.
-///
-/// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
-/// where the (i,j) element is the squared Euclidean distance between the i-th row of data
-/// and the j-th row of reference.
-pub fn cross_euclidean_distances(data: &PopulationGenes, reference: &PopulationGenes) -> Mat<f64> {
-    let n = data.nrows();
-    let m = reference.nrows();
-    let faer_data = data.view().into_faer();
+fn faer_dot_and_norms(
+    population_genes: &PopulationGenes,
+    reference: &Array2<f64>,
+) -> (Mat<f64>, Mat<f64>, Mat<f64>) {
+    let faer_data = population_genes.view().into_faer();
     let faer_ref = reference.view().into_faer();
 
     let data_norm = Mat::from_fn(faer_data.nrows(), 1, |i, _| {
@@ -38,22 +33,52 @@ pub fn cross_euclidean_distances(data: &PopulationGenes, reference: &PopulationG
     });
 
     let faer_dot = faer_data * faer_ref.transpose();
+    (data_norm, ref_norm, faer_dot)
+}
 
+/// Computes the cross squared Euclidean distance matrix between `data` and `reference`
+/// using matrix algebra.
+///
+/// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
+/// where the (i,j) element is the squared Euclidean distance between the i-th row of data
+/// and the j-th row of reference.
+pub fn cross_euclidean_distances(
+    population_genes: &PopulationGenes,
+    reference: &Array2<f64>,
+) -> Mat<f64> {
+    let (data_norm, reference_norm, faer_dot) = faer_dot_and_norms(population_genes, reference);
+
+    let n = population_genes.nrows();
+    let m = reference.nrows();
     // d²(i,j) = ||x_i||² + ||y_j||² - 2 * (x_i dot y_j)
     let faer_dist: Mat<f64> = Mat::from_fn(n, m, |i, j| {
-        data_norm.get(i, 0) + ref_norm.get(j, 0) - 2.0 * faer_dot.get(i, j)
+        data_norm.get(i, 0) + reference_norm.get(j, 0) - 2.0 * faer_dot.get(i, j)
     });
     faer_dist
 }
 
+pub fn cross_cosine_distances(
+    population_genes: &PopulationGenes,
+    reference: &Array2<f64>,
+) -> Mat<f64> {
+    let (data_norm, reference_norm, faer_dot) = faer_dot_and_norms(population_genes, reference);
+    let n = population_genes.nrows();
+    let m = reference.nrows();
+    // cosine(Oi,Oj) = (x_i dot y_j)/(||x_i||||y_i||)
+    let faer_cosine_dist: Mat<f64> = Mat::from_fn(n, m, |i, j| {
+        faer_dot.get(i, j) / (data_norm.get(i, 0).sqrt() * reference_norm.get(j, 0).sqrt())
+    });
+    faer_cosine_dist
+}
+
 pub fn cross_p_distances(
-    data: &PopulationFitness,
-    reference: &PopulationFitness,
+    population_genes: &PopulationFitness,
+    reference: &Array2<f64>,
     p: f64,
 ) -> Array2<f64> {
     // Expand dimensions so that `data` has shape (n, 1, d) and `reference` has shape (1, m, d)
     // Expand dimensions and convert to owned arrays so that subtraction is allowed.
-    let data_expanded = data.view().insert_axis(Axis(1)).to_owned(); // shape (n, 1, d)
+    let data_expanded = population_genes.view().insert_axis(Axis(1)).to_owned(); // shape (n, 1, d)
     let reference_expanded = reference.view().insert_axis(Axis(0)).to_owned(); // shape (1, m, d)
 
     // Compute the element-wise differences.

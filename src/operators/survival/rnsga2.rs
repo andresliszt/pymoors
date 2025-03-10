@@ -5,7 +5,7 @@ use ndarray::{Array1, Array2, ArrayView1, Axis};
 
 use crate::genetic::{Fronts, PopulationFitness};
 use crate::algorithms::AlgorithmContext;
-use crate::helpers::extreme_points::{get_nadir, get_nideal};
+use crate::helpers::extreme_points::{get_nadir, get_ideal};
 use crate::operators::{GeneticOperator, SurvivalOperator, SurvivalScoringComparison};
 use crate::random::RandomGenerator;
 
@@ -50,13 +50,13 @@ impl SurvivalOperator for Rnsga2ReferencePointsSurvival {
 
         for front in fronts.iter_mut().take(len_fronts.saturating_sub(1)) {
             let nadir = get_nadir(&front.fitness);
-            let nideal = get_nideal(&front.fitness);
+            let ideal = get_ideal(&front.fitness);
             let survival_score = assign_crowding_distance_to_inner_front(
                 &front.fitness,
                 &self.reference_points,
                 &weights,
                 &nadir,
-                &nideal,
+                &ideal,
             );
             front
                 .set_survival_score(survival_score)
@@ -65,14 +65,14 @@ impl SurvivalOperator for Rnsga2ReferencePointsSurvival {
         // Process the last front with the special crowding_distance_last_front function
         if let Some(last_front) = fronts.last_mut() {
             let nadir = get_nadir(&last_front.fitness);
-            let nideal = get_nideal(&last_front.fitness);
+            let ideal = get_ideal(&last_front.fitness);
             let survival_score = assign_crowding_distance_splitting_front(
                 &last_front.fitness,
                 &self.reference_points,
                 &weights,
                 self.epsilon,
                 &nadir,
-                &nideal,
+                &ideal,
                 rng,
             );
             last_front
@@ -83,20 +83,20 @@ impl SurvivalOperator for Rnsga2ReferencePointsSurvival {
 }
 
 /// Computes the weighted, normalized Euclidean distance between two objective vectors `f1` and `f2`.
-/// Normalization is performed using the provided ideal (`nideal`) and nadir (`nadir`) points.
-/// If for any objective the range (nadir - nideal) is zero, the normalized difference is set to 0.0.
+/// Normalization is performed using the provided ideal (`ideal`) and nadir (`nadir`) points.
+/// If for any objective the range (nadir - ideal) is zero, the normalized difference is set to 0.0.
 /// This is the equation (3) in the presented paper
 fn weighted_normalized_euclidean_distance(
     f1: &ArrayView1<f64>,
     f2: &ArrayView1<f64>,
     weights: &Array1<f64>,
-    nideal: &Array1<f64>,
+    ideal: &Array1<f64>,
     nadir: &Array1<f64>,
 ) -> f64 {
     // Compute the element-wise difference between f1 and f2.
     let diff = f1 - f2;
     // Compute the range for normalization.
-    let ranges = nadir - nideal;
+    let ranges = nadir - ideal;
     let normalized_diff = diff / &ranges;
     // Compute the weighted sum of squared normalized differences.
     let weighted_sum_sq: f64 = normalized_diff.mapv(|x| x * x).dot(weights);
@@ -108,7 +108,7 @@ fn distance_to_reference(
     front_fitness: &PopulationFitness,
     reference_points: &Array2<f64>,
     weights: &Array1<f64>,
-    nideal: &Array1<f64>,
+    ideal: &Array1<f64>,
     nadir: &Array1<f64>,
 ) -> Array1<f64> {
     // --- Step 1: Compute initial crowding distances based on reference points ---
@@ -122,7 +122,7 @@ fn distance_to_reference(
             .enumerate()
             .map(|(i, sol)| {
                 let distance =
-                    weighted_normalized_euclidean_distance(&sol, &rp, weights, nideal, nadir);
+                    weighted_normalized_euclidean_distance(&sol, &rp, weights, ideal, nadir);
                 (i, distance)
             })
             .collect();
@@ -154,7 +154,7 @@ fn distance_to_reference(
 /// # Parameters
 /// - `solutions`: An Array2<f64> where each row is a solution.
 /// - `reference_points`: An Array2<f64> where each row is a reference point.
-/// - `weights`, `nideal`, `nadir`: Parameters used to normalize the distance.
+/// - `weights`, `ideal`, `nadir`: Parameters used to normalize the distance.
 /// - `epsilon`: The threshold used to group similar solutions.
 /// - `rng`: A mutable reference to an object implementing `RngCore` to be used for random shuffling.
 ///
@@ -165,9 +165,9 @@ fn assign_crowding_distance_to_inner_front(
     reference_points: &Array2<f64>,
     weights: &Array1<f64>,
     nadir: &Array1<f64>,
-    nideal: &Array1<f64>,
+    ideal: &Array1<f64>,
 ) -> Array1<f64> {
-    distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir)
+    distance_to_reference(&front_fitness, &reference_points, &weights, &ideal, &nadir)
 }
 
 fn assign_crowding_distance_splitting_front(
@@ -176,7 +176,7 @@ fn assign_crowding_distance_splitting_front(
     weights: &Array1<f64>,
     epsilon: f64,
     nadir: &Array1<f64>,
-    nideal: &Array1<f64>,
+    ideal: &Array1<f64>,
     rng: &mut dyn RandomGenerator,
 ) -> Array1<f64> {
     let num_front_individuals = front_fitness.nrows();
@@ -185,7 +185,7 @@ fn assign_crowding_distance_splitting_front(
         &reference_points,
         &weights,
         nadir,
-        nideal,
+        ideal,
     );
 
     // --- Step 3: Group similar solutions using epsilon ---
@@ -204,7 +204,7 @@ fn assign_crowding_distance_splitting_front(
             if !visited[j] {
                 let sol_j = front_fitness.row(j);
                 let sum_diff = weighted_normalized_euclidean_distance(
-                    &sol_i, &sol_j, &weights, &nideal, &nadir,
+                    &sol_i, &sol_j, &weights, &ideal, &nadir,
                 );
                 if sum_diff <= epsilon {
                     group.push(j);
@@ -244,13 +244,13 @@ mod tests {
         let f1 = array![1.0, 2.0];
         let f2 = array![1.0, 2.0];
         let weights = array![1.0, 1.0];
-        let nideal = array![0.0, 0.0];
+        let ideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
         let distance = weighted_normalized_euclidean_distance(
             &f1.view(),
             &f2.view(),
             &weights,
-            &nideal,
+            &ideal,
             &nadir,
         );
         assert_eq!(distance, 0.0);
@@ -260,20 +260,20 @@ mod tests {
     fn test_distance_simple() {
         // Example:
         // f1 = [3, 4], f2 = [1, 2]
-        // nideal = [1, 2], nadir = [5, 6] => range = [4, 4]
+        // ideal = [1, 2], nadir = [5, 6] => range = [4, 4]
         // Normalized differences = [(3-1)/4, (4-2)/4] = [0.5, 0.5]
         // With weights = [1, 1], the weighted sum of squares is 0.5^2 + 0.5^2 = 0.25 + 0.25 = 0.5,
         // and the distance is sqrt(0.5).
         let f1 = array![3.0, 4.0];
         let f2 = array![1.0, 2.0];
         let weights = array![1.0, 1.0];
-        let nideal = array![1.0, 2.0];
+        let ideal = array![1.0, 2.0];
         let nadir = array![5.0, 6.0];
         let distance = weighted_normalized_euclidean_distance(
             &f1.view(),
             &f2.view(),
             &weights,
-            &nideal,
+            &ideal,
             &nadir,
         );
         let expected = (0.25_f64 + 0.25).sqrt();
@@ -283,18 +283,18 @@ mod tests {
     #[test]
     fn test_distance_with_zero_range() {
         // Test scenario where one of the objectives has a zero range.
-        // For the first objective: nideal = 1, nadir = 1, so range = 0 and normalized difference = 0.
-        // For the second objective: nideal = 2, nadir = 6, so range = 4 and normalized difference = (4-2)/4 = 0.5.
+        // For the first objective: ideal = 1, nadir = 1, so range = 0 and normalized difference = 0.
+        // For the second objective: ideal = 2, nadir = 6, so range = 4 and normalized difference = (4-2)/4 = 0.5.
         let f1 = array![3.0, 4.0];
         let f2 = array![1.0, 2.0];
         let weights = array![1.0, 1.0];
-        let nideal = array![1.0, 2.0];
+        let ideal = array![1.0, 2.0];
         let nadir = array![1.0, 6.0];
         let distance: f64 = weighted_normalized_euclidean_distance(
             &f1.view(),
             &f2.view(),
             &weights,
-            &nideal,
+            &ideal,
             &nadir,
         );
         let expected: f64 = f64::INFINITY;
@@ -306,11 +306,11 @@ mod tests {
         let front_fitness = array![[0.5, 0.5]];
         let reference_points = array![[0.5, 0.5]];
         let weights = array![1.0, 1.0];
-        let nideal = array![0.0, 0.0];
+        let ideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
 
         let result =
-            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+            distance_to_reference(&front_fitness, &reference_points, &weights, &ideal, &nadir);
         let expected = array![1.0];
         assert_eq!(result, expected);
     }
@@ -324,11 +324,11 @@ mod tests {
         let front_fitness = array![[0.5, 0.5], [0.2, 0.8]];
         let reference_points = array![[0.5, 0.5]];
         let weights = array![1.0, 1.0];
-        let nideal = array![0.0, 0.0];
+        let ideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
 
         let result =
-            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+            distance_to_reference(&front_fitness, &reference_points, &weights, &ideal, &nadir);
         // Expected: the first solution gets rank 1 and the second gets rank 2.
         let expected = array![1.0, 2.0];
         assert_eq!(result, expected);
@@ -348,11 +348,11 @@ mod tests {
         let front_fitness = array![[0.2, 0.8], [0.8, 0.2]];
         let reference_points = array![[0.0, 1.0], [1.0, 0.0]];
         let weights = array![1.0, 1.0];
-        let nideal = array![0.0, 0.0];
+        let ideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
 
         let result =
-            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+            distance_to_reference(&front_fitness, &reference_points, &weights, &ideal, &nadir);
         let expected = array![1.0, 1.0];
         assert_eq!(result, expected);
     }
@@ -384,11 +384,11 @@ mod tests {
         let front_fitness = array![[0.1, 0.9], [0.4, 0.6], [0.9, 0.1]];
         let reference_points = array![[0.0, 1.0], [1.0, 0.0]];
         let weights = array![1.0, 1.0];
-        let nideal = array![0.0, 0.0];
+        let ideal = array![0.0, 0.0];
         let nadir = array![1.0, 1.0];
 
         let result =
-            distance_to_reference(&front_fitness, &reference_points, &weights, &nideal, &nadir);
+            distance_to_reference(&front_fitness, &reference_points, &weights, &ideal, &nadir);
         let expected = array![1.0, 2.0, 1.0];
         assert_eq!(result, expected);
     }

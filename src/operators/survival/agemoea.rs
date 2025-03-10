@@ -6,7 +6,7 @@ use numpy::ndarray::{stack, Array1, Array2, ArrayView1, Axis};
 
 use crate::algorithms::AlgorithmContext;
 use crate::genetic::PopulationFitness;
-use crate::helpers::extreme_points::get_nideal;
+use crate::helpers::extreme_points::get_ideal;
 use crate::helpers::linalg::{cross_p_distances, lp_norm_arrayview};
 use crate::operators::{
     survival::helpers::HyperPlaneNormalization, GeneticOperator, SurvivalOperator,
@@ -24,10 +24,7 @@ impl HyperPlaneNormalization for AgeMoeaHyperPlaneNormalization {
     fn compute_extreme_points(&self, population_fitness: &Array2<f64>) -> Array2<f64> {
         let extreme_indices: Vec<usize> = population_fitness
             .axis_iter(Axis(1))
-            .map(|col| {
-                col.argmax()
-                    .expect("La columna debe tener al menos un elemento")
-            })
+            .map(|col| col.argmax().unwrap())
             .collect();
 
         let extreme_rows: Vec<_> = extreme_indices
@@ -41,7 +38,7 @@ impl HyperPlaneNormalization for AgeMoeaHyperPlaneNormalization {
                 .map(|row| row.view())
                 .collect::<Vec<_>>(),
         )
-        .expect("No se pudo apilar las filas")
+        .unwrap()
     }
 }
 
@@ -69,7 +66,7 @@ impl SurvivalOperator for AgeMoeaSurvival {
     ) {
         // Split the fronts into the first one and the rest
         if let Some((first_front, other_fronts)) = fronts.split_first_mut() {
-            let z_min = get_nideal(&first_front.fitness);
+            let z_min = get_ideal(&first_front.fitness);
             let translated = &first_front.fitness - &z_min;
             let normalizer = AgeMoeaHyperPlaneNormalization::new();
             let intercepts = normalizer.compute_hyperplane_intercepts(&translated);
@@ -101,7 +98,7 @@ impl SurvivalOperator for AgeMoeaSurvival {
                     .set_survival_score(score_first_front)
                     .expect("Failed to set survival score in AgeMoea");
                 for front in other_fronts.iter_mut() {
-                    //let z_min = get_nideal(&front.fitness);
+                    //let z_min = get_ideal(&front.fitness);
                     let translated = &front.fitness - &z_min;
                     let normalized_front = translated / &intercepts;
                     let score = assign_survival_scores_higher_front(&normalized_front, p);
@@ -337,7 +334,7 @@ mod tests {
         // Expected extreme vectors: for obj0 -> row1 = [2.0, 0.0], for obj1 -> row0 = [0.0, 1.0]
         // Therefore, system: 2*a0 = 1, 1*a1 = 1 → a = [0.5, 1.0] → intercepts = [2.0, 1.0]
         let front: PopulationGenes = array![[1.0, 2.0], [3.0, 1.0]];
-        let z_min = crate::helpers::extreme_points::get_nideal(&front);
+        let z_min = crate::helpers::extreme_points::get_ideal(&front);
         let translated = &front - &z_min;
         let normalizer = AgeMoeaHyperPlaneNormalization::new();
         let intercepts = normalizer.compute_hyperplane_intercepts(&translated);
@@ -356,7 +353,7 @@ mod tests {
         // For objective 1, extreme vector = row1 = [0.0, 1.0].
         // Fallback should return the nadir of translated front: [0.0, 1.0]
         let front: PopulationGenes = array![[1.0, 2.0], [1.0, 3.0]];
-        let z_min = get_nideal(&front);
+        let z_min = get_ideal(&front);
         let translated = front - z_min;
         let normalizer = AgeMoeaHyperPlaneNormalization::new();
         let intercepts = normalizer.compute_hyperplane_intercepts(&translated);

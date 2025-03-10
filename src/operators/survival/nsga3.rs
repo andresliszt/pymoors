@@ -5,8 +5,8 @@ use ndarray_stats::QuantileExt;
 
 use crate::algorithms::AlgorithmContext;
 use crate::genetic::{Fronts, Population, PopulationFitness};
-use crate::helpers::extreme_points::get_nideal;
 use crate::non_dominated_sorting::build_fronts;
+use crate::helpers::extreme_points::get_ideal;
 use crate::operators::survival::helpers::HyperPlaneNormalization;
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
@@ -138,7 +138,7 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
                         Some(acc) => (Population::merge(&acc, &front), acc.len()),
                         None => (front, 0),
                     };
-                    let z_min = get_nideal(&st.fitness);
+                    let z_min = get_ideal(&st.fitness);
                     let translated_population = &st.fitness - &z_min;
                     let normalizer = Nsga3HyperPlaneNormalization::new();
                     let intercepts =
