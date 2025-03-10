@@ -112,7 +112,7 @@ def test_small_real_biobjective(algorithm_class, extra_kw):
         n_vars=2,  # We have 2 variables: x,y
         population_size=100,
         n_offsprings=100,
-        num_iterations=100,
+        n_iterations=100,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-6),
@@ -146,7 +146,7 @@ def test_same_seed_same_result():
         n_vars=2,  # We have 2 variables: x,y
         population_size=50,
         n_offsprings=50,
-        num_iterations=20,
+        n_iterations=20,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
@@ -164,7 +164,7 @@ def test_same_seed_same_result():
         n_vars=2,  # We have 2 variables: x,y
         population_size=50,
         n_offsprings=50,
-        num_iterations=20,
+        n_iterations=20,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-8),

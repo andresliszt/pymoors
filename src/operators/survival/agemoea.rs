@@ -4,6 +4,7 @@ use std::fmt::Debug;
 use ndarray_stats::QuantileExt;
 use numpy::ndarray::{stack, Array1, Array2, ArrayView1, Axis};
 
+use crate::algorithms::AlgorithmContext;
 use crate::genetic::PopulationFitness;
 use crate::helpers::extreme_points::get_nideal;
 use crate::helpers::linalg::{cross_p_distances, lp_norm_arrayview};
@@ -64,6 +65,7 @@ impl SurvivalOperator for AgeMoeaSurvival {
         &self,
         fronts: &mut crate::genetic::Fronts,
         _rng: &mut dyn RandomGenerator,
+        _algorithm_context: &AlgorithmContext,
     ) {
         // Split the fronts into the first one and the rest
         if let Some((first_front, other_fronts)) = fronts.split_first_mut() {
@@ -479,7 +481,9 @@ mod tests {
 
         let operator = AgeMoeaSurvival::new();
         let mut rng = NoopRandomGenerator::new();
-        let survivors = operator.operate(population, n_survive, &mut rng);
+        // create context (not used in the algorithm)
+        let _context = AlgorithmContext::new(2, 5, 5, 2, 1, None, None, None);
+        let survivors = operator.operate(population, n_survive, &mut rng, &_context);
 
         assert_eq!(
             survivors.len(),

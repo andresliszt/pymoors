@@ -103,16 +103,55 @@ fn validate_positive(value: usize, name: &str) -> Result<(), MultiObjectiveAlgor
     Ok(())
 }
 
+pub struct AlgorithmContext {
+    n_vars: usize,
+    population_size: usize,
+    n_offsprings: usize,
+    n_objectives: usize,
+    n_iterations: usize,
+    current_iteration: usize,
+    n_constraints: Option<usize>,
+    upper_bound: Option<f64>,
+    lower_bound: Option<f64>,
+}
+
+impl AlgorithmContext {
+    pub fn new(
+        n_vars: usize,
+        population_size: usize,
+        n_offsprings: usize,
+        n_objectives: usize,
+        n_iterations: usize,
+        n_constraints: Option<usize>,
+        upper_bound: Option<f64>,
+        lower_bound: Option<f64>,
+    ) -> Self {
+        let current_iteration = 0;
+        Self {
+            n_vars,
+            population_size,
+            n_offsprings,
+            n_objectives,
+            n_iterations,
+            current_iteration,
+            n_constraints,
+            upper_bound,
+            lower_bound,
+        }
+    }
+
+    pub fn set_current_iteration(&mut self, current_iteration: usize) {
+        self.current_iteration = current_iteration
+    }
+}
+
 pub struct MultiObjectiveAlgorithm {
     population: Population,
     survivor: Box<dyn SurvivalOperator>,
     evolve: Evolve,
     evaluator: Evaluator,
-    population_size: usize,
-    n_offsprings: usize,
-    num_iterations: usize,
+    context: AlgorithmContext,
     verbose: bool,
-    n_vars: usize,
     rng: MOORandomGenerator,
 }
 
@@ -129,7 +168,7 @@ impl MultiObjectiveAlgorithm {
         n_vars: usize,
         population_size: usize,
         n_offsprings: usize,
-        num_iterations: usize,
+        n_iterations: usize,
         mutation_rate: f64,
         crossover_rate: f64,
         keep_infeasible: bool,
@@ -148,7 +187,7 @@ impl MultiObjectiveAlgorithm {
         validate_positive(n_vars, "Number of variables")?;
         validate_positive(population_size, "Population size")?;
         validate_positive(n_offsprings, "Number of offsprings")?;
-        validate_positive(num_iterations, "Number of iterations")?;
+        validate_positive(n_iterations, "Number of iterations")?;
 
         // Validate bounds
         if let (Some(lower), Some(upper)) = (lower_bound, upper_bound) {
@@ -189,34 +228,49 @@ impl MultiObjectiveAlgorithm {
 
         let population = evaluator.evaluate(genes)?;
 
+        // Get the context
+        let context: AlgorithmContext = AlgorithmContext::new(
+            n_vars,
+            population_size,
+            n_offsprings,
+            population.fitness.ncols(),
+            n_iterations,
+            population.constraints.as_ref().map(|c| c.ncols()),
+            upper_bound,
+            lower_bound,
+        );
+
         Ok(Self {
             population,
             survivor,
             evolve,
             evaluator,
-            population_size,
-            n_offsprings,
-            num_iterations,
+            context,
             verbose,
-            n_vars,
             rng,
         })
     }
+
 
     fn next(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
         // Obtain offspring genes.
         let offspring_genes = self
             .evolve
-            .evolve(&self.population, self.n_offsprings, 200, &mut self.rng)
+            .evolve(
+                &self.population,
+                self.context.n_offsprings,
+                200,
+                &mut self.rng,
+            )
             .map_err::<MultiObjectiveAlgorithmError, _>(Into::into)?;
 
         // Validate that the number of columns in offspring_genes matches n_vars.
         assert_eq!(
             offspring_genes.ncols(),
-            self.n_vars,
+            self.context.n_vars,
             "Number of columns in offspring_genes ({}) does not match n_vars ({})",
             offspring_genes.ncols(),
-            self.n_vars
+            self.context.n_vars
         );
 
         // Combine the current population with the offspring.
@@ -230,14 +284,17 @@ impl MultiObjectiveAlgorithm {
         let population = self.evaluator.evaluate(combined_genes)?;
 
         // Select the new population
-        self.population = self
-            .survivor
-            .operate(population, self.population_size, &mut self.rng);
+        self.population = self.survivor.operate(
+            population,
+            self.context.population_size,
+            &mut self.rng,
+            &self.context,
+        );
         Ok(())
     }
 
     pub fn run(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
-        for current_iter in 0..self.num_iterations {
+        for current_iter in 0..self.context.n_iterations {
             match self.next() {
                 Ok(()) => {
                     if self.verbose {
@@ -253,6 +310,7 @@ impl MultiObjectiveAlgorithm {
                 }
                 Err(e) => return Err(e),
             }
+            self.context.set_current_iteration(current_iter);
         }
         Ok(())
     }

@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use ndarray::{s, Array1, Array2, Axis};
 use ndarray_stats::QuantileExt;
 
+use crate::algorithms::AlgorithmContext;
 use crate::genetic::{Fronts, Population, PopulationFitness};
 use crate::helpers::extreme_points::get_nideal;
 use crate::non_dominated_sorting::build_fronts;
@@ -91,7 +92,12 @@ impl Nsga3ReferencePointsSurvival {
 }
 
 impl SurvivalOperator for Nsga3ReferencePointsSurvival {
-    fn set_survival_score(&self, _fronts: &mut Fronts, _rng: &mut dyn RandomGenerator) {
+    fn set_survival_score(
+        &self,
+        _fronts: &mut Fronts,
+        _rng: &mut dyn RandomGenerator,
+        _algorithm_context: &AlgorithmContext,
+    ) {
         unimplemented!("NSGA3 doesn't use survival score. It uses random tournament which doesn't depend on the score")
     }
 
@@ -100,6 +106,7 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
         population: Population,
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
+        _algorithm_context: &AlgorithmContext,
     ) -> Population {
         // Build fronts
         let mut fronts = build_fronts(population, n_survive);
@@ -492,9 +499,10 @@ mod tests {
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
         let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
         let mut rng = FakeRandomGenerator::new();
-
+        // create context (not used in the algorithm)
+        let _context = AlgorithmContext::new(2, 5, 5, 2, 1, None, None, None);
         // Set n_survive to 3 so that splitting must occur on the single front.
-        let survivors = survival_operator.operate(population, 3, &mut rng);
+        let survivors = survival_operator.operate(population, 3, &mut rng, &_context);
         assert_eq!(survivors.len(), 3, "Final survivors count should be 3");
 
         // Verify that each selected individual comes from the original front.
@@ -535,11 +543,12 @@ mod tests {
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
         let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
         let mut rng = FakeRandomGenerator::new();
-
+        // create context (not used in the algorithm)
+        let _context = AlgorithmContext::new(2, 7, 5, 2, 1, None, None, None);
         // Total individuals if merged completely would be 7.
         // Set n_survive to 5 so that the first front (3 individuals) is completely taken
         // and 2 individuals are selected from the second front.
-        let survivors = survival_operator.operate(population, 5, &mut rng);
+        let survivors = survival_operator.operate(population, 5, &mut rng, &_context);
         assert_eq!(survivors.len(), 5, "Final survivors count should be 5");
 
         // Check that the survivors include all individuals from the first front.

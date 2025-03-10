@@ -66,7 +66,7 @@ def test_drop_duplicates_dtlz2(duplicates_cleaner):
         n_vars=50,
         population_size=1000,
         n_offsprings=100,
-        num_iterations=50,
+        n_iterations=50,
         mutation_rate=0.1,
         crossover_rate=0.9,
         duplicates_cleaner=duplicates_cleaner,
