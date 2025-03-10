@@ -2,6 +2,7 @@ pub mod agemoea;
 pub mod helpers;
 pub mod nsga2;
 pub mod nsga3;
+pub mod revea;
 pub mod rnsga2;
 
 pub use agemoea::AgeMoeaSurvival;
