@@ -303,7 +303,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
         n_vars (int): Number of variables in the optimization problem.
         population_size (int): Population size.
         n_offsprings (int): Number of offsprings generated in each generation.
-        num_iterations (int): Number of generations to run the algorithm.
+        n_iterations (int): Number of generations to run the algorithm.
         mutation_rate (float): Probability of mutation.
         crossover_rate (float): Probability of crossover.
         keep_infeasible (bool, optional): Whether to keep infeasible solutions. Defaults to False.
@@ -322,7 +322,7 @@ class _MooAlgorithmKwargs(TypedDict, total=False):
     n_vars: int
     population_size: int
     n_offsprings: int
-    num_iterations: int
+    n_iterations: int
     mutation_rate: float
     crossover_rate: float
     keep_infeasible: bool

@@ -167,7 +167,7 @@ def test_knapsack(algorithm_class, extra_kw, compare_exact_front):
         n_vars=5,  # 5 items
         population_size=100,  # population size
         n_offsprings=32,  # offsprings per generation
-        num_iterations=2,  # Note that with only 2 iteration we reach the opt
+        n_iterations=2,  # Note that with only 2 iteration we reach the opt
         mutation_rate=0.1,
         crossover_rate=0.9,
         keep_infeasible=False,

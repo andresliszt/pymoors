@@ -19,7 +19,7 @@ def valid_algorithm_params():
         "n_vars": 10,
         "population_size": 100,
         "n_offsprings": 50,
-        "num_iterations": 50,
+        "n_iterations": 50,
         "mutation_rate": 0.1,
         "crossover_rate": 0.9,
         "keep_infeasible": False,
@@ -92,9 +92,9 @@ def test_invalid_n_offsprings(valid_algorithm_params):
 
 
 # ❌ **Test that number of iterations must be greater than 0**
-def test_invalid_num_iterations(valid_algorithm_params):
+def test_invalid_n_iterations(valid_algorithm_params):
     """Number of iterations must be greater than 0."""
-    valid_algorithm_params["num_iterations"] = 0
+    valid_algorithm_params["n_iterations"] = 0
     with pytest.raises(
         InvalidParameterError, match="Number of iterations must be greater than 0"
     ):

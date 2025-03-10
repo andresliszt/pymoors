@@ -3,6 +3,7 @@ use std::fmt::Debug;
 
 use ndarray::Array1;
 
+use crate::algorithms::AlgorithmContext;
 use crate::genetic::PopulationFitness;
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
@@ -27,6 +28,7 @@ impl SurvivalOperator for RankCrowdingSurvival {
         &self,
         fronts: &mut crate::genetic::Fronts,
         _rng: &mut dyn RandomGenerator,
+        _algorithm_context: &AlgorithmContext,
     ) {
         for front in fronts.iter_mut() {
             let crowding_distance = crowding_distance(&front.fitness);
@@ -205,7 +207,9 @@ mod tests {
         let selector = RankCrowdingSurvival;
         assert_eq!(selector.name(), "RankCrowdingSurvival");
         let mut _rng = NoopRandomGenerator::new();
-        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng);
+        // create context (not used in the algorithm)
+        let _context = AlgorithmContext::new(10, 10, 5, 2, 1, None, None, None);
+        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng, &_context);
 
         // All three should survive unchanged
         assert_eq!(new_population.len(), 3);
@@ -274,7 +278,9 @@ mod tests {
         // Use the survival operator (assumed to be RankCrowdingSurvival in NSGA-II classic mode).
         let selector = RankCrowdingSurvival;
         let mut _rng = NoopRandomGenerator::new();
-        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng);
+        // create context (not used in the algorithm)
+        let _context = AlgorithmContext::new(10, 10, 5, 2, 1, None, None, None);
+        let new_population = selector.operate(&mut fronts, n_survive, &mut _rng, &_context);
 
         // The final population must have 4 individuals.
         assert_eq!(new_population.len(), n_survive);
