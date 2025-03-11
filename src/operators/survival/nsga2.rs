@@ -249,7 +249,7 @@ mod tests {
         */
         // Front 1: 2 individuals.
         let front1_genes: Array2<f64> = array![[0.0, 1.0], [2.0, 3.0]];
-        let front1_fitness: Array2<f64> = array![[0.0, 0.1], [0.0, 0.2]];
+        let front1_fitness: Array2<f64> = array![[0.0, 0.1], [0.1, 0.0]];
 
         // Front 2: 4 individuals.
         let front2_genes: Array2<f64> = array![[4.0, 5.0], [6.0, 7.0], [8.0, 9.0], [10.0, 11.0]];
@@ -274,7 +274,7 @@ mod tests {
         let mut expected_genes: Array2<f64> =
             array![[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]];
         let mut expected_fitness: Array2<f64> =
-            array![[0.0, 0.1], [0.0, 0.2], [0.3, 0.7], [0.6, 0.4]];
+            array![[0.0, 0.1], [0.1, 0.0], [0.3, 0.7], [0.6, 0.4]];
         let mut new_genes = new_population.genes.clone();
         let mut new_fitness = new_population.fitness.clone();
 
