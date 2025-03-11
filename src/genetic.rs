@@ -217,7 +217,6 @@ impl Population {
                 .set_survival_score(score)
                 .expect("Failed to set survival score");
         }
-
         merged_population
     }
 }

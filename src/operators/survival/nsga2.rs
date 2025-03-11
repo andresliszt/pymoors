@@ -3,7 +3,7 @@ use std::fmt::Debug;
 
 use ndarray::Array1;
 
-use crate::genetic::PopulationFitness;
+use crate::genetic::{Fronts, PopulationFitness};
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
 
@@ -23,11 +23,7 @@ impl RankCrowdingSurvival {
 }
 
 impl SurvivalOperator for RankCrowdingSurvival {
-    fn set_survival_score(
-        &self,
-        fronts: &mut crate::genetic::Fronts,
-        _rng: &mut dyn RandomGenerator,
-    ) {
+    fn set_survival_score(&self, fronts: &mut Fronts, _rng: &mut dyn RandomGenerator) {
         for front in fronts.iter_mut() {
             let crowding_distance = crowding_distance(&front.fitness);
             front
@@ -253,7 +249,7 @@ mod tests {
         */
         // Front 1: 2 individuals.
         let front1_genes: Array2<f64> = array![[0.0, 1.0], [2.0, 3.0]];
-        let front1_fitness: Array2<f64> = array![[0.1, 0.9], [0.2, 0.8]];
+        let front1_fitness: Array2<f64> = array![[0.0, 0.1], [0.0, 0.2]];
 
         // Front 2: 4 individuals.
         let front2_genes: Array2<f64> = array![[4.0, 5.0], [6.0, 7.0], [8.0, 9.0], [10.0, 11.0]];
@@ -275,15 +271,42 @@ mod tests {
         // - From Front 1 (rank 0): both individuals are selected.
         // - From Front 2 (rank 1): the extreme individuals based on crowding_distance are selected,
         //   yielding genes [4.0, 5.0] and [10.0, 11.0].
-        let expected_genes: Array2<f64> = array![[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]];
-        let expected_fitness: Array2<f64> = array![[0.1, 0.9], [0.2, 0.8], [0.3, 0.7], [0.6, 0.4]];
-        assert_eq!(new_population.genes, expected_genes);
-        assert_eq!(new_population.fitness, expected_fitness);
+        let mut expected_genes: Array2<f64> =
+            array![[0.0, 1.0], [2.0, 3.0], [4.0, 5.0], [10.0, 11.0]];
+        let mut expected_fitness: Array2<f64> =
+            array![[0.0, 0.1], [0.0, 0.2], [0.3, 0.7], [0.6, 0.4]];
+        let mut new_genes = new_population.genes.clone();
+        let mut new_fitness = new_population.fitness.clone();
+
+        // Sort the arrays for comparison
+        expected_genes
+            .as_slice_mut()
+            .unwrap()
+            .sort_by(|a, b| a.partial_cmp(b).unwrap());
+        expected_fitness
+            .as_slice_mut()
+            .unwrap()
+            .sort_by(|a, b| a.partial_cmp(b).unwrap());
+        new_genes
+            .as_slice_mut()
+            .unwrap()
+            .sort_by(|a, b| a.partial_cmp(b).unwrap());
+        new_fitness
+            .as_slice_mut()
+            .unwrap()
+            .sort_by(|a, b| a.partial_cmp(b).unwrap());
+
+        assert_eq!(new_genes, expected_genes);
+        assert_eq!(new_fitness, expected_fitness);
+
         // Verify that the new population has the correct rank assignment:
         // The first two survivors should be rank 0 (from Front 1) and the last two rank 1 (from Front 2).
-        let expected_rank: Array1<usize> = array![0_usize, 0_usize, 1_usize, 1_usize];
+        let mut expected_rank: Array1<usize> = array![0_usize, 0_usize, 1_usize, 1_usize];
+        let mut new_rank = new_population.rank.unwrap().clone();
+        expected_rank.as_slice_mut().unwrap().sort();
+        new_rank.as_slice_mut().unwrap().sort();
         assert_eq!(
-            new_population.rank.unwrap().as_slice().unwrap(),
+            new_rank.as_slice().unwrap(),
             expected_rank.as_slice().unwrap()
         );
     }

@@ -76,7 +76,7 @@ def test_population_raises_value_error_for_length_mismatch():
     constraints = np.array([[0.0, -0.1], [0.0, 0.1]])
 
     with pytest.raises(
-        ValueError, match="genes, fitness and rank arrays must have the same lenght"
+        ValueError, match="genes and fitness arrays must have the same lenght"
     ):
         Population(genes, fitness, rank, constraints)
 
@@ -91,3 +91,12 @@ def test_population_raises_value_error_for_constraints_mismatch():
         ValueError, match="constraints must have the same length as genes"
     ):
         Population(genes, fitness, rank, constraints)
+
+
+def test_population_raises_value_error_for_rank_mismatch():
+    genes = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
+    fitness = np.array([[0.9, 0.8], [0.7, 0.6], [0.5, 0.4]])
+    rank = np.array([0, 1, 2, 3])
+
+    with pytest.raises(ValueError, match="rank must have the same length as genes"):
+        Population(genes, fitness, rank, None)

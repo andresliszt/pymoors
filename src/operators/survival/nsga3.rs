@@ -91,11 +91,7 @@ impl Nsga3ReferencePointsSurvival {
 }
 
 impl SurvivalOperator for Nsga3ReferencePointsSurvival {
-    fn set_survival_score(
-        &self,
-        _fronts: &mut crate::genetic::Fronts,
-        _rng: &mut dyn RandomGenerator,
-    ) {
+    fn set_survival_score(&self, _fronts: &mut Fronts, _rng: &mut dyn RandomGenerator) {
         unimplemented!("NSGA3 doesn't use survival score. It uses random tournament which doesn't depend on the score")
     }
 

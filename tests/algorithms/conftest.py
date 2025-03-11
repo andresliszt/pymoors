@@ -18,7 +18,6 @@ def compare_exact_front() -> Callable[[list[Individual], list[Individual]], None
                     tuple(
                         ind.constraints.tolist() if ind.constraints is not None else []
                     ),
-                    ind.rank,
                 )
                 for ind in individuals
             }

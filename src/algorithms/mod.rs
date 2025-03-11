@@ -8,7 +8,7 @@ use pyo3::exceptions::PyRuntimeError;
 use pyo3::PyErr;
 
 use crate::{
-    algorithms::py_errors::InvalidParameterError,
+    algorithms::py_errors::{InvalidParameterError, NoFeasibleIndividualsError},
     duplicates::PopulationCleaner,
     evaluator::{Evaluator, EvaluatorError},
     genetic::{Population, PopulationConstraints, PopulationFitness, PopulationGenes},
@@ -66,11 +66,15 @@ impl From<EvaluatorError> for MultiObjectiveAlgorithmError {
 /// the match must be updated to convert the error to the new error type.
 impl From<MultiObjectiveAlgorithmError> for PyErr {
     fn from(err: MultiObjectiveAlgorithmError) -> PyErr {
+        let msg = err.to_string();
         match err {
-            MultiObjectiveAlgorithmError::InvalidParameter(msg) => {
+            MultiObjectiveAlgorithmError::Evaluator(EvaluatorError::NoFeasibleIndividuals) => {
+                NoFeasibleIndividualsError::new_err(msg)
+            }
+            MultiObjectiveAlgorithmError::InvalidParameter(_) => {
                 InvalidParameterError::new_err(msg)
             }
-            _ => PyRuntimeError::new_err(err.to_string()),
+            _ => PyRuntimeError::new_err(msg),
         }
     }
 }

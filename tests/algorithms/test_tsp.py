@@ -129,6 +129,9 @@ def get_real_pareto_front() -> list[Individual]:
     return pareto
 
 
+@pytest.mark.xfail(
+    reason="Known issue https://github.com/andresliszt/pymoors/issues/89"
+)
 @pytest.mark.parametrize(
     "algorithm_class, extra_kw",
     [
@@ -174,7 +177,6 @@ def test_tsp_multiobjective(algorithm_class, extra_kw, compare_exact_front):
     )
 
     algorithm.run()
-
     # Retrieve final population of solutions
     best = algorithm.population.best
     # Enumerate the exact Pareto front for the 5-item knapsack

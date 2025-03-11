@@ -94,7 +94,8 @@ def test_keep_infeasible_out_of_bounds():
 
 def test_remove_infeasible():
     with pytest.raises(
-        NoFeasibleIndividualsError, match="No feasible individuals found"
+        NoFeasibleIndividualsError,
+        match="Error during evaluation: No feasible individuals found in the population",
     ):
         algorithm = Nsga2(
             sampler=RandomSamplingBinary(),
