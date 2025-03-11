@@ -94,10 +94,10 @@ mod tests {
     use super::*;
     use rand::rngs::StdRng;
 
-    use ndarray::{arr1, arr2, Array2};
+    use ndarray::{array, Array1};
     use rand::prelude::*;
 
-    use crate::genetic::{Individual, Population};
+    use crate::genetic::{Individual, Population, PopulationFitness, PopulationGenes};
     use crate::operators::{DuelResult, SelectionOperator};
     use crate::random::MOORandomGenerator;
 
@@ -115,10 +115,10 @@ mod tests {
         let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
 
         // Create two individuals using the actual Individual type.
-        // Both individuals have the same rank (0) but different diversity metrics.
+        // Both individuals have the same rank (Some(0)) but different diversity metrics.
         // In Maximize mode, the individual with the higher diversity (10.0) should win.
-        let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
-        let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
+        let p1 = Individual::new(array![1.0, 2.0], array![0.5], None, Some(0), Some(10.0));
+        let p2 = Individual::new(array![3.0, 4.0], array![0.6], None, Some(0), Some(5.0));
         let selector = RankAndScoringSelection::new(); // Default: Maximize
         assert_eq!(selector.name(), "RankAndScoringSelection");
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
@@ -129,10 +129,10 @@ mod tests {
     fn test_tournament_duel_minimize() {
         let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // Create two individuals using the actual Individual type.
-        // Both individuals have the same rank (0) but different diversity metrics.
+        // Both individuals have the same rank (Some(0)) but different diversity metrics.
         // In Minimize mode, the individual with the lower diversity (5.0) should win.
-        let p1 = Individual::new(arr1(&[1.0, 2.0]), arr1(&[0.5]), None, 0, Some(10.0));
-        let p2 = Individual::new(arr1(&[3.0, 4.0]), arr1(&[0.6]), None, 0, Some(5.0));
+        let p1 = Individual::new(array![1.0, 2.0], array![0.5], None, Some(0), Some(10.0));
+        let p2 = Individual::new(array![3.0, 4.0], array![0.6], None, Some(0), Some(5.0));
         let selector =
             RankAndScoringSelection::new_with_comparison(SurvivalScoringComparison::Minimize);
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
@@ -145,10 +145,10 @@ mod tests {
         // For a population of 4:
         // Rank: [0, 1, 0, 1]
         // Diversity (CD): [10.0, 5.0, 9.0, 1.0]
-        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]]);
-        let fitness = arr2(&[[0.5], [0.6], [0.7], [0.8]]);
+        let genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]];
+        let fitness = array![[0.5], [0.6], [0.7], [0.8]];
         let constraints = None;
-        let rank = arr1(&[0, 1, 0, 1]);
+        let rank = Some(array![0, 1, 0, 1]);
 
         let population = Population::new(genes, fitness, constraints, rank);
 
@@ -168,10 +168,10 @@ mod tests {
         // Two individuals:
         // Individual 0: feasible
         // Individual 1: infeasible
-        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
-        let fitness = arr2(&[[0.5], [0.6]]);
-        let constraints = Some(arr2(&[[-1.0, 0.0], [1.0, 1.0]]));
-        let rank = arr1(&[0, 0]);
+        let genes = array![[1.0, 2.0], [3.0, 4.0]];
+        let fitness = array![[0.5], [0.6]];
+        let constraints = Some(array![[-1.0, 0.0], [1.0, 1.0]]);
+        let rank = Some(array![0, 0]);
         let population = Population::new(genes, fitness, constraints, rank);
 
         // n_crossovers = 1 → total_needed = 4 participants → 2 tournaments → 2 winners total.
@@ -190,10 +190,10 @@ mod tests {
         let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
         // If two individuals have the same rank and the same crowding distance,
         // the tournament duel should result in a tie.
-        let genes = arr2(&[[1.0, 2.0], [3.0, 4.0]]);
-        let fitness = arr2(&[[0.5], [0.6]]);
+        let genes = array![[1.0, 2.0], [3.0, 4.0]];
+        let fitness = array![[0.5], [0.6]];
         let constraints = None;
-        let rank = arr1(&[0, 0]);
+        let rank = Some(array![0, 0]);
 
         let population = Population::new(genes, fitness, constraints, rank);
 
@@ -215,15 +215,15 @@ mod tests {
         // Large population test to ensure stability.
         let population_size = 100;
         let n_genes = 5;
-        let genes = Array2::from_shape_fn((population_size, n_genes), |(i, _)| i as f64);
-        let fitness = Array2::from_shape_fn((population_size, 1), |(i, _)| i as f64 / 100.0);
+        let genes = PopulationGenes::from_shape_fn((population_size, n_genes), |(i, _)| i as f64);
+        let fitness =
+            PopulationFitness::from_shape_fn((population_size, 1), |(i, _)| i as f64 / 100.0);
         let constraints = None;
 
         let rank_vec: Vec<usize> = (0..population_size)
             .map(|_| rng.gen_range_usize(0, n_genes))
             .collect();
-        let rank = arr1(&rank_vec);
-
+        let rank = Some(Array1::from_vec(rank_vec));
         let population = Population::new(genes, fitness, constraints, rank);
 
         // n_crossovers = 50 → total_needed = 200 participants → 100 tournaments → 100 winners.
@@ -242,10 +242,10 @@ mod tests {
         // One crossover:
         // total_needed = 4 participants → 2 tournaments → 2 winners.
         // After splitting: pop_a = 1, pop_b = 1.
-        let genes = arr2(&[[10.0, 20.0], [30.0, 40.0]]);
-        let fitness = arr2(&[[1.0], [2.0]]);
+        let genes = array![[10.0, 20.0], [30.0, 40.0]];
+        let fitness = array![[1.0], [2.0]];
         let constraints = None;
-        let rank = arr1(&[0, 1]);
+        let rank = Some(array![0, 1]);
 
         let population = Population::new(genes, fitness, constraints, rank);
 

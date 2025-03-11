@@ -1,8 +1,24 @@
-use crate::{
-    genetic::{Fronts, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
-    non_dominated_sorting::fast_non_dominated_sorting,
-};
-use numpy::ndarray::{Array1, Axis};
+use std::fmt;
+
+use numpy::ndarray::Axis;
+
+use crate::genetic::{Population, PopulationConstraints, PopulationFitness, PopulationGenes};
+
+/// Error type for the Evaluator.
+#[derive(Debug)]
+pub enum EvaluatorError {
+    NoFeasibleIndividuals,
+}
+
+impl fmt::Display for EvaluatorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EvaluatorError::NoFeasibleIndividuals => {
+                write!(f, "No feasible individuals found in the population.")
+            }
+        }
+    }
+}
 
 /// Evaluator struct for calculating fitness and (optionally) constraints,
 /// then assembling a `Population`. In addition to the user-provided constraints function,
@@ -37,24 +53,24 @@ impl Evaluator {
     }
 
     /// Evaluates the fitness of the population genes (2D ndarray).
-    pub fn evaluate_fitness(&self, population_genes: &PopulationGenes) -> PopulationFitness {
+    fn evaluate_fitness(&self, population_genes: &PopulationGenes) -> PopulationFitness {
         (self.fitness_fn)(population_genes)
     }
 
     /// Evaluates the constraints (if available).
     /// Returns `None` if no constraints function was provided.
-    pub fn evaluate_constraints(
+    fn evaluate_constraints(
         &self,
         population_genes: &PopulationGenes,
     ) -> Option<PopulationConstraints> {
         self.constraints_fn.as_ref().map(|cf| cf(population_genes))
     }
 
-    /// Builds the fronts from the population genes. If `keep_infeasible` is false,
+    /// Builds the population instance from the genes. If `keep_infeasible` is false,
     /// individuals are filtered out if they do not satisfy:
     ///   - The provided constraints function (all constraint values must be ≤ 0), and
     ///   - The optional lower and upper bounds (each gene must satisfy lower_bound <= gene <= upper_bound).
-    pub fn build_fronts(&self, mut genes: PopulationGenes, n_survive: usize) -> Fronts {
+    pub fn evaluate(&self, mut genes: PopulationGenes) -> Result<Population, EvaluatorError> {
         let mut fitness = self.evaluate_fitness(&genes);
         let mut constraints = self.evaluate_constraints(&genes);
 
@@ -90,37 +106,15 @@ impl Evaluator {
 
             // Filter all relevant arrays (genes, fitness, and constraints if present).
             genes = genes.select(Axis(0), &feasible_indices);
+
+            if genes.nrows() == 0 {
+                return Err(EvaluatorError::NoFeasibleIndividuals);
+            }
+
             fitness = fitness.select(Axis(0), &feasible_indices);
             constraints = constraints.map(|c_array| c_array.select(Axis(0), &feasible_indices));
         }
-
-        // Return an empty Vec if no feasible individuals remain after filtering.
-        if genes.nrows() == 0 {
-            return Vec::new();
-        }
-
-        let sorted_fronts = fast_non_dominated_sorting(&fitness, n_survive);
-        let mut results: Fronts = Vec::new();
-
-        // For each front (with rank = front_index), extract the sub-population.
-        for (front_index, indices) in sorted_fronts.iter().enumerate() {
-            let front_genes = genes.select(Axis(0), &indices[..]);
-            let front_fitness = fitness.select(Axis(0), &indices[..]);
-            let front_constraints = constraints
-                .as_ref()
-                .map(|c| c.select(Axis(0), &indices[..]));
-
-            // Create a rank Array1 (one rank value per individual in the front).
-            let rank_arr = Array1::from_elem(indices.len(), front_index);
-
-            // Build a `Population` representing this entire front.
-            let population_front =
-                Population::new(front_genes, front_fitness, front_constraints, rank_arr);
-
-            results.push(population_front);
-        }
-
-        results
+        Ok(Population::new(genes, fitness, constraints, None))
     }
 }
 
@@ -157,7 +151,6 @@ mod tests {
 
     #[test]
     fn test_evaluator_evaluate_fitness() {
-        // Using the Crowding metric in this test.
         let evaluator = Evaluator::new(Box::new(fitness_fn), None, true, None, None);
 
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [0.0, 0.0]];
@@ -196,7 +189,6 @@ mod tests {
             ];
             assert_eq!(constraints_array, expected_constraints);
 
-            // Verify feasibility: true if all constraint values are ≤ 0.
             let feasibility: Vec<bool> = constraints_array
                 .outer_iter()
                 .map(|row| row.iter().all(|&val| val <= 0.0))
@@ -204,60 +196,44 @@ mod tests {
             let expected_feasibility = vec![true, true, false];
             assert_eq!(feasibility, expected_feasibility);
         } else {
-            panic!("Constraints function should not be None");
+            panic!("The constraints function should not be None");
         }
     }
 
     #[test]
-    fn test_evaluator_build_fronts_without_bounds() {
+    fn test_evaluator_evaluate_without_bounds() {
         let evaluator = Evaluator::new(
             Box::new(fitness_fn),
             Some(Box::new(constraints_fn)),
-            true,
+            true, // keep_infeasible = true, no filtering
             None,
             None,
         );
 
-        // Create a small population with 3 individuals.
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
+        let population = evaluator.evaluate(population_genes).unwrap();
 
-        // Build fronts.
-        let fronts = evaluator.build_fronts(population_genes, 3);
-
-        // Verify total number of individuals across all fronts equals 3.
-        let total_individuals: usize = fronts.iter().map(|f| f.genes.nrows()).sum();
+        // Verify that the total number of individuals is 3.
         assert_eq!(
-            total_individuals, 3,
-            "Total individuals across all fronts should be 3."
+            population.genes.nrows(),
+            3,
+            "Total number of individuals should be 3 without filtering."
         );
 
-        // Check that in each front the length of the rank array matches.
-        for (front_index, front_pop) in fronts.iter().enumerate() {
-            let n = front_pop.genes.nrows();
+        if let Some(ref constraints) = population.constraints {
             assert_eq!(
-                front_pop.rank.len(),
-                n,
-                "Rank length should match number of individuals in the front"
+                constraints.nrows(),
+                3,
+                "The number of rows in constraints should match the number of individuals."
             );
-            for &r in front_pop.rank.iter() {
-                assert_eq!(
-                    r, front_index,
-                    "Each individual's rank should match the front index"
-                );
-            }
-            if let Some(ref c) = front_pop.constraints {
-                assert_eq!(
-                    c.nrows(),
-                    n,
-                    "Number of rows in constraints should match number of individuals"
-                );
-            }
         }
+        // In evaluate, rank is None.
+        assert!(population.rank.is_none());
     }
 
     #[test]
-    fn test_evaluator_build_fronts_with_infeasible_and_bounds() {
-        // Use constraints function and bounds. Also, keep_infeasible is false.
+    fn test_evaluator_evaluate_with_infeasible_and_bounds() {
+        // Use the constraints function and bounds, with keep_infeasible = false.
         // The bounds require each gene to be between 0 and 5.
         let evaluator = Evaluator::new(
             Box::new(fitness_fn),
@@ -268,19 +244,17 @@ mod tests {
         );
 
         // Create a population with 3 individuals:
-        //   - [1.0, 2.0]: Feasible (sum=3, all genes between 0 and 5)
-        //   - [3.0, 4.0]: Feasible (sum=7, all genes between 0 and 5)
+        //   - [1.0, 2.0]: Feasible (sum=3, genes between 0 and 5)
+        //   - [3.0, 4.0]: Feasible (sum=7, genes between 0 and 5)
         //   - [6.0, 1.0]: Infeasible (6.0 > 5.0)
         let population_genes = array![[1.0, 2.0], [3.0, 4.0], [6.0, 1.0]];
+        let population = evaluator.evaluate(population_genes).unwrap();
 
-        // Build fronts.
-        let fronts = evaluator.build_fronts(population_genes, 3);
-
-        // Expecting only 2 feasible individuals due to bounds filtering.
-        let total_individuals: usize = fronts.iter().map(|f| f.genes.nrows()).sum();
+        // Expecting only 2 feasible individuals after filtering.
         assert_eq!(
-            total_individuals, 2,
-            "Total individuals across all fronts should be 2 due to bounds filtering."
+            population.genes.nrows(),
+            2,
+            "Total number of individuals should be 2 after filtering by feasibility and bounds."
         );
     }
 }

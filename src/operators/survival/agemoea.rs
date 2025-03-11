@@ -320,7 +320,7 @@ pub fn assign_survival_scores_higher_front(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::genetic::{Fronts, Population, PopulationGenes};
+    use crate::genetic::{Population, PopulationGenes};
     use crate::operators::survival::helpers::HyperPlaneNormalization;
     use crate::random::NoopRandomGenerator;
     use ndarray::{array, Array1, Array2};
@@ -468,29 +468,18 @@ mod tests {
 
     #[test]
     fn test_operate_age_moea_survival() {
-        // Create a first front (F₁) with 3 individuals and 2 objectives.
-        let fitness_front1: Array2<f64> = array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0]];
+        // Front 1: 3 individuals and Front 2: 2 individuals
+        let fitness: Array2<f64> =
+            array![[1.0, 0.0], [0.5, 0.5], [0.0, 1.0], [0.8, 0.2], [0.2, 0.8]];
         // For simplicity, let genes be equal to fitness.
-        let genes_front1 = fitness_front1.clone();
-        // All individuals in the first front have rank 0.
-        let rank_front1: Array1<usize> = Array1::from(vec![0, 0, 0]);
-        let front1 = Population::new(genes_front1, fitness_front1, None, rank_front1);
-
-        // Create a second front with 2 individuals (lower-ranked solutions).
-        let fitness_front2: Array2<f64> = array![[0.8, 0.2], [0.2, 0.8]];
-        let genes_front2 = fitness_front2.clone();
-        let rank_front2: Array1<usize> = Array1::from(vec![1, 1]);
-        let front2 = Population::new(genes_front2, fitness_front2, None, rank_front2);
-
-        // Assemble fronts.
-        let mut fronts: Fronts = vec![front1, front2];
+        let genes = fitness.clone();
+        let population = Population::new(genes, fitness, None, None);
         // Set the desired number of survivors (e.g., 4).
         let n_survive = 4;
 
         let operator = AgeMoeaSurvival::new();
         let mut rng = NoopRandomGenerator::new();
-        operator.set_survival_score(&mut fronts, &mut rng);
-        let survivors = operator.operate(&mut fronts, n_survive, &mut rng);
+        let survivors = operator.operate(population, n_survive, &mut rng);
 
         assert_eq!(
             survivors.len(),

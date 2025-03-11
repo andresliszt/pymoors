@@ -6,12 +6,12 @@ pub type IndividualGenes = Array1<f64>;
 pub type IndividualGenesMut<'a> = ArrayViewMut1<'a, f64>;
 
 /// Represents an individual with genes, fitness, constraints (if any),
-/// rank, and an optional diversity metric.
+/// rank, and an optional survival score.
 pub struct Individual {
     pub genes: IndividualGenes,
     pub fitness: Array1<f64>,
     pub constraints: Option<Array1<f64>>,
-    pub rank: usize,
+    pub rank: Option<usize>,
     pub survival_score: Option<f64>,
 }
 
@@ -20,7 +20,7 @@ impl Individual {
         genes: IndividualGenes,
         fitness: Array1<f64>,
         constraints: Option<Array1<f64>>,
-        rank: usize,
+        rank: Option<usize>,
         survival_score: Option<f64>,
     ) -> Self {
         Self {
@@ -46,13 +46,13 @@ pub type PopulationFitness = Array2<f64>;
 pub type PopulationConstraints = Array2<f64>;
 
 /// The `Population` struct contains genes, fitness, constraints (if any),
-/// rank, and optionally a diversity metric vector.
+/// rank (optional), and optionally a survival score vector.
 #[derive(Debug)]
 pub struct Population {
     pub genes: PopulationGenes,
     pub fitness: PopulationFitness,
     pub constraints: Option<PopulationConstraints>,
-    pub rank: Array1<usize>,
+    pub rank: Option<Array1<usize>>,
     pub survival_score: Option<Array1<f64>>,
 }
 
@@ -75,7 +75,7 @@ impl Population {
         genes: PopulationGenes,
         fitness: PopulationFitness,
         constraints: Option<PopulationConstraints>,
-        rank: Array1<usize>,
+        rank: Option<Array1<usize>>,
     ) -> Self {
         Self {
             genes,
@@ -89,13 +89,14 @@ impl Population {
     /// Retrieves an `Individual` from the population by index.
     pub fn get(&self, idx: usize) -> Individual {
         let constraints = self.constraints.as_ref().map(|c| c.row(idx).to_owned());
-        let diversity = self.survival_score.as_ref().map(|dm| dm[idx]);
+        let survival_score = self.survival_score.as_ref().map(|ss| ss[idx]);
+        let rank = self.rank.as_ref().map(|r| r[idx]);
         Individual::new(
             self.genes.row(idx).to_owned(),
             self.fitness.row(idx).to_owned(),
             constraints,
-            self.rank[idx],
-            diversity,
+            rank,
+            survival_score,
         )
     }
 
@@ -103,17 +104,23 @@ impl Population {
     pub fn selected(&self, indices: &[usize]) -> Population {
         let genes = self.genes.select(Axis(0), indices);
         let fitness = self.fitness.select(Axis(0), indices);
-        let rank = self.rank.select(Axis(0), indices);
+        let rank = self.rank.as_ref().map(|r| r.select(Axis(0), indices));
         let survival_score = self
             .survival_score
             .as_ref()
-            .map(|dm| dm.select(Axis(0), indices));
+            .map(|ss| ss.select(Axis(0), indices));
         let constraints = self
             .constraints
             .as_ref()
             .map(|c| c.select(Axis(0), indices));
 
-        Population::new(genes, fitness, constraints, rank).with_diversity(survival_score)
+        let mut selected_population = Population::new(genes, fitness, constraints, rank);
+        if let Some(score) = survival_score {
+            selected_population
+                .set_survival_score(score)
+                .expect("Failed to set survival score");
+        }
+        selected_population
     }
 
     /// Returns the number of individuals in the population.
@@ -122,38 +129,38 @@ impl Population {
     }
 
     /// Returns a new `Population` containing only the individuals with rank = 0.
+    /// If no ranking information is available, the entire population is returned.
     pub fn best(&self) -> Population {
-        let indices: Vec<usize> = self
-            .rank
-            .iter()
-            .enumerate()
-            .filter_map(|(i, &r)| if r == 0 { Some(i) } else { None })
-            .collect();
-        self.selected(&indices)
-    }
-
-    /// Auxiliary method to chain the assignment of `survival_score` in the `selected` method.
-    fn with_diversity(mut self, survival_score: Option<Array1<f64>>) -> Self {
-        self.survival_score = survival_score;
-        self
+        if let Some(ranks) = &self.rank {
+            let indices: Vec<usize> = ranks
+                .iter()
+                .enumerate()
+                .filter_map(|(i, &r)| if r == 0 { Some(i) } else { None })
+                .collect();
+            self.selected(&indices)
+        } else {
+            // If rank is not set, return the entire population.
+            self.clone()
+        }
     }
 
     /// Updates the population's `survival_score` field.
     ///
     /// This method validates that the provided `diversity` vector has the same number of elements
     /// as individuals in the population. If not, it returns an error.
-    pub fn set_survival_score(&mut self, diversity: Array1<f64>) -> Result<(), String> {
-        if diversity.len() != self.len() {
+    pub fn set_survival_score(&mut self, score: Array1<f64>) -> Result<(), String> {
+        if score.len() != self.len() {
             return Err(format!(
                 "The diversity vector has length {} but the population contains {} individuals.",
-                diversity.len(),
+                score.len(),
                 self.len()
             ));
         }
-        self.survival_score = Some(diversity);
+        self.survival_score = Some(score);
         Ok(())
     }
 
+    /// Merges two populations into one.
     pub fn merge(population1: &Population, population2: &Population) -> Population {
         // Concatenate genes (assumed to be an Array2).
         let merged_genes = concatenate(
@@ -169,9 +176,14 @@ impl Population {
         )
         .expect("Failed to merge fitness");
 
-        // Concatenate rank (Array1).
-        let merged_rank = concatenate(Axis(0), &[population1.rank.view(), population2.rank.view()])
-            .expect("Failed to merge rank");
+        // Merge rank: both must be Some or both must be None.
+        let merged_rank = match (&population1.rank, &population2.rank) {
+            (Some(r1), Some(r2)) => {
+                Some(concatenate(Axis(0), &[r1.view(), r2.view()]).expect("Failed to merge rank"))
+            }
+            (None, None) => None,
+            _ => panic!("Mismatched population rank: one is set and the other is None"),
+        };
 
         // Merge constraints: both must be Some or both must be None.
         let merged_constraints = match (&population1.constraints, &population2.constraints) {
@@ -193,14 +205,20 @@ impl Population {
             _ => panic!("Mismatched population survival scores: one is set and the other is None"),
         };
 
-        // Create the new Population with merged fields.
-        Population::new(
+        let mut merged_population = Population::new(
             merged_genes,
             merged_fitness,
             merged_constraints,
             merged_rank,
-        )
-        .with_diversity(merged_survival_score)
+        );
+
+        if let Some(score) = merged_survival_score {
+            merged_population
+                .set_survival_score(score)
+                .expect("Failed to set survival score");
+        }
+
+        merged_population
     }
 }
 
@@ -229,7 +247,7 @@ mod tests {
     #[test]
     fn test_individual_is_feasible() {
         // Individual with no constraints should be feasible.
-        let ind1 = Individual::new(array![1.0, 2.0], array![0.5, 1.0], None, 0, None);
+        let ind1 = Individual::new(array![1.0, 2.0], array![0.5, 1.0], None, Some(0), None);
         assert!(
             ind1.is_feasible(),
             "Individual with no constraints should be feasible"
@@ -240,7 +258,7 @@ mod tests {
             array![1.0, 2.0],
             array![0.5, 1.0],
             Some(array![-1.0, 0.0]),
-            0,
+            Some(0),
             None,
         );
         assert!(
@@ -253,7 +271,7 @@ mod tests {
             array![1.0, 2.0],
             array![0.5, 1.0],
             Some(array![1.0, 0.1]),
-            0,
+            Some(0),
             None,
         );
         assert!(
@@ -267,8 +285,9 @@ mod tests {
         // Create a population with two individuals.
         let genes = array![[1.0, 2.0], [3.0, 4.0]];
         let fitness = array![[0.5, 1.0], [1.5, 2.0]];
-        let rank = array![0, 1];
-        let pop = Population::new(genes.clone(), fitness.clone(), None, rank.clone());
+        // Using a rank array here.
+        let rank = Some(array![0, 1]);
+        let pop = Population::new(genes.clone(), fitness.clone(), None, rank);
 
         // Test len()
         assert_eq!(pop.len(), 2, "Population should have 2 individuals");
@@ -277,7 +296,7 @@ mod tests {
         let ind0 = pop.get(0);
         assert_eq!(ind0.genes, genes.row(0).to_owned());
         assert_eq!(ind0.fitness, fitness.row(0).to_owned());
-        assert_eq!(ind0.rank, 0);
+        assert_eq!(ind0.rank, Some(0));
 
         // Test selected()
         let selected = pop.selected(&[1]);
@@ -289,16 +308,16 @@ mod tests {
         let ind_selected = selected.get(0);
         assert_eq!(ind_selected.genes, array![3.0, 4.0]);
         assert_eq!(ind_selected.fitness, array![1.5, 2.0]);
-        assert_eq!(ind_selected.rank, 1);
+        assert_eq!(ind_selected.rank, Some(1));
     }
 
     #[test]
-    fn test_population_best() {
+    fn test_population_best_with_rank() {
         // Create a population with three individuals and varying ranks.
         let genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]];
         let fitness = array![[0.5, 1.0], [1.5, 2.0], [2.5, 3.0]];
         // First and third individuals have rank 0, second has rank 1.
-        let rank = array![0, 1, 0];
+        let rank = Some(array![0, 1, 0]);
         let pop = Population::new(genes, fitness, None, rank);
         let best = pop.best();
         // Expect best population to contain only individuals with rank 0.
@@ -306,10 +325,26 @@ mod tests {
         for i in 0..best.len() {
             let ind = best.get(i);
             assert_eq!(
-                ind.rank, 0,
+                ind.rank,
+                Some(0),
                 "All individuals in best population should have rank 0"
             );
         }
+    }
+
+    #[test]
+    fn test_population_best_without_rank() {
+        // Create a population without rank information.
+        let genes = array![[1.0, 2.0], [3.0, 4.0]];
+        let fitness = array![[0.5, 1.0], [1.5, 2.0]];
+        let pop = Population::new(genes.clone(), fitness.clone(), None, None);
+        // Since there is no rank, best() should return the whole population.
+        let best = pop.best();
+        assert_eq!(
+            best.len(),
+            pop.len(),
+            "Best population should equal the original population when rank is None"
+        );
     }
 
     #[test]
@@ -317,13 +352,12 @@ mod tests {
         // Create a population with two individuals.
         let genes = array![[1.0, 2.0], [3.0, 4.0]];
         let fitness = array![[0.5, 1.0], [1.5, 2.0]];
-        let rank = array![0, 1];
+        let rank = Some(array![0, 1]);
         let mut pop = Population::new(genes, fitness, None, rank);
-
         // Set a survival score vector with correct length.
-        let diversity = array![0.1, 0.2];
-        assert!(pop.set_survival_score(diversity.clone()).is_ok());
-        assert_eq!(pop.survival_score.unwrap(), diversity);
+        let score = array![0.1, 0.2];
+        assert!(pop.set_survival_score(score.clone()).is_ok());
+        assert_eq!(pop.survival_score.unwrap(), score);
     }
 
     #[test]
@@ -331,25 +365,25 @@ mod tests {
         // Create a population with two individuals.
         let genes = array![[1.0, 2.0], [3.0, 4.0]];
         let fitness = array![[0.5, 1.0], [1.5, 2.0]];
-        let rank = array![0, 1];
+        let rank = Some(array![0, 1]);
         let mut pop = Population::new(genes, fitness, None, rank);
 
         // Setting a survival score vector with incorrect length should error.
-        let wrong_diversity = array![0.1];
-        assert!(pop.set_survival_score(wrong_diversity).is_err());
+        let wrong_score = array![0.1];
+        assert!(pop.set_survival_score(wrong_score).is_err());
     }
 
     #[test]
     fn test_population_merge() {
-        // Create two populations.
+        // Create two populations with rank information.
         let genes1 = array![[1.0, 2.0], [3.0, 4.0]];
         let fitness1 = array![[0.5, 1.0], [1.5, 2.0]];
-        let rank1 = array![0, 0];
+        let rank1 = Some(array![0, 0]);
         let pop1 = Population::new(genes1, fitness1, None, rank1);
 
         let genes2 = array![[5.0, 6.0], [7.0, 8.0]];
         let fitness2 = array![[2.5, 3.0], [3.5, 4.0]];
-        let rank2 = array![1, 1];
+        let rank2 = Some(array![1, 1]);
         let pop2 = Population::new(genes2, fitness2, None, rank2);
 
         let merged = Population::merge(&pop1, &pop2);
@@ -368,7 +402,7 @@ mod tests {
             "Merged fitness does not match"
         );
 
-        let expected_rank = array![0, 0, 1, 1];
+        let expected_rank = Some(array![0, 0, 1, 1]);
         assert_eq!(merged.rank, expected_rank, "Merged rank does not match");
     }
 
@@ -377,15 +411,15 @@ mod tests {
         // Create two fronts.
         let genes1 = array![[1.0, 2.0], [3.0, 4.0]];
         let fitness1 = array![[0.5, 1.0], [1.5, 2.0]];
-        let rank1 = array![0, 0];
+        let rank1 = Some(array![0, 0]);
         let pop1 = Population::new(genes1, fitness1, None, rank1);
 
         let genes2 = array![[5.0, 6.0], [7.0, 8.0]];
         let fitness2 = array![[2.5, 3.0], [3.5, 4.0]];
-        let rank2 = array![1, 1];
+        let rank2 = Some(array![1, 1]);
         let pop2 = Population::new(genes2, fitness2, None, rank2);
 
-        let fronts: Fronts = vec![pop1.clone(), pop2.clone()];
+        let fronts: Vec<Population> = vec![pop1.clone(), pop2.clone()];
         let merged = fronts.to_population();
 
         assert_eq!(

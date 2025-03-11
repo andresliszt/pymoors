@@ -9,10 +9,9 @@ use pyo3::PyErr;
 
 use crate::{
     algorithms::py_errors::InvalidParameterError,
-    algorithms::py_errors::NoFeasibleIndividualsError,
     duplicates::PopulationCleaner,
-    evaluator::Evaluator,
-    genetic::{FrontsExt, Population, PopulationConstraints, PopulationFitness, PopulationGenes},
+    evaluator::{Evaluator, EvaluatorError},
+    genetic::{Population, PopulationConstraints, PopulationFitness, PopulationGenes},
     helpers::printer::print_minimum_objectives,
     operators::{
         evolve::Evolve, evolve::EvolveError, CrossoverOperator, MutationOperator, SamplingOperator,
@@ -31,7 +30,7 @@ pub mod rnsga2;
 #[derive(Debug)]
 pub enum MultiObjectiveAlgorithmError {
     Evolve(EvolveError),
-    NoFeasibleIndividuals,
+    Evaluator(EvaluatorError),
     InvalidParameter(String),
 }
 
@@ -41,8 +40,8 @@ impl fmt::Display for MultiObjectiveAlgorithmError {
             MultiObjectiveAlgorithmError::Evolve(msg) => {
                 write!(f, "Error during evolution: {}", msg)
             }
-            MultiObjectiveAlgorithmError::NoFeasibleIndividuals => {
-                write!(f, "No feasible individuals found")
+            MultiObjectiveAlgorithmError::Evaluator(msg) => {
+                write!(f, "Error during evaluation: {}", msg)
             }
             MultiObjectiveAlgorithmError::InvalidParameter(msg) => {
                 write!(f, "Invalid parameter: {}", msg)
@@ -57,14 +56,17 @@ impl From<EvolveError> for MultiObjectiveAlgorithmError {
     }
 }
 
+impl From<EvaluatorError> for MultiObjectiveAlgorithmError {
+    fn from(e: EvaluatorError) -> Self {
+        MultiObjectiveAlgorithmError::Evaluator(e)
+    }
+}
+
 /// Once a new error is created to be exposed to the python side
 /// the match must be updated to convert the error to the new error type.
 impl From<MultiObjectiveAlgorithmError> for PyErr {
     fn from(err: MultiObjectiveAlgorithmError) -> PyErr {
         match err {
-            MultiObjectiveAlgorithmError::NoFeasibleIndividuals => {
-                NoFeasibleIndividualsError::new_err(err.to_string())
-            }
             MultiObjectiveAlgorithmError::InvalidParameter(msg) => {
                 InvalidParameterError::new_err(msg)
             }
@@ -181,13 +183,7 @@ impl MultiObjectiveAlgorithm {
             upper_bound,
         );
 
-        let fronts = evaluator.build_fronts(genes, population_size);
-
-        if fronts.is_empty() {
-            return Err(MultiObjectiveAlgorithmError::NoFeasibleIndividuals);
-        }
-
-        let population = fronts.to_population();
+        let population = evaluator.evaluate(genes)?;
 
         Ok(Self {
             population,
@@ -227,18 +223,12 @@ impl MultiObjectiveAlgorithm {
         .expect("Failed to concatenate current population genes with offspring genes");
         // Build fronts from the combined genes.
 
-        let mut fronts = self
-            .evaluator
-            .build_fronts(combined_genes, self.population_size);
+        let population = self.evaluator.evaluate(combined_genes)?;
 
-        // Check if there are no feasible individuals
-        if fronts.is_empty() {
-            return Err(MultiObjectiveAlgorithmError::NoFeasibleIndividuals);
-        }
         // Select the new population
         self.population = self
             .survivor
-            .operate(&mut fronts, self.population_size, &mut self.rng);
+            .operate(population, self.population_size, &mut self.rng);
         Ok(())
     }
 

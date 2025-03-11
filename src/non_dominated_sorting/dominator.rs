@@ -1,8 +1,10 @@
-use crate::genetic::PopulationFitness;
-use numpy::ndarray::{ArrayView1, Axis};
-use rayon::prelude::*;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
+
+use ndarray::{Array1, ArrayView1, Axis};
+use rayon::prelude::*;
+
+use crate::genetic::{Fronts, Population, PopulationFitness};
 
 /// Inlines the check for "does f1 dominate f2?" to reduce call overhead.
 #[inline]
@@ -128,6 +130,32 @@ pub fn fast_non_dominated_sorting(
     fronts
 }
 
+/// Builds the fronts from the population.
+pub fn build_fronts(population: Population, n_survive: usize) -> Fronts {
+    let sorted_fronts = fast_non_dominated_sorting(&population.fitness, n_survive);
+    let mut results: Fronts = Vec::new();
+
+    // For each front (with rank = front_index), extract the sub-population.
+    for (front_index, indices) in sorted_fronts.iter().enumerate() {
+        let front_genes = population.genes.select(Axis(0), &indices[..]);
+        let front_fitness = population.fitness.select(Axis(0), &indices[..]);
+        let front_constraints = population
+            .constraints
+            .as_ref()
+            .map(|c| c.select(Axis(0), &indices[..]));
+
+        // Create a rank Array1 (one rank value per individual in the front).
+        let rank_arr = Some(Array1::from_elem(indices.len(), front_index));
+
+        // Build a `Population` representing this entire front.
+        let population_front =
+            Population::new(front_genes, front_fitness, front_constraints, rank_arr);
+
+        results.push(population_front);
+    }
+    results
+}
+
 #[cfg(test)]
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
@@ -239,5 +267,92 @@ mod tests {
         ];
 
         assert_eq!(fronts, expected_fronts);
+    }
+
+    #[test]
+    fn test_build_fronts_behavior() {
+        // Create a population with 5 individuals and 2 objectives.
+        // For simplicity, we set the fitness equal to the genes.
+        // Genes (and fitness) are chosen such that:
+        //   - Individual 1: [1.0, 1.0] -> best, should be in front 0.
+        //   - Individual 2: [2.0, 2.0]
+        //   - Individual 3: [1.5, 2.5]
+        //   - Individual 4: [2.5, 1.5]
+        //   - Individual 5: [3.0, 3.0] -> dominated by one of the above, hence in a later front.
+        let genes = array![
+            [1.0, 1.0], // Individual 1
+            [2.0, 2.0], // Individual 2
+            [1.5, 2.5], // Individual 3
+            [2.5, 1.5], // Individual 4
+            [3.0, 3.0]  // Individual 5
+        ];
+        let fitness = genes.clone();
+        let constraints = Some(Array2::from_elem((5, 2), -1.0));
+
+        // Build the Population (with rank set to None initially).
+        let population = Population::new(genes, fitness, constraints, None);
+
+        // Call build_fronts with n_survive = 5.
+        let fronts = build_fronts(population, 5);
+
+        // We expect three fronts:
+        //   Front 0: 1 individual (the best).
+        //   Front 1: 3 individuals (non-dominated among themselves).
+        //   Front 2: 1 individual.
+        assert_eq!(
+            fronts.len(),
+            3,
+            "Expected 3 fronts based on the objectives."
+        );
+
+        // Check front sizes.
+        assert_eq!(
+            fronts[0].genes.nrows(),
+            1,
+            "Front 0 should have 1 individual."
+        );
+        assert_eq!(
+            fronts[1].genes.nrows(),
+            3,
+            "Front 1 should have 3 individuals."
+        );
+        assert_eq!(
+            fronts[2].genes.nrows(),
+            1,
+            "Front 2 should have 1 individual."
+        );
+
+        // Verify each front's rank array.
+        for (front_index, front) in fronts.iter().enumerate() {
+            let rank = front
+                .rank
+                .as_ref()
+                .expect("Each front should have a rank array.");
+            assert_eq!(
+                rank.len(),
+                front.genes.nrows(),
+                "Rank array length must match the number of individuals."
+            );
+            for &r in rank.iter() {
+                assert_eq!(
+                    r, front_index,
+                    "Each rank value should equal the front index."
+                );
+            }
+        }
+
+        // Check that all constraints in each front are feasible (≤ 0).
+        for front in fronts.iter() {
+            if let Some(constraints_arr) = &front.constraints {
+                for row in constraints_arr.outer_iter() {
+                    for &val in row.iter() {
+                        assert!(
+                            val <= 0.0,
+                            "All constraints values should be feasible (≤ 0)."
+                        );
+                    }
+                }
+            }
+        }
     }
 }

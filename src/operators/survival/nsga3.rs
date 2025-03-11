@@ -5,6 +5,7 @@ use ndarray_stats::QuantileExt;
 
 use crate::genetic::{Fronts, Population, PopulationFitness};
 use crate::helpers::extreme_points::get_nideal;
+use crate::non_dominated_sorting::build_fronts;
 use crate::operators::survival::helpers::HyperPlaneNormalization;
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
@@ -100,10 +101,12 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
 
     fn operate(
         &self,
-        fronts: &mut Fronts,
+        population: Population,
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
     ) -> Population {
+        // Build fronts
+        let mut fronts = build_fronts(population, n_survive);
         // Accumulator for the merged population.
         let mut survivors: Option<Population> = None;
         let mut n_survivors = 0;
@@ -480,23 +483,14 @@ mod tests {
         assert_eq!(chosen, vec![0, 1]);
     }
 
-    // Helper to create a minimal Population with given fitness.
-    // For simplicity, genes = fitness and rank = zeros.
-    fn create_population_from_fitness(fitness: Array2<f64>) -> Population {
-        let num_individuals = fitness.nrows();
-        let rank = Array1::from_vec(vec![0; num_individuals]);
-        // Here we set genes equal to fitness (for testing) and leave constraints as None.
-        Population::new(fitness.clone(), fitness, None, rank)
-    }
-
     /// Test the operate method when the first (and only) front is larger than n_survive.
     /// In this case splitting occurs with no previously accumulated survivors.
     #[test]
     fn test_operate_split_first_front_content() {
         // Create one front with 5 individuals having distinct fitness values.
         let fitness = array![[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0], [5.0, 5.0]];
-        let front = create_population_from_fitness(fitness.clone());
-        let mut fronts: Fronts = vec![front];
+        // For simplicity, genes = fitness
+        let population = Population::new(fitness.clone(), fitness.clone(), None, None);
 
         // Use a simple reference points matrix: for 2 objectives we use the 2x2 identity.
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
@@ -504,7 +498,7 @@ mod tests {
         let mut rng = FakeRandomGenerator::new();
 
         // Set n_survive to 3 so that splitting must occur on the single front.
-        let survivors = survival_operator.operate(&mut fronts, 3, &mut rng);
+        let survivors = survival_operator.operate(population, 3, &mut rng);
         assert_eq!(survivors.len(), 3, "Final survivors count should be 3");
 
         // Verify that each selected individual comes from the original front.
@@ -529,17 +523,18 @@ mod tests {
     /// In this scenario the complete first front is preserved and a part of the second front is selected.
     #[test]
     fn test_operate_split_later_front_content() {
-        // Front 1: 3 individuals.
-        let fitness1 = array![[1.0, 1.0], [1.1, 1.1], [1.2, 1.2]];
-        let front1 = create_population_from_fitness(fitness1.clone());
-
-        // Front 2: 4 individuals with higher fitness values.
-        let fitness2 = array![[2.0, 2.0], [2.1, 2.1], [2.2, 2.2], [2.3, 2.3]];
-        let front2 = create_population_from_fitness(fitness2.clone());
-
-        // Combine fronts into a vector.
-        let mut fronts: Fronts = vec![front1, front2];
-
+        // Front 1: 3 individuals (1.x fitness). Front 2: 4 individuals with higher fitness values (2.x fitness)
+        let fitness = array![
+            [1.0, 1.0],
+            [1.1, 1.1],
+            [1.2, 1.2],
+            [2.0, 2.0],
+            [2.1, 2.1],
+            [2.2, 2.2],
+            [2.3, 2.3]
+        ];
+        // For simplicity, genes = fitness
+        let population = Population::new(fitness.clone(), fitness.clone(), None, None);
         // Use the identity as reference points for 2 objectives.
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
         let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
@@ -548,7 +543,7 @@ mod tests {
         // Total individuals if merged completely would be 7.
         // Set n_survive to 5 so that the first front (3 individuals) is completely taken
         // and 2 individuals are selected from the second front.
-        let survivors = survival_operator.operate(&mut fronts, 5, &mut rng);
+        let survivors = survival_operator.operate(population, 5, &mut rng);
         assert_eq!(survivors.len(), 5, "Final survivors count should be 5");
 
         // Check that the survivors include all individuals from the first front.
@@ -558,7 +553,7 @@ mod tests {
         for i in 0..3 {
             // Compare each row of survivors with the corresponding row in fitness1.
             let survivor_row = survivors_fitness.slice(s![i, ..]);
-            let expected_row = fitness1.slice(s![i, ..]);
+            let expected_row = fitness.slice(s![i, ..]);
             assert!(
                 survivor_row.eq(&expected_row),
                 "Survivor row {} does not match expected front1 row: got {:?}, expected {:?}",
@@ -574,7 +569,7 @@ mod tests {
         for i in 3..5 {
             let survivor_row = survivors_fitness.slice(s![i, ..]);
             let mut found = false;
-            for orig in fitness2.outer_iter() {
+            for orig in fitness.outer_iter() {
                 if survivor_row.eq(&orig) {
                     found = true;
                     break;

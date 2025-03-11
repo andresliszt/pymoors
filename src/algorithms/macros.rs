@@ -33,7 +33,12 @@ macro_rules! define_multiobj_pyclass {
                 // For each value we want to pass to Python, call the new conversion method.
                 let py_genes = population.genes.to_pyarray(py);
                 let py_fitness = population.fitness.to_pyarray(py);
-                let py_rank = population.rank.to_pyarray(py);
+                // For rank, if Some then convert the array, else convert py.None()
+                let py_rank = if let Some(ref r) = population.rank {
+                    r.to_pyarray(py).into_py(py)
+                } else {
+                    py.None().into_py(py)
+                };
                 // For constraints, if Some then convert the array, else convert py.None()
                 let py_constraints = if let Some(ref c) = population.constraints {
                     c.to_pyarray(py).into_py(py)

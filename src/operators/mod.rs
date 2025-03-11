@@ -1,10 +1,16 @@
-use crate::genetic::{
-    Fronts, FrontsExt, Individual, IndividualGenes, IndividualGenesMut, Population, PopulationGenes,
-};
-use crate::random::RandomGenerator;
+use std::fmt::Debug;
+
 use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
-use std::fmt::Debug;
+
+use crate::random::RandomGenerator;
+use crate::{
+    genetic::{
+        Fronts, FrontsExt, Individual, IndividualGenes, IndividualGenesMut, Population,
+        PopulationGenes,
+    },
+    non_dominated_sorting::build_fronts,
+};
 
 pub mod crossover;
 pub mod evolve;
@@ -301,13 +307,14 @@ pub trait SurvivalOperator: GeneticOperator {
     /// The default implementation uses the survival score to select individuals.
     fn operate(
         &self,
-        fronts: &mut Fronts,
+        population: Population,
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
     ) -> Population {
+        // Build fronts
+        let mut fronts = build_fronts(population, n_survive);
         // Set survival score
-        self.set_survival_score(fronts, rng);
-
+        self.set_survival_score(&mut fronts, rng);
         // Drain all fronts.
         let drained = fronts.drain(..);
         let mut survivors_parts: Vec<Population> = Vec::new();

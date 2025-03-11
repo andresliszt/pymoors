@@ -1,3 +1,3 @@
 mod dominator;
 
-pub use dominator::fast_non_dominated_sorting;
+pub use dominator::{build_fronts, fast_non_dominated_sorting};
