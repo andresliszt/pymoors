@@ -36,7 +36,7 @@ jobs:
     - name: Test with pytest
       run: |
         source <(cargo llvm-cov show-env --export-prefix)
-        uv run pytest -n auto --ignore=tests/benchmarks --cov --cov-report=xml
+        uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
 
     - name: Get pytest coverage report
       run: |
