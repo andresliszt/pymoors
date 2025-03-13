@@ -449,6 +449,7 @@ class AgeMoea:
 class _ReveaKwargs(_MooAlgorithmKwargs, total=False):
     reference_points: TwoDArray | StructuredReferencePoints
     alpha: float
+    frequency: float
 
 class Revea:
     def __init__(self, **kwargs: Unpack[_ReveaKwargs]) -> None: ...
