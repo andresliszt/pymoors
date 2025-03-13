@@ -6,9 +6,6 @@ sources = python/pymoors tests
 # using pip install cargo (via maturin via pip) doesn't get the tty handle
 # so doesn't render color without some help
 export CARGO_TERM_COLOR=$(shell (test -t 0 && echo "always") || echo "auto")
-# maturin develop only makes sense inside a virtual env, is otherwise
-# more or less equivalent to pip install -e just a little nicer
-USE_MATURIN = $(shell [ "$$VIRTUAL_ENV" != "" ] && (which maturin))
 
 .PHONY: .uv  ## Check that uv is installed
 .uv:
@@ -32,20 +29,12 @@ rebuild-lockfiles: .uv
 .PHONY: build-dev
 build-dev:
 	@rm -f python/pymoors/*.so
-ifneq ($(USE_MATURIN),)
 	uv run maturin develop --uv
-else
-	uv pip install --force-reinstall -v -e . --config-settings=build-args='--profile dev'
-endif
 
 .PHONY: build-prod
 build-prod:
 	@rm -f python/pymoors/*.so
-ifneq ($(USE_MATURIN),)
 	uv run maturin develop --release --uv
-else
-	uv pip install -v -e .
-endif
 
 .PHONY: format
 format:

@@ -24,24 +24,46 @@ jobs:
     - name: install rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
+    - run: cargo install rustfilt coverage-prepare
+
     - name: Install cargo-llvm-cov
       uses: taiki-e/install-action@cargo-llvm-cov
 
-    - name: Install Pymoors
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        uv sync --group testing
-        make build-dev
 
-    - name: Test with pytest
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
+    - run: make build-dev
+      env:
+        RUST_BACKTRACE: 1
+        RUSTFLAGS: '-C instrument-coverage'
 
-    - name: Get pytest coverage report
-      run: |
-        source <(cargo llvm-cov show-env --export-prefix)
-        cargo llvm-cov report --codecov --output-path codecov.json
+    - run: uv pip freeze
+
+    - run: uv run coverage run -m pytest --ignore=tests/benchmarks
+
+    - run: ls -lha
+    - run: uv run coverage xml
+
+    - run: coverage-prepare lcov python/pydantic_core/*.so
+
+
+
+
+
+
+    # - name: Install Pymoors
+    #   run: |
+    #     source <(cargo llvm-cov show-env --export-prefix)
+    #     uv sync --group testing
+    #     make build-dev
+
+    # - name: Test with pytest
+    #   run: |
+    #     source <(cargo llvm-cov show-env --export-prefix)
+    #     uv run pytest --ignore=tests/benchmarks --cov --cov-report=xml
+
+    # - name: Get pytest coverage report
+    #   run: |
+    #     source <(cargo llvm-cov show-env --export-prefix)
+    #     cargo llvm-cov report --codecov --output-path codecov.json
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
