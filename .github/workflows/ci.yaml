@@ -30,7 +30,10 @@ jobs:
       uses: taiki-e/install-action@cargo-llvm-cov
 
 
-    - run: make build-dev
+    - run: |
+        uv sync --group testing
+        make build-dev
+
       env:
         RUST_BACKTRACE: 1
         RUSTFLAGS: '-C instrument-coverage'
