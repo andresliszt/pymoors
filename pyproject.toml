@@ -37,8 +37,9 @@ dynamic = [
 ]
 
 [dependency-groups]
+dev = ["maturin"]
 testing = [
-    "maturin",
+    { include-group = "dev" },
     "scipy",
     "pytest",
     "pytest-cov",
@@ -47,11 +48,13 @@ testing = [
     "pre-commit"
 ]
 linting = [
+    { include-group = "dev" },
     "pyright",
     "ruff",
     "pytest"
 ]
 docs = [
+    { include-group = "dev" },
     "matplotlib",
     "mkdocs",
     "mkdocs-jupyter",

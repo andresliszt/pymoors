@@ -1616,8 +1616,12 @@ all = [
     { name = "ruff" },
     { name = "scipy" },
 ]
+dev = [
+    { name = "maturin" },
+]
 docs = [
     { name = "matplotlib" },
+    { name = "maturin" },
     { name = "mkdocs" },
     { name = "mkdocs-jupyter" },
     { name = "mkdocs-material" },
@@ -1625,6 +1629,7 @@ docs = [
     { name = "pymdown-extensions" },
 ]
 linting = [
+    { name = "maturin" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
@@ -1660,8 +1665,10 @@ all = [
     { name = "ruff" },
     { name = "scipy" },
 ]
+dev = [{ name = "maturin" }]
 docs = [
     { name = "matplotlib" },
+    { name = "maturin" },
     { name = "mkdocs" },
     { name = "mkdocs-jupyter" },
     { name = "mkdocs-material" },
@@ -1669,6 +1676,7 @@ docs = [
     { name = "pymdown-extensions" },
 ]
 linting = [
+    { name = "maturin" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "ruff" },
