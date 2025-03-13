@@ -25,6 +25,7 @@ mod macros;
 pub mod nsga2;
 pub mod nsga3;
 pub mod py_errors;
+pub mod revea;
 pub mod rnsga2;
 
 #[derive(Debug)]
@@ -104,15 +105,15 @@ fn validate_positive(value: usize, name: &str) -> Result<(), MultiObjectiveAlgor
 }
 
 pub struct AlgorithmContext {
-    n_vars: usize,
-    population_size: usize,
-    n_offsprings: usize,
-    n_objectives: usize,
-    n_iterations: usize,
-    current_iteration: usize,
-    n_constraints: Option<usize>,
-    upper_bound: Option<f64>,
-    lower_bound: Option<f64>,
+    pub n_vars: usize,
+    pub population_size: usize,
+    pub n_offsprings: usize,
+    pub n_objectives: usize,
+    pub n_iterations: usize,
+    pub current_iteration: usize,
+    pub n_constraints: Option<usize>,
+    pub upper_bound: Option<f64>,
+    pub lower_bound: Option<f64>,
 }
 
 impl AlgorithmContext {
@@ -250,7 +251,6 @@ impl MultiObjectiveAlgorithm {
             rng,
         })
     }
-
 
     fn next(&mut self) -> Result<(), MultiObjectiveAlgorithmError> {
         // Obtain offspring genes.

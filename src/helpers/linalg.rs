@@ -1,11 +1,9 @@
-use faer::Mat;
+use faer::{Mat, MatRef};
 use faer_ext::{IntoFaer, IntoNdarray};
 
 use ndarray::{Array2, ArrayView1, Axis};
 use numpy::{PyArray2, PyReadonlyArray2, ToPyArray};
 use pyo3::prelude::*;
-
-use crate::genetic::{PopulationFitness, PopulationGenes};
 
 /// Computes the Lp norm of a array view vector.
 pub fn lp_norm_arrayview(x: &ArrayView1<f64>, p: f64) -> f64 {
@@ -15,25 +13,33 @@ pub fn lp_norm_arrayview(x: &ArrayView1<f64>, p: f64) -> f64 {
         .powf(1.0 / p)
 }
 
-fn faer_dot_and_norms(
-    population_genes: &PopulationGenes,
-    reference: &Array2<f64>,
-) -> (Mat<f64>, Mat<f64>, Mat<f64>) {
-    let faer_data = population_genes.view().into_faer();
-    let faer_ref = reference.view().into_faer();
+fn faer_dot(x: MatRef<f64>, y: MatRef<f64>) -> Mat<f64> {
+    x * y.transpose()
+}
 
-    let data_norm = Mat::from_fn(faer_data.nrows(), 1, |i, _| {
-        let row = faer_data.row(i);
+pub fn faer_dot_from_array(x: &Array2<f64>, y: &Array2<f64>) -> Mat<f64> {
+    let faer_x = x.view().into_faer();
+    let faer_y = y.view().into_faer();
+    faer_dot(faer_x, faer_y)
+}
+
+pub fn faer_squared_norm(x: MatRef<f64>) -> Mat<f64> {
+    let x_norm = Mat::from_fn(x.nrows(), 1, |i, _| {
+        let row = x.row(i);
         row * row.transpose()
     });
+    x_norm
+}
 
-    let ref_norm = Mat::from_fn(faer_ref.nrows(), 1, |i, _| {
-        let row = faer_ref.row(i);
-        row * row.transpose()
-    });
+pub fn faer_dot_and_norms(x: &Array2<f64>, y: &Array2<f64>) -> (Mat<f64>, Mat<f64>, Mat<f64>) {
+    let faer_x = x.view().into_faer();
+    let faer_y = y.view().into_faer();
 
-    let faer_dot = faer_data * faer_ref.transpose();
-    (data_norm, ref_norm, faer_dot)
+    let x_norm = faer_squared_norm(faer_x);
+    let y_norm = faer_squared_norm(faer_y);
+
+    let faer_dot = faer_dot(faer_x, faer_y);
+    (x_norm, y_norm, faer_dot)
 }
 
 /// Computes the cross squared Euclidean distance matrix between `data` and `reference`
@@ -42,13 +48,10 @@ fn faer_dot_and_norms(
 /// For data of shape (n, d) and reference of shape (m, d), returns an (n x m) matrix
 /// where the (i,j) element is the squared Euclidean distance between the i-th row of data
 /// and the j-th row of reference.
-pub fn cross_euclidean_distances(
-    population_genes: &PopulationGenes,
-    reference: &Array2<f64>,
-) -> Mat<f64> {
-    let (data_norm, reference_norm, faer_dot) = faer_dot_and_norms(population_genes, reference);
+pub fn cross_euclidean_distances(data: &Array2<f64>, reference: &Array2<f64>) -> Mat<f64> {
+    let (data_norm, reference_norm, faer_dot) = faer_dot_and_norms(data, reference);
 
-    let n = population_genes.nrows();
+    let n = data.nrows();
     let m = reference.nrows();
     // d²(i,j) = ||x_i||² + ||y_j||² - 2 * (x_i dot y_j)
     let faer_dist: Mat<f64> = Mat::from_fn(n, m, |i, j| {
@@ -57,28 +60,10 @@ pub fn cross_euclidean_distances(
     faer_dist
 }
 
-pub fn cross_cosine_distances(
-    population_genes: &PopulationGenes,
-    reference: &Array2<f64>,
-) -> Mat<f64> {
-    let (data_norm, reference_norm, faer_dot) = faer_dot_and_norms(population_genes, reference);
-    let n = population_genes.nrows();
-    let m = reference.nrows();
-    // cosine(Oi,Oj) = (x_i dot y_j)/(||x_i||||y_i||)
-    let faer_cosine_dist: Mat<f64> = Mat::from_fn(n, m, |i, j| {
-        faer_dot.get(i, j) / (data_norm.get(i, 0).sqrt() * reference_norm.get(j, 0).sqrt())
-    });
-    faer_cosine_dist
-}
-
-pub fn cross_p_distances(
-    population_genes: &PopulationFitness,
-    reference: &Array2<f64>,
-    p: f64,
-) -> Array2<f64> {
+pub fn cross_p_distances(data: &Array2<f64>, reference: &Array2<f64>, p: f64) -> Array2<f64> {
     // Expand dimensions so that `data` has shape (n, 1, d) and `reference` has shape (1, m, d)
     // Expand dimensions and convert to owned arrays so that subtraction is allowed.
-    let data_expanded = population_genes.view().insert_axis(Axis(1)).to_owned(); // shape (n, 1, d)
+    let data_expanded = data.view().insert_axis(Axis(1)).to_owned(); // shape (n, 1, d)
     let reference_expanded = reference.view().insert_axis(Axis(0)).to_owned(); // shape (1, m, d)
 
     // Compute the element-wise differences.

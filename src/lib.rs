@@ -19,6 +19,7 @@ pub use algorithms::nsga2::Nsga2;
 pub use algorithms::nsga3::Nsga3;
 pub use algorithms::py_errors::InvalidParameterError;
 pub use algorithms::py_errors::NoFeasibleIndividualsError;
+pub use algorithms::revea::Revea;
 pub use algorithms::rnsga2::Rnsga2;
 pub use duplicates::{PyCloseDuplicatesCleaner, PyExactDuplicatesCleaner};
 pub use operators::py_operators::{
@@ -36,6 +37,7 @@ fn _pymoors(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<Nsga3>()?;
     m.add_class::<Rnsga2>()?;
     m.add_class::<AgeMoea>()?;
+    m.add_class::<Revea>()?;
 
     // Add classes from operators
     m.add_class::<PyBitFlipMutation>()?;

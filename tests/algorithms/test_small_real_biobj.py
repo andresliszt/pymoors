@@ -10,6 +10,7 @@ from pymoors import (
     Nsga2,
     Nsga3,
     Rnsga2,
+    Revea,
     DanAndDenisReferencePoints,
 )
 from pymoors.typing import TwoDArray
@@ -70,7 +71,7 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
             Nsga3,
             {
                 "reference_points": DanAndDenisReferencePoints(
-                    n_reference_points=200, n_objectives=2
+                    n_reference_points=100, n_objectives=2
                 )
             },
         ),
@@ -78,17 +79,22 @@ def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
             Nsga3,
             {
                 "reference_points": DanAndDenisReferencePoints(
-                    n_reference_points=200, n_objectives=2
+                    n_reference_points=100, n_objectives=2
                 ).generate()
             },
         ),
         (
             Rnsga2,
-            {"reference_points": np.array([[0.5, 0.5], [0.1, 0.1]]), "epsilon": 0.1},
+            {"reference_points": np.array([[0.8, 0.8], [0.9, 0.9]]), "epsilon": 0.001},
         ),
         (
-            Rnsga2,
-            {"reference_points": np.array([[0.8, 0.8], [0.9, 0.9]]), "epsilon": 0.001},
+            Revea,
+            {
+                "reference_points": DanAndDenisReferencePoints(
+                    n_reference_points=100, n_objectives=2
+                ),
+                "alpha": 2.5,
+            },
         ),
     ],
 )

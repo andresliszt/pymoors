@@ -446,6 +446,23 @@ class AgeMoea:
 
     def run(self) -> None: ...
 
+class _ReveaKwargs(_MooAlgorithmKwargs, total=False):
+    reference_points: TwoDArray | StructuredReferencePoints
+    alpha: float
+
+class Revea:
+    def __init__(self, **kwargs: Unpack[_ReveaKwargs]) -> None: ...
+    @property
+    def population(self) -> Population:
+        """
+        Returns the current population of individuals.
+
+        Returns:
+            Population: The current population.
+        """
+
+    def run(self) -> None: ...
+
 # Custom Errors
 
 class NoFeasibleIndividualsError(BaseException):

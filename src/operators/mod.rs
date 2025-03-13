@@ -4,12 +4,12 @@ use numpy::ndarray::Axis;
 use rand::prelude::SliceRandom;
 
 use crate::{
+    algorithms::AlgorithmContext,
     genetic::{
         Fronts, FrontsExt, Individual, IndividualGenes, IndividualGenesMut, Population,
         PopulationGenes,
     },
     non_dominated_sorting::build_fronts,
-    algorithms::AlgorithmContext,
     random::RandomGenerator,
 };
 
@@ -312,7 +312,7 @@ pub trait SurvivalOperator: GeneticOperator {
     /// Selects the individuals that will survive to the next generation.
     /// The default implementation uses the survival score to select individuals.
     fn operate(
-        &self,
+        &mut self,
         population: Population,
         n_survive: usize,
         rng: &mut dyn RandomGenerator,

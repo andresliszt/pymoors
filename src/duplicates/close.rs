@@ -66,7 +66,6 @@ impl PopulationCleaner for CloseDuplicatesCleaner {
             .enumerate()
             .filter_map(|(i, row)| if keep[i] { Some(row.to_owned()) } else { None })
             .collect();
-        // println!("KEPT len ROWS {}", kept_rows.len());
         let data_flat: Vec<f64> = kept_rows.into_iter().flatten().collect();
         PopulationGenes::from_shape_vec((data_flat.len() / num_cols, num_cols), data_flat)
             .expect("Failed to create deduplicated Array2")

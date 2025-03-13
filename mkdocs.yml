@@ -71,6 +71,7 @@ nav:
         - RNSGA-II: user_guide/algorithms/rnsga2.ipynb
         - NSGA-III: user_guide/algorithms/nsga3.ipynb
         - AGE-MOEA: user_guide/algorithms/agemoea.ipynb
+        - REVEA: user_guide/algorithms/revea.ipynb
 
 plugins:
     - mkdocs-jupyter

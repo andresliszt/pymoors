@@ -476,7 +476,7 @@ mod tests {
         // Set the desired number of survivors (e.g., 4).
         let n_survive = 4;
 
-        let operator = AgeMoeaSurvival::new();
+        let mut operator = AgeMoeaSurvival::new();
         let mut rng = NoopRandomGenerator::new();
         // create context (not used in the algorithm)
         let _context = AlgorithmContext::new(2, 5, 5, 2, 1, None, None, None);

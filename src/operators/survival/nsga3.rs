@@ -5,8 +5,8 @@ use ndarray_stats::QuantileExt;
 
 use crate::algorithms::AlgorithmContext;
 use crate::genetic::{Fronts, Population, PopulationFitness};
-use crate::non_dominated_sorting::build_fronts;
 use crate::helpers::extreme_points::get_ideal;
+use crate::non_dominated_sorting::build_fronts;
 use crate::operators::survival::helpers::HyperPlaneNormalization;
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
@@ -102,7 +102,7 @@ impl SurvivalOperator for Nsga3ReferencePointsSurvival {
     }
 
     fn operate(
-        &self,
+        &mut self,
         population: Population,
         n_survive: usize,
         rng: &mut dyn RandomGenerator,
@@ -497,7 +497,7 @@ mod tests {
 
         // Use a simple reference points matrix: for 2 objectives we use the 2x2 identity.
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
-        let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
+        let mut survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
         let mut rng = FakeRandomGenerator::new();
         // create context (not used in the algorithm)
         let _context = AlgorithmContext::new(2, 5, 5, 2, 1, None, None, None);
@@ -541,7 +541,7 @@ mod tests {
         let population = Population::new(fitness.clone(), fitness.clone(), None, None);
         // Use the identity as reference points for 2 objectives.
         let reference_points = Nsga3ReferencePoints::new(Array2::eye(2), false);
-        let survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
+        let mut survival_operator = Nsga3ReferencePointsSurvival::new(reference_points);
         let mut rng = FakeRandomGenerator::new();
         // create context (not used in the algorithm)
         let _context = AlgorithmContext::new(2, 7, 5, 2, 1, None, None, None);

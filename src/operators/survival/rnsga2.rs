@@ -3,9 +3,9 @@ use std::fmt::Debug;
 
 use ndarray::{Array1, Array2, ArrayView1, Axis};
 
-use crate::genetic::{Fronts, PopulationFitness};
 use crate::algorithms::AlgorithmContext;
-use crate::helpers::extreme_points::{get_nadir, get_ideal};
+use crate::genetic::{Fronts, PopulationFitness};
+use crate::helpers::extreme_points::{get_ideal, get_nadir};
 use crate::operators::{GeneticOperator, SurvivalOperator, SurvivalScoringComparison};
 use crate::random::RandomGenerator;
 

@@ -3,8 +3,8 @@ use std::fmt::Debug;
 
 use ndarray::Array1;
 
-use crate::genetic::{Fronts, PopulationFitness};
 use crate::algorithms::AlgorithmContext;
+use crate::genetic::{Fronts, PopulationFitness};
 use crate::operators::{GeneticOperator, SurvivalOperator};
 use crate::random::RandomGenerator;
 
@@ -24,7 +24,12 @@ impl RankCrowdingSurvival {
 }
 
 impl SurvivalOperator for RankCrowdingSurvival {
-    fn set_survival_score(&self, fronts: &mut Fronts, _rng: &mut dyn RandomGenerator, _algorithm_context: AlgorithmContext) {
+    fn set_survival_score(
+        &self,
+        fronts: &mut Fronts,
+        _rng: &mut dyn RandomGenerator,
+        _algorithm_context: &AlgorithmContext,
+    ) {
         for front in fronts.iter_mut() {
             let crowding_distance = crowding_distance(&front.fitness);
             front
@@ -221,7 +226,7 @@ mod tests {
         let fitness: Array2<f64> = array![[0.1, 0.9], [0.2, 0.8], [0.3, 0.7]];
         let population = Population::new(genes.clone(), fitness.clone(), None, None);
         let n_survive = 3;
-        let selector = RankCrowdingSurvival;
+        let mut selector = RankCrowdingSurvival;
         assert_eq!(selector.name(), "RankCrowdingSurvival");
         let mut _rng = NoopRandomGenerator::new();
         // create context (not used in the algorithm)
@@ -267,7 +272,7 @@ mod tests {
         let population = Population::new(genes.clone(), fitness.clone(), None, None);
         let n_survive = 4;
 
-        let selector = RankCrowdingSurvival;
+        let mut selector = RankCrowdingSurvival;
         let mut _rng = NoopRandomGenerator::new();
         // create context (not used in the algorithm)
         let _context = AlgorithmContext::new(10, 10, 5, 2, 1, None, None, None);
