@@ -61,16 +61,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v4
+
     - name: install rust nightly
       uses: dtolnay/rust-toolchain@nightly
 
-    - uses: actions/checkout@v4
+    - name: Install rustflit and coverage-prepare
+      run: cargo install rustfilt coverage-prepare
+
+    - name: Install llvm-tools-preview
+      run: rustup component add llvm-tools-preview
+
     - name: Install cargo-llvm-cov
-
       uses: taiki-e/install-action@cargo-llvm-cov
-    - name: Run tests
 
+    - name: Run tests
       run: cargo llvm-cov --workspace --lcov --output-path lcov.info
+
     - name: Upload coverage to Codecov
       uses: codecov/codecov-action@v5
       with:
