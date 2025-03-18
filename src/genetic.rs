@@ -430,4 +430,44 @@ mod tests {
         let expected_genes = array![[1.0, 2.0], [3.0, 4.0], [5.0, 6.0], [7.0, 8.0]];
         assert_eq!(merged.genes, expected_genes, "Flattened genes do not match");
     }
+
+    #[test]
+    #[should_panic(
+        expected = "Mismatched population constraints: one is set and the other is None"
+    )]
+    fn test_population_merge_mismatched_constraints() {
+        // Crear dos poblaciones con constraints incompatibles: una con Some y otra sin.
+        let genes1 = array![[1.0, 2.0]];
+        let fitness1 = array![[0.5, 1.0]];
+        let constraints1 = Some(array![[-1.0, 0.0]]);
+        let pop1 = Population::new(genes1, fitness1, constraints1, None);
+
+        let genes2 = array![[3.0, 4.0]];
+        let fitness2 = array![[1.5, 2.0]];
+        // pop2 sin constraints.
+        let pop2 = Population::new(genes2, fitness2, None, None);
+
+        Population::merge(&pop1, &pop2);
+    }
+
+    #[test]
+    #[should_panic(
+        expected = "Mismatched population survival scores: one is set and the other is None"
+    )]
+    fn test_population_merge_mismatched_survival_score() {
+        // Crear dos poblaciones con survival_score incompatibles: una con Some y otra sin.
+        let genes1 = array![[1.0, 2.0]];
+        let fitness1 = array![[0.5, 1.0]];
+        let mut pop1 = Population::new(genes1, fitness1, None, None);
+        // Asignar survival_score a pop1.
+        let score1 = array![0.1];
+        pop1.set_survival_score(score1).unwrap();
+
+        let genes2 = array![[3.0, 4.0]];
+        let fitness2 = array![[1.5, 2.0]];
+        // pop2 sin survival_score.
+        let pop2 = Population::new(genes2, fitness2, None, None);
+
+        Population::merge(&pop1, &pop2);
+    }
 }
