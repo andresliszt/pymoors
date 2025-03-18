@@ -220,7 +220,7 @@ pub trait SelectionOperator: GeneticOperator {
         let n_perms = (total_needed + population_size - 1) / population_size; // Ceil division
         for _ in 0..n_perms {
             let mut perm: Vec<usize> = (0..population_size).collect();
-            perm.shuffle(rng.rng());
+            rng.shuffle_vec_usize(&mut perm);
             all_indices.extend_from_slice(&perm);
         }
 

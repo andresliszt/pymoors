@@ -38,3 +38,9 @@ harness = false
 
 [lints.rust]
 unexpected_cfgs = { level = "warn", check-cfg = ['cfg(coverage,coverage_nightly)'] }
+
+[profile.dev]
+incremental = true
+
+[profile.test]
+incremental = true

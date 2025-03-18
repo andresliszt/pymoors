@@ -92,14 +92,35 @@ impl SelectionOperator for RankAndScoringSelection {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use rand::rngs::StdRng;
+    use rstest::rstest;
 
     use ndarray::{array, Array1};
-    use rand::prelude::*;
 
     use crate::genetic::{Individual, Population, PopulationFitness, PopulationGenes};
     use crate::operators::{DuelResult, SelectionOperator};
-    use crate::random::MOORandomGenerator;
+    use crate::random::{RandomGenerator, TestDummyRng};
+
+    // A fake random generator to control the outcome of gen_bool.
+    struct FakeRandomGenerator {
+        dummy: TestDummyRng,
+    }
+
+    impl FakeRandomGenerator {
+        fn new() -> Self {
+            Self {
+                dummy: TestDummyRng,
+            }
+        }
+    }
+
+    impl RandomGenerator for FakeRandomGenerator {
+        fn rng(&mut self) -> &mut dyn rand::RngCore {
+            &mut self.dummy
+        }
+        fn shuffle_vec_usize(&mut self, _vector: &mut Vec<usize>) {
+            // Do nothing
+        }
+    }
 
     #[test]
     fn test_default_diversity_comparison_maximize() {
@@ -110,38 +131,81 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_tournament_duel_maximize() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    #[rstest(
+        left_feasible, right_feasible, left_rank, right_rank, left_survival, right_survival, diversity, expected,
+        // Feasibility check: if one is feasible and the other isn't, feasibility wins regardless of rank or survival.
+        case(true, false, 0, 1, 10.0, 5.0, SurvivalScoringComparison::Maximize, DuelResult::LeftWins),
+        case(false, true, 1, 0, 10.0, 5.0, SurvivalScoringComparison::Maximize, DuelResult::RightWins),
 
-        // Create two individuals using the actual Individual type.
-        // Both individuals have the same rank (Some(0)) but different diversity metrics.
-        // In Maximize mode, the individual with the higher diversity (10.0) should win.
-        let p1 = Individual::new(array![1.0, 2.0], array![0.5], None, Some(0), Some(10.0));
-        let p2 = Individual::new(array![3.0, 4.0], array![0.6], None, Some(0), Some(5.0));
-        let selector = RankAndScoringSelection::new(); // Default: Maximize
-        assert_eq!(selector.name(), "RankAndScoringSelection");
+        // Both are feasible: rank comparison takes precedence.
+        case(true, true, 0, 1, 5.0, 10.0, SurvivalScoringComparison::Maximize, DuelResult::LeftWins),
+        case(true, true, 2, 1, 5.0, 10.0, SurvivalScoringComparison::Maximize, DuelResult::RightWins),
+
+        // Both are feasible (or both infeasible) and ranks are equal → decide by survival (diversity) in Maximize mode.
+        case(true, true, 0, 0, 10.0, 5.0, SurvivalScoringComparison::Maximize, DuelResult::LeftWins),
+        case(true, true, 0, 0, 5.0, 10.0, SurvivalScoringComparison::Maximize, DuelResult::RightWins),
+        case(true, true, 0, 0, 7.0, 7.0, SurvivalScoringComparison::Maximize, DuelResult::Tie),
+
+        // Both are feasible (or both infeasible) and ranks are equal → decide by survival in Minimize mode.
+        case(true, true, 0, 0, 5.0, 10.0, SurvivalScoringComparison::Minimize, DuelResult::LeftWins),
+        case(true, true, 0, 0, 10.0, 5.0, SurvivalScoringComparison::Minimize, DuelResult::RightWins),
+        case(true, true, 0, 0, 8.0, 8.0, SurvivalScoringComparison::Minimize, DuelResult::Tie),
+
+        // Both are infeasible: rules are the same as for feasible individuals.
+        case(false, false, 0, 1, 10.0, 5.0, SurvivalScoringComparison::Maximize, DuelResult::LeftWins),
+        case(false, false, 0, 0, 7.0, 7.0, SurvivalScoringComparison::Maximize, DuelResult::Tie)
+    )]
+    fn test_tournament_duel(
+        left_feasible: bool,
+        right_feasible: bool,
+        left_rank: usize,
+        right_rank: usize,
+        left_survival: f64,
+        right_survival: f64,
+        diversity: SurvivalScoringComparison,
+        expected: DuelResult,
+    ) {
+        // For simplicity, we use the same genes and fitness values for both individuals.
+        let genes = array![1.0, 2.0];
+        let fitness = array![0.5];
+
+        // Force feasibility by providing constraints: feasible if -1.0, infeasible if 1.0.
+        let left_constraints = Some(if left_feasible {
+            array![-1.0]
+        } else {
+            array![1.0]
+        });
+        let right_constraints = Some(if right_feasible {
+            array![-1.0]
+        } else {
+            array![1.0]
+        });
+
+        // Create individuals with the given rank and survival (diversity) values.
+        let p1 = Individual::new(
+            genes.clone(),
+            fitness.clone(),
+            left_constraints,
+            Some(left_rank),
+            Some(left_survival),
+        );
+        let p2 = Individual::new(
+            genes,
+            fitness,
+            right_constraints,
+            Some(right_rank),
+            Some(right_survival),
+        );
+
+        let selector = RankAndScoringSelection::new_with_comparison(diversity);
+        let mut rng = FakeRandomGenerator::new();
         let result = selector.tournament_duel(&p1, &p2, &mut rng);
-        assert_eq!(result, DuelResult::LeftWins);
+        assert_eq!(result, expected);
     }
 
     #[test]
-    fn test_tournament_duel_minimize() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
-        // Create two individuals using the actual Individual type.
-        // Both individuals have the same rank (Some(0)) but different diversity metrics.
-        // In Minimize mode, the individual with the lower diversity (5.0) should win.
-        let p1 = Individual::new(array![1.0, 2.0], array![0.5], None, Some(0), Some(10.0));
-        let p2 = Individual::new(array![3.0, 4.0], array![0.6], None, Some(0), Some(5.0));
-        let selector =
-            RankAndScoringSelection::new_with_comparison(SurvivalScoringComparison::Minimize);
-        let result = selector.tournament_duel(&p1, &p2, &mut rng);
-        assert_eq!(result, DuelResult::RightWins);
-    }
-
-    #[test]
-    fn test_tournament_selection_no_constraints_basic() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    fn test_operate_no_constraints_basic() {
+        let mut rng = FakeRandomGenerator::new();
         // For a population of 4:
         // Rank: [0, 1, 0, 1]
         // Diversity (CD): [10.0, 5.0, 9.0, 1.0]
@@ -163,8 +227,8 @@ mod tests {
     }
 
     #[test]
-    fn test_tournament_selection_with_constraints() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    fn test_operate_with_constraints() {
+        let mut rng = FakeRandomGenerator::new();
         // Two individuals:
         // Individual 0: feasible
         // Individual 1: infeasible
@@ -186,8 +250,8 @@ mod tests {
     }
 
     #[test]
-    fn test_tournament_selection_same_rank_and_cd() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    fn test_operate_same_rank_and_cd() {
+        let mut rng = FakeRandomGenerator::new();
         // If two individuals have the same rank and the same crowding distance,
         // the tournament duel should result in a tie.
         let genes = array![[1.0, 2.0], [3.0, 4.0]];
@@ -210,8 +274,8 @@ mod tests {
     }
 
     #[test]
-    fn test_tournament_selection_large_population() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    fn test_operate_large_population() {
+        let mut rng = FakeRandomGenerator::new();
         // Large population test to ensure stability.
         let population_size = 100;
         let n_genes = 5;
@@ -220,16 +284,14 @@ mod tests {
             PopulationFitness::from_shape_fn((population_size, 1), |(i, _)| i as f64 / 100.0);
         let constraints = None;
 
-        let rank_vec: Vec<usize> = (0..population_size)
-            .map(|_| rng.gen_range_usize(0, n_genes))
-            .collect();
-        let rank = Some(Array1::from_vec(rank_vec));
+        let rank = Some(Array1::zeros(population_size));
         let population = Population::new(genes, fitness, constraints, rank);
 
         // n_crossovers = 50 → total_needed = 200 participants → 100 tournaments → 100 winners.
         // After splitting: pop_a = 50 winners, pop_b = 50 winners.
         let n_crossovers = 50;
         let selector = RankAndScoringSelection::new();
+        assert_eq!(selector.name(), "RankAndScoringSelection");
         let (pop_a, pop_b) = selector.operate(&population, n_crossovers, &mut rng);
 
         assert_eq!(pop_a.len(), 50);
@@ -237,8 +299,8 @@ mod tests {
     }
 
     #[test]
-    fn test_tournament_selection_single_tournament() {
-        let mut rng = MOORandomGenerator::new(StdRng::from_entropy());
+    fn test_operate_single_tournament() {
+        let mut rng = FakeRandomGenerator::new();
         // One crossover:
         // total_needed = 4 participants → 2 tournaments → 2 winners.
         // After splitting: pop_a = 1, pop_b = 1.

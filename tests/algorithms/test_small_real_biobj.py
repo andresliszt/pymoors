@@ -16,44 +16,21 @@ from pymoors import (
 from pymoors.typing import TwoDArray
 
 
-def f1(x: float, y: float) -> float:
-    """Objective 1: x^2 + y^2."""
-    return x**2 + y**2
-
-
-def f2(x: float, y: float) -> float:
-    """Objective 2: (x - 1)^2 + (y - 1)^2."""
-    return (x - 1) ** 2 + (y - 1) ** 2
-
-
 def fitness_biobjective(population_genes: TwoDArray) -> TwoDArray:
     """
-    Multi-objective fitness for a population of real-valued vectors [x, y].
+    Multi-objective fitness for a population of real-valued vectors [x, y] computed in vectorized form.
 
     Parameters
     ----------
-    population_genes: np.ndarray of shape (population_size, 2)
-      Each row is (x,y).
+    population_genes : np.ndarray of shape (population_size, 2)
+      Cada fila es (x, y).
 
-    Returns
-    -------
-    fitness: np.ndarray of shape (population_size, 2)
-      Each row is [f1, f2], the two objectives to minimize.
     """
-    population_size = population_genes.shape[0]
-    fitness = np.zeros((population_size, 2), dtype=float)
-    for i in range(population_size):
-        x, y = population_genes[i]  # shape (2,)
-        fitness[i, 0] = f1(x, y)
-        fitness[i, 1] = f2(x, y)
-    return fitness
-
-
-def constraints_biobjective(population_genes: TwoDArray) -> TwoDArray:
     x = population_genes[:, 0]
     y = population_genes[:, 1]
-    constraints = np.column_stack((-x, x - 1, -y, y - 1))
-    return constraints
+    f1_vals = x**2 + y**2
+    f2_vals = (x - 1) ** 2 + (y - 1) ** 2
+    return np.column_stack((f1_vals, f2_vals))
 
 
 ##############################################################################
@@ -148,7 +125,6 @@ def test_same_seed_same_result():
         crossover=SimulatedBinaryCrossover(distribution_index=2),
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
-        constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
         population_size=50,
         n_offsprings=50,
@@ -158,6 +134,8 @@ def test_same_seed_same_result():
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-5),
         keep_infeasible=False,
         seed=1,
+        lower_bound=0,
+        upper_bound=1,
     )
     algorithm1.run()
 
@@ -166,7 +144,6 @@ def test_same_seed_same_result():
         crossover=SimulatedBinaryCrossover(distribution_index=2),
         mutation=GaussianMutation(gene_mutation_rate=0.1, sigma=0.05),
         fitness_fn=fitness_biobjective,
-        constraints_fn=constraints_biobjective,
         n_vars=2,  # We have 2 variables: x,y
         population_size=50,
         n_offsprings=50,
@@ -175,7 +152,9 @@ def test_same_seed_same_result():
         crossover_rate=0.9,
         duplicates_cleaner=CloseDuplicatesCleaner(epsilon=1e-8),
         keep_infeasible=False,
-        seed=100,
+        seed=1,
+        lower_bound=0,
+        upper_bound=1,
     )
     algorithm2.run()
 

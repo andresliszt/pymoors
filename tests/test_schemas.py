@@ -39,12 +39,46 @@ def test_individual_is_feasible():
 
 def test_population_length():
     genes = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
-    fitness = np.array([[0.9, 0.8], [0.7, 0.6], [0.5, 0.4]])
+    fitness = np.array([[0.5, 0.4], [0.7, 0.6], [0.8, 0.9]])
     rank = np.array([0, 1, 2])
     constraints = np.array([[0.0, -0.1], [0.0, 0.1], [-0.2, 0.0]])
 
     pop = Population(genes, fitness, rank, constraints)
     assert len(pop) == 3
+
+
+def test_population_best():
+    genes = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
+    fitness = np.array(
+        [
+            [0.5, 0.4],
+            [0.4, 0.5],
+            [0.7, 0.6],
+        ]
+    )
+    rank = np.array([0, 0, 1])
+
+    pop = Population(genes, fitness, rank, None)
+    assert len(pop.best) == 2
+    assert len(pop.best_as_population) == 2
+    assert isinstance(pop.best_as_population, Population)
+
+
+def test_population_best_no_rank():
+    # W.O rank every individual is considered best (for now)
+    genes = np.array([[0.1, 0.2], [0.3, 0.4], [0.5, 0.6]])
+    fitness = np.array(
+        [
+            [0.5, 0.4],
+            [0.4, 0.5],
+            [0.7, 0.6],
+        ]
+    )
+
+    pop = Population(genes, fitness, None, None)
+    assert len(pop.best) == 3
+    assert len(pop.best_as_population) == 3
+    assert isinstance(pop.best_as_population, Population)
 
 
 def test_population_getitem():
@@ -67,6 +101,12 @@ def test_population_getitem():
     assert len(individuals) == 2
     assert np.array_equal(individuals[0].genes, genes[1])
     assert np.array_equal(individuals[1].genes, genes[2])
+
+    # Test Incorrect get item
+    with pytest.raises(
+        TypeError, match="indices must be integers or slices, not <class 'list'>"
+    ):
+        _ = pop[[1, 2, 3]]  # type: ignore
 
 
 def test_population_raises_value_error_for_length_mismatch():
