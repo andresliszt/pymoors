@@ -65,11 +65,17 @@ def common_kwargs():
                 )
             },
         ),
+        (
+            Revea,
+            {
+                "reference_points": DanAndDenisReferencePoints(
+                    n_reference_points=10, n_objectives=2
+                ).generate()
+            },
+        ),
     ],
 )
 def test_init_minimal_args(algorithm_class, algorithm_specific_kwargs, common_kwargs):
-    """ """
-
     _ = algorithm_class(
         **common_kwargs,
         **algorithm_specific_kwargs,
