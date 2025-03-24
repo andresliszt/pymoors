@@ -1,33 +1,36 @@
+use std::usize;
+
 use rand::rngs::StdRng;
 use rand::seq::SliceRandom;
 use rand::{Rng, RngCore, SeedableRng};
+use rand::prelude::IndexedRandom;
 
 /// A trait defining a unified interface for generating random values,
 /// used across genetic operators and algorithms.
 pub trait RandomGenerator {
     /// Generates a random `usize` in the range `[min, max)` using the underlying RNG.
     fn gen_range_usize(&mut self, min: usize, max: usize) -> usize {
-        self.rng().gen_range(min..max)
+        self.rng().random_range(min..max)
     }
 
     /// Generates a random `f64` in the range `[min, max)` using the underlying RNG.
     fn gen_range_f64(&mut self, min: f64, max: f64) -> f64 {
-        self.rng().gen_range(min..max)
+        self.rng().random_range(min..max)
     }
 
     /// Generates a random `usize` using the underlying RNG.
     fn gen_usize(&mut self) -> usize {
-        self.rng().gen()
+        self.rng().random_range(usize::MIN..usize::MAX)
     }
-
+    
     /// Generates a random boolean value with probability `p` of being `true`
     /// using the underlying RNG.
     fn gen_bool(&mut self, p: f64) -> bool {
-        self.rng().gen_bool(p)
+        self.rng().random_bool(p)
     }
     /// Generates a random probability as an `f64` in the range `[0.0, 1.0)`.
     fn gen_proability(&mut self) -> f64 {
-        self.rng().gen::<f64>()
+        self.rng().random::<f64>()
     }
     fn shuffle_vec(&mut self, vector: &mut Vec<f64>) {
         vector.shuffle(self.rng())
@@ -54,9 +57,13 @@ impl MOORandomGenerator {
         Self { rng }
     }
     pub fn new_from_seed(seed: Option<u64>) -> Self {
-        let rng = seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64);
+        let rng = seed.map_or_else(
+            || StdRng::from_rng(&mut rand::rng()),
+            StdRng::seed_from_u64
+        );
         Self { rng }
     }
+    
 }
 
 impl RandomGenerator for MOORandomGenerator {
@@ -88,10 +95,10 @@ impl RngCore for TestDummyRng {
         unimplemented!("Not used in this test")
     }
 
-    /// Not used in tests. This method is unimplemented.
-    fn try_fill_bytes(&mut self, _dest: &mut [u8]) -> Result<(), rand::Error> {
-        unimplemented!("Not used in this test")
-    }
+    // Not used in tests. This method is unimplemented.
+    //fn try_fill_bytes(&mut self, _dest: &mut [u8]) -> Result<(), rand::Error> {
+    //    unimplemented!("Not used in this test")
+    //}
 }
 
 pub struct NoopRandomGenerator {

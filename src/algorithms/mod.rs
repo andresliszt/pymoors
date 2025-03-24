@@ -201,7 +201,13 @@ impl MultiObjectiveAlgorithm {
         }
 
         let mut rng =
-            MOORandomGenerator::new(seed.map_or_else(StdRng::from_entropy, StdRng::seed_from_u64));
+        MOORandomGenerator::new(
+            seed.map_or_else(
+                || StdRng::from_rng(&mut rand::rng()), 
+                StdRng::seed_from_u64
+            )
+        );
+        
         let mut genes = sampler.operate(population_size, n_vars, &mut rng);
 
         // Create the evolution operator.
