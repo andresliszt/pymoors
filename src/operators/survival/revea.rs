@@ -243,7 +243,7 @@ mod tests {
     use super::*;
     use faer::mat;
     use ndarray::array;
-    use std::f64::consts::FRAC_PI_4;
+    //use std::f64::consts::FRAC_PI_4; // @oliveira-sh: this is not being used 
 
     #[test]
     fn test_cross_cosine_distances() {

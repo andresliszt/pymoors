@@ -20,7 +20,7 @@ use pymoors::non_dominated_sorting::fast_non_dominated_sorting;
 fn generate_population_fitness(population_size: usize, n_obj: usize, seed: u64) -> Array2<f64> {
     let mut rng = StdRng::seed_from_u64(seed);
     let data: Vec<f64> = (0..population_size * n_obj)
-        .map(|_| rng.gen_range(0.0..100.0))
+        .map(|_| rng.random_range(0.0..100.0))
         .collect();
     Array2::from_shape_vec((population_size, n_obj), data)
         .expect("Error creating population fitness array")

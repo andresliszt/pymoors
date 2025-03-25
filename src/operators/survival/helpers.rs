@@ -1,5 +1,6 @@
 use faer::prelude::*;
 use faer_ext::{IntoFaer, IntoNdarray};
+use faer::linalg::solvers::Solve;
 use ndarray::{Array1, Array2, ArrayView1};
 use numpy::{IntoPyArray, PyArray2};
 use pyo3::exceptions::PyTypeError;

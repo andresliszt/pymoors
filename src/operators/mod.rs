@@ -1,7 +1,6 @@
 use std::fmt::Debug;
 
 use numpy::ndarray::Axis;
-use rand::prelude::SliceRandom;
 
 use crate::{
     algorithms::AlgorithmContext,

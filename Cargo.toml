@@ -1,7 +1,7 @@
 [package]
 name = "pymoors"
 version = "0.1.2"
-edition = "2021"
+edition = "2024"
 
 [lib]
 name = "pymoors"
@@ -11,25 +11,25 @@ crate-type = ["cdylib", "rlib"]
 python-source = "python"
 
 [dependencies]
-pyo3 = { version = "0.23.5", features = ["multiple-pymethods"]}
-numpy = "0.23.0"
+pyo3 = { version = "0.24.0", features = ["multiple-pymethods"]}
+numpy = "0.24.0"
 rand = "0.9.0"
 rand_distr = "0.5.1"
 num-traits = "0.2.19"
 ndarray = "0.16.1"
-ordered-float = "4.6.0"
+ordered-float = "5.0.0"
 rayon = "1.10.0"
 ndarray-stats = "0.6.0"
 pymoors_macros = { path = "pymoors_macros"}
-faer-ext = { version = "0.4.1", features = ["ndarray"] }
-faer = "0.20.0"
+faer-ext = { version = "0.5.0", features = ["ndarray"] }
+faer = "0.21.9"
 
 [features]
 extension-module = ["pyo3/extension-module"]
 
 [dev-dependencies]
 criterion = "0.5.1"
-rstest = "0.18.2"
+rstest = "0.25.0"
 
 [[bench]]
 name = "benches"
