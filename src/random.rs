@@ -106,6 +106,8 @@ pub struct NoopRandomGenerator {
 }
 
 impl NoopRandomGenerator {
+    // @oliveira-sh: this is being used on tests
+    #[allow(dead_code)] 
     pub fn new() -> Self {
         Self {
             dummy: TestDummyRng,

@@ -1,6 +1,6 @@
 use numpy::ndarray::{Array1, Axis};
 
-use crate::genetic::{Fronts, PopulationFitness};
+use crate::genetic::PopulationFitness;
 
 // ---------------------------------------------------------------------------
 // Auxiliary Functions for Distance and Ranking Computations

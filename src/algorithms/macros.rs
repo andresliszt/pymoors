@@ -35,7 +35,7 @@ macro_rules! define_multiobj_pyclass {
                 let py_fitness = population.fitness.to_pyarray(py);
                 // For rank, if Some then convert the array, else convert py.None()
                 let py_rank = if let Some(ref r) = population.rank {
-                    r.to_pyarray(py).into_py(py)
+                    r.to_pyarray(py).into_py(py) // @oliveira-sh: todo, replace the deprecated methods
                 } else {
                     py.None().into_py(py)
                 };
