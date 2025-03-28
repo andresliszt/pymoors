@@ -85,7 +85,7 @@ impl CrossoverOperator for ExponentialCrossover {
 mod tests {
     use super::*;
     use crate::random::{RandomGenerator, TestDummyRng};
-    use numpy::ndarray::array;
+    use ndarray::array;
 
     /// A simple fake random generator for controlled testing of ExponentialCrossover.
     /// It returns predetermined values for `gen_range_usize` and `gen_proability`.

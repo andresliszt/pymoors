@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use numpy::ndarray::Array1;
+use ndarray::Array1;
 use pymoors_macros::py_operator;
 
 use crate::operators::{GeneticOperator, IndividualGenes, SamplingOperator};

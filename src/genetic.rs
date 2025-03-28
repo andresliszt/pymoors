@@ -1,4 +1,4 @@
-use numpy::ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
+use ndarray::{concatenate, Array1, Array2, ArrayViewMut1, Axis};
 
 /// Represents an individual in the population.
 /// Each `IndividualGenes` is an `Array1<f64>`.

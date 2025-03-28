@@ -104,7 +104,7 @@ pub fn crowding_distance(population_fitness: &PopulationFitness) -> Array1<f64> 
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use numpy::ndarray::{array, concatenate, Array2, Axis};
+    use ndarray::{array, concatenate, Array2, Axis};
 
     use crate::genetic::Population;
     use crate::random::NoopRandomGenerator;

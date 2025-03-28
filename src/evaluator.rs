@@ -1,6 +1,6 @@
 use std::fmt;
 
-use numpy::ndarray::Axis;
+use ndarray::Axis;
 
 use crate::genetic::{Population, PopulationConstraints, PopulationFitness, PopulationGenes};
 
@@ -122,7 +122,7 @@ impl Evaluator {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use numpy::ndarray::{array, concatenate, Axis};
+    use ndarray::{array, concatenate, Axis};
 
     // Fitness function: Sphere function (sum of squares for each individual).
     fn fitness_fn(genes: &PopulationGenes) -> PopulationFitness {

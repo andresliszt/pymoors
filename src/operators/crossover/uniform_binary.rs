@@ -59,7 +59,7 @@ impl CrossoverOperator for UniformBinaryCrossover {
 mod tests {
     use super::*;
     use crate::random::{RandomGenerator, TestDummyRng};
-    use numpy::ndarray::{array, Array1};
+    use ndarray::{array, Array1};
     use rand::RngCore;
 
     /// A controlled fake random generator that returns predetermined values for `gen_proability()`.

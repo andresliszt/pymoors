@@ -1,4 +1,4 @@
-use numpy::ndarray::{concatenate, s, Array1, Axis};
+use ndarray::{concatenate, s, Array1, Axis};
 use pymoors_macros::py_operator;
 
 use crate::genetic::IndividualGenes;
@@ -64,8 +64,8 @@ impl CrossoverOperator for SinglePointBinaryCrossover {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use numpy::ndarray::array;
-    use numpy::ndarray::Array1;
+    use ndarray::array;
+    use ndarray::Array1;
     use rand::RngCore;
 
     use crate::random::{RandomGenerator, TestDummyRng};

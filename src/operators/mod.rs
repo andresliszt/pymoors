@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use numpy::ndarray::Axis;
+use ndarray::Axis;
 
 use crate::{
     algorithms::AlgorithmContext,

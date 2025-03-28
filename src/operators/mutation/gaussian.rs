@@ -50,7 +50,7 @@ mod tests {
     use super::*;
     use crate::genetic::PopulationGenes;
     use crate::random::MOORandomGenerator;
-    use numpy::ndarray::array;
+    use ndarray::array;
     use rand::rngs::StdRng;
     use rand::SeedableRng;
 

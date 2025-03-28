@@ -2,7 +2,7 @@ use std::collections::HashSet;
 use std::fmt::Debug;
 
 use ndarray_stats::QuantileExt;
-use numpy::ndarray::{stack, Array1, Array2, ArrayView1, Axis};
+use ndarray::{stack, Array1, Array2, ArrayView1, Axis};
 
 use crate::algorithms::AlgorithmContext;
 use crate::genetic::PopulationFitness;

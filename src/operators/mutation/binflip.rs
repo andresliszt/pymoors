@@ -38,7 +38,7 @@ mod tests {
     use super::*; // Brings in BitFlipMutation and related types.
     use crate::genetic::PopulationGenes;
     use crate::random::{RandomGenerator, TestDummyRng};
-    use numpy::ndarray::array;
+    use ndarray::array;
     use rand::RngCore;
 
     /// A fake RandomGenerator for testing that always returns `true` for `gen_bool`.

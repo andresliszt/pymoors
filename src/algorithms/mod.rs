@@ -1,4 +1,4 @@
-use numpy::ndarray::{concatenate, Axis};
+use ndarray::{concatenate, Axis};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use std::error::Error;
@@ -203,11 +203,11 @@ impl MultiObjectiveAlgorithm {
         let mut rng =
         MOORandomGenerator::new(
             seed.map_or_else(
-                || StdRng::from_rng(&mut rand::rng()), 
+                || StdRng::from_rng(&mut rand::rng()),
                 StdRng::seed_from_u64
             )
         );
-        
+
         let mut genes = sampler.operate(population_size, n_vars, &mut rng);
 
         // Create the evolution operator.

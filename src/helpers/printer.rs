@@ -1,4 +1,4 @@
-use numpy::ndarray::Axis;
+use ndarray::Axis;
 
 use crate::genetic::Population;
 

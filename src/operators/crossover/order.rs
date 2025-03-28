@@ -1,4 +1,4 @@
-use numpy::ndarray::Array1;
+use ndarray::Array1;
 use pymoors_macros::py_operator;
 
 use crate::genetic::IndividualGenes;
@@ -87,7 +87,7 @@ mod tests {
     use super::*;
     use crate::genetic::IndividualGenes;
     use crate::random::{RandomGenerator, TestDummyRng};
-    use numpy::ndarray::Array1;
+    use ndarray::Array1;
     use rand::RngCore;
 
     /// A controlled fake RandomGenerator that returns predetermined values for `gen_range_usize`.

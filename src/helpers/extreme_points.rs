@@ -1,4 +1,4 @@
-use numpy::ndarray::{Array1, Axis};
+use ndarray::{Array1, Axis};
 
 use crate::genetic::PopulationFitness;
 

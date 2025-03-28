@@ -160,7 +160,7 @@ pub fn build_fronts(population: Population, n_survive: usize) -> Fronts {
 #[cfg_attr(coverage_nightly, coverage(off))]
 mod tests {
     use super::*;
-    use numpy::ndarray::{array, Array2};
+    use ndarray::{array, Array2};
 
     #[test]
     fn test_dominates() {

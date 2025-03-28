@@ -46,7 +46,7 @@ mod tests {
     use super::*;
     use crate::genetic::PopulationGenes;
     use crate::random::{RandomGenerator, TestDummyRng};
-    use numpy::ndarray::array;
+    use ndarray::array;
     use rand::RngCore;
 
     /// A controlled fake RandomGenerator that returns predetermined values for `gen_range_usize`.
