@@ -104,7 +104,9 @@ jobs:
         run: make build-release
 
       - name: Run tests (excluding benchmarks)
-        run: make test
+        run: |
+          uv sync --group testing
+          make test
 
   lint:
     name: Lint
