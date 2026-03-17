@@ -9,15 +9,25 @@
 
 # Development
 
+## Quick Start
+
 ```sh
 # Fork & clone the repo
 git clone https://github.com/your-username/moo-rs.git
-# Go directly to the pymoors/moors directory
-cd moo-rs/pymoors # or cd moo-rs/moors
-# Build in dev mod
+cd moo-rs
+
+# Setup development environment (syncs dependencies & hooks)
+make setup
+
+# Build everything (moors + pymoors)
 make build-dev
-# or build in release mode
-make build-release
+
+# Run all tests
+make test
+
+# Format & lint code
+make lint
+make fmt
 ```
 
-For detailed requirements to install from source, see the [Developer Guide](../development/setup_environment.md).
+For detailed requirements and advanced commands, see the [Developer Guide](../development/setup_environment.md).

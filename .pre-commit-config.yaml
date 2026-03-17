@@ -14,19 +14,19 @@ repos:
     hooks:
       - id: lint-python-pymoors
         name: Lint Python (pymoors)
-        entry: make pymoors-lint-python
+        entry: make lint-pymoors
         language: system
         pass_filenames: false
 
       - id: lint-rust-moors
         name: Lint Rust (moors)
-        entry: make moors-lint
+        entry: make lint-moors
         language: system
         pass_filenames: false
 
       - id: typecheck-python-pymoors
         name: Typecheck Python (pymoors)
-        entry: make pymoors-pyright
+        entry: make pyright
         language: system
         pass_filenames: false
 

@@ -2,20 +2,28 @@
 
 ## Prerequisites
 
-Before you proceed, make sure you have **Rust** installed. We recommend using [rustup](https://rustup.rs/) for an easy setup:
+Before you proceed, make sure you have the following installed:
+
+### Rust
+We recommend using [rustup](https://rustup.rs/) for an easy setup. Minimum version: **1.76.0**
 
 ```bash
 # For Linux/Mac:
-curl --proto '=https' --tlsv1.2 https://sh.rustup.rs -sSf | sh
+curl --proto ‘=https’ --tlsv1.2 https://sh.rustup.rs -sSf | sh
 
 # For Windows:
-# Download and run the installer:
-# https://rustup.rs/
+# Download and run the installer: https://rustup.rs/
 ```
 
-Also `pymoors` uses [uv](https://github.com/astral-sh/uv). Make sure it’s available on your `PATH` so the `make` commands can run properly.
+### Python
+Minimum version: **3.10**
 
-> **Note:** `moors` doesn’t use `uv`
+```bash
+# We recommend using uv for Python dependency management
+# Install from: https://docs.astral.sh/uv/
+```
+
+> **Note:** `pymoors` uses [uv](https://docs.astral.sh/uv/) for dependency management. `moors` uses Cargo only.
 
 ## moors vs pymoors
 
@@ -90,26 +98,50 @@ make bench
 
 ---
 
-## From the Repo Root
+## From the Repository Root
+
+### Monorepo Commands (Recommended)
+
+The root `Makefile` provides convenient targets to work with the entire monorepo:
 
 ```sh
-# run pymoors dev build from root
-make pymoors-build-dev
+# Setup development environment (install dependencies & git hooks)
+make setup
 
-# run pymoors lint-Python from root
-make pymoors-lint-python
+# Test everything (moors + pymoors)
+make test
 
-# run pymoors tests from root
-make pymoors-test
+# Format code in both packages
+make fmt
 
-# run moors tests from root
-make moors-test
+# Lint code in both packages
+make lint
 
-# run moors benchmarks from root
-make moors-bench
+# Build in dev mode
+make build-dev
+
+# Build in release mode
+make build-release
+
+# Clean all artifacts
+make clean
 ```
 
-Use `make help` at root to list all available `pymoors-<target>` and `moors-<target>` commands.
+### Sub-package Specific Commands
+
+If you need to run commands only for one package from the root:
+
+```sh
+# moors-specific (e.g., benchmarks)
+make moors-bench
+make moors-build-release
+
+# pymoors-specific
+make pymoors-build-dev
+make pymoors-docs
+```
+
+Use `make help` at root to see all available targets.
 
 ---
 
