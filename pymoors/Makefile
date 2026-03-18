@@ -34,6 +34,7 @@ lock:   ## Rebuild Python lockfile
 
 build-dev:  ## Build & install in dev mode
 	@echo "[pymoors] dev build" \
+	  && uv sync --group all \
 	  && uv run maturin develop --uv
 
 build-release:  ## Build & install in release mode
@@ -43,7 +44,6 @@ build-release:  ## Build & install in release mode
 
 lint-python:  ## Lint Python code
 	@echo "[pymoors] lint python" \
-	  && uv sync --group linting \
 	  && uv run ruff check $(SOURCES) \
 	  && uv run ruff format --check $(SOURCES)
 
@@ -53,33 +53,27 @@ lint-rust:  ## Lint Rust bindings
 
 pyright:  ## Run Pyright type checks
 	@echo "[pymoors] typecheck" \
-	  && uv sync --group linting \
 	  && uv run pyright
 
 test:  ## Run pytest excluding benchmarks
 	@echo "[pymoors] test (no benchmarks)" \
-	  && uv sync --group testing \
 	  && uv run pytest --ignore=tests/benchmarks
 
 test-benchmarks:  ## Run only benchmarks tests
 	@echo "[pymoors] benchmarks only" \
-	  && uv sync --group testing \
 	  && uv run pytest tests/benchmarks --codspeed
 
 test-all:  ## Run all tests including benchmarks
 	@echo "[pymoors] all tests" \
-	  && uv sync --group testing \
 	  && uv run pytest
 
 coverage:  ## Run coverage & generate lcov
 	@echo "[pymoors] coverage" \
-	  && uv sync --group testing \
 	  && uv run coverage run -m pytest --ignore=tests/benchmarks \
 	  && uv run coverage xml
 
 docs:  ## Build documentation
 	@echo "[pymoors] docs" \
-	  && uv sync --group docs \
 	  && uv run mkdocs build --strict
 
 # Format
@@ -90,7 +84,6 @@ fmt-rust:  ## cargo fmt
 # Format
 fmt-python:  ## Fmt Python code
 	@echo "[pymoors] fmt python" \
-	  && uv sync --group linting \
 	  && uv run ruff format $(SOURCES)
 
 #-------------------------------------------------

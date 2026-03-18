@@ -71,11 +71,10 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
 
-      - name: Build Pymoors (release)
-        run: make build-release
-
       - name: Build documentation
-        run: make docs
+        run: |
+          uv sync --group docs
+          make docs
 
   test-python:
     name: Test on Python ${{ matrix.python-version }}
@@ -104,7 +103,9 @@ jobs:
         run: make build-release
 
       - name: Run tests (excluding benchmarks)
-        run: make test
+        run: |
+          uv sync --group testing
+          make test
 
   lint:
     name: Lint

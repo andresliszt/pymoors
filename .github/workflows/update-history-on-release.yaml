@@ -15,8 +15,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
 
-      - name: Choose package HISTORY path
-        id: pick
+      - name: Update HISTORY files
         run: |
           TAG="${{ github.event.release.tag_name }}"
           DATE="$(date -u +%F)"
@@ -24,13 +23,12 @@ jobs:
           printf "%s" "${{ github.event.release.body }}" > "$BODY_FILE"
 
           if [[ "$TAG" == moors-* ]]; then
-            echo "history=moors/HISTORY.md" >> $GITHUB_OUTPUT
+            HISTORY_PATH="moors/HISTORY.md"
           else
-            echo "history=pymoors/HISTORY.md" >> $GITHUB_OUTPUT
+            HISTORY_PATH="pymoors/HISTORY.md"
           fi
 
           # Prepend section to HISTORY
-          HISTORY_PATH="$(cat $GITHUB_OUTPUT | sed -n 's/^history=//p')"
           HEADER="## [$TAG] - $DATE"
           TMP=".tmp_history.md"
           {
@@ -48,6 +46,13 @@ jobs:
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add moors/HISTORY.md pymoors/HISTORY.md || true
+
+          TAG="${{ github.event.release.tag_name }}"
+          if [[ "$TAG" == moors-* ]]; then
+            git add moors/HISTORY.md
+          else
+            git add pymoors/HISTORY.md
+          fi
+
           git commit -m "docs(history): update from release ${{ github.event.release.tag_name }}" || echo "No changes"
           git push
