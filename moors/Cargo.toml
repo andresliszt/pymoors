@@ -19,7 +19,7 @@ ndarray = "0.16.1"
 ordered-float = "5.0.0"
 ndarray-stats = "0.6.0"
 faer-ext = { version = "0.7.1", features = ["ndarray"] }
-faer = "0.23.1"
+faer =  { version = "0.23.1", default-features = false, features = ["std"] }
 thiserror = "2.0.17"
 derive_builder = "0.20.2"
 paste = "1.0.15"
