@@ -9,6 +9,7 @@ test.py
 example.py
 
 *.so
+*.pdb
 .cache/
 .hypothesis/
 build/
