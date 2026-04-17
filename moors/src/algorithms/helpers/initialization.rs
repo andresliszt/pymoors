@@ -11,18 +11,17 @@ pub struct Initialization;
 
 impl Initialization {
     /// Sample, clean duplicates, evaluate, and rank the initial population.
-    pub fn initialize<S, Sur, DC, F, G>(
+    pub fn initialize<S, Sur, F, G>(
         sampler: &S,
         survivor: &mut Sur,
         evaluator: &Evaluator<F, G>,
-        duplicates_cleaner: &DC,
+        duplicates_cleaner: &dyn PopulationCleaner,
         rng: &mut impl RandomGenerator,
         context: &AlgorithmContext,
     ) -> Result<Population<F::Dim, G::Dim>, InitializationError>
     where
         S: SamplingOperator,
         Sur: SurvivalOperator<FDim = F::Dim>,
-        DC: PopulationCleaner,
         F: FitnessFn,
         G: ConstraintsFn,
     {

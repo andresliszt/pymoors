@@ -4,7 +4,6 @@ use ndarray::{Axis, concatenate};
 
 use crate::{
     algorithms::helpers::{AlgorithmContext, AlgorithmError, initialization::Initialization},
-    duplicates::PopulationCleaner,
     evaluator::{ConstraintsFn, Evaluator, FitnessFn},
     genetic::Population,
     helpers::printer::algorithm_printer,
@@ -16,7 +15,7 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G, DC>
+pub struct GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G>
 where
     S: SamplingOperator,
     Sel: SelectionOperator<FDim = F::Dim>,
@@ -25,12 +24,11 @@ where
     Mut: MutationOperator,
     F: FitnessFn,
     G: ConstraintsFn,
-    DC: PopulationCleaner,
 {
     pub population: Option<Population<F::Dim, G::Dim>>,
     sampler: S,
     survivor: Sur,
-    evolve: Evolve<Sel, Cross, Mut, DC>,
+    evolve: Evolve<Sel, Cross, Mut>,
     evaluator: Evaluator<F, G>,
     pub context: AlgorithmContext,
     verbose: bool,
@@ -38,7 +36,7 @@ where
     phantom: PhantomData<S>,
 }
 
-impl<S, Sel, Sur, Cross, Mut, F, G, DC> GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G, DC>
+impl<S, Sel, Sur, Cross, Mut, F, G> GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G>
 where
     S: SamplingOperator,
     Sel: SelectionOperator<FDim = F::Dim>,
@@ -47,13 +45,12 @@ where
     Mut: MutationOperator,
     F: FitnessFn,
     G: ConstraintsFn,
-    DC: PopulationCleaner,
 {
     pub fn new(
         population: Option<Population<F::Dim, G::Dim>>,
         sampler: S,
         survivor: Sur,
-        evolve: Evolve<Sel, Cross, Mut, DC>,
+        evolve: Evolve<Sel, Cross, Mut>,
         evaluator: Evaluator<F, G>,
         context: AlgorithmContext,
         verbose: bool,
@@ -113,7 +110,7 @@ where
             &self.sampler,
             &mut self.survivor,
             &self.evaluator,
-            &self.evolve.duplicates_cleaner,
+            &*self.evolve.duplicates_cleaner,
             &mut self.rng,
             &self.context,
         )?;

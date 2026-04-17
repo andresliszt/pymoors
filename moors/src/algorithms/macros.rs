@@ -49,13 +49,13 @@ macro_rules! define_algorithm_and_builder {
     ) => {
         ::paste::paste! {
             $(#[$meta])*
-            pub type $algorithm<S, Cross, Mut, F, G, DC> =
+            pub type $algorithm<S, Cross, Mut, F, G> =
                 $crate::algorithms::GeneticAlgorithm<
-                    S, $selector, $survivor, Cross, Mut, F, G, DC
+                    S, $selector, $survivor, Cross, Mut, F, G
                 >;
 
             // -------- Builder -------------------------------------------------
-            pub struct [<$algorithm Builder>]<S, Cross, Mut, F, G, DC>
+            pub struct [<$algorithm Builder>]<S, Cross, Mut, F, G>
             where
                 S: $crate::operators::SamplingOperator,
                 $selector: $crate::operators::SelectionOperator<FDim = F::Dim>,
@@ -64,18 +64,17 @@ macro_rules! define_algorithm_and_builder {
                 Mut: $crate::operators::MutationOperator,
                 F: $crate::evaluator::FitnessFn,
                 G: $crate::evaluator::ConstraintsFn,
-                DC: $crate::duplicates::PopulationCleaner
             {
                 inner: $crate::algorithms::AlgorithmBuilder<
-                    S, $selector, $survivor, Cross, Mut, F, G, DC
+                    S, $selector, $survivor, Cross, Mut, F, G
                 >,
 
                 $( $larg: ::core::option::Option<$lty>, )*
                 $( $sarg: ::core::option::Option<$sty>, )*
             }
 
-            impl<S, Cross, Mut, F, G, DC> ::core::default::Default
-                for [<$algorithm Builder>]<S, Cross, Mut, F, G, DC>
+            impl<S, Cross, Mut, F, G> ::core::default::Default
+                for [<$algorithm Builder>]<S, Cross, Mut, F, G>
             where
                 S: $crate::operators::SamplingOperator,
                 $selector: $crate::operators::SelectionOperator<FDim = F::Dim>,
@@ -84,9 +83,8 @@ macro_rules! define_algorithm_and_builder {
                 Mut: $crate::operators::MutationOperator,
                 F: $crate::evaluator::FitnessFn,
                 G: $crate::evaluator::ConstraintsFn,
-                DC: $crate::duplicates::PopulationCleaner,
                 $crate::algorithms::AlgorithmBuilder<
-                    S, $selector, $survivor, Cross, Mut, F, G, DC
+                    S, $selector, $survivor, Cross, Mut, F, G
                 >: ::core::default::Default,
             {
                 fn default() -> Self {
@@ -98,7 +96,7 @@ macro_rules! define_algorithm_and_builder {
                 }
             }
 
-            impl<S, Cross, Mut, F, G, DC> [<$algorithm Builder>]<S, Cross, Mut, F, G, DC>
+            impl<S, Cross, Mut, F, G> [<$algorithm Builder>]<S, Cross, Mut, F, G>
             where
                 S: $crate::operators::SamplingOperator,
                 $selector: $crate::operators::SelectionOperator<FDim = F::Dim>,
@@ -107,7 +105,6 @@ macro_rules! define_algorithm_and_builder {
                 Mut: $crate::operators::MutationOperator,
                 F: $crate::evaluator::FitnessFn,
                 G: $crate::evaluator::ConstraintsFn,
-                DC: $crate::duplicates::PopulationCleaner,
             {
                 // === Public setters (selection/survival) ====================
                 $(
@@ -129,12 +126,12 @@ macro_rules! define_algorithm_and_builder {
                 #[inline] pub fn sampler(mut self, v: S) -> Self { self.inner = self.inner.sampler(v); self }
                 #[inline] pub fn crossover(mut self, v: Cross) -> Self { self.inner = self.inner.crossover(v); self }
                 #[inline] pub fn mutation(mut self, v: Mut) -> Self { self.inner = self.inner.mutation(v); self }
-                #[inline] pub fn repair(mut self, v: impl $crate::operators::repair::RepairOperator + 'static) -> Self { self.inner = self.inner.repair(std::sync::Arc::new(v)); self }
+                #[inline] pub fn repair(mut self, v: impl $crate::operators::RepairOperator + 'static) -> Self { self.inner = self.inner.repair(v); self }
                 #[inline] pub fn selector(mut self, v: $selector) -> Self { self.inner = self.inner.selector(v); self }
                 #[inline] pub fn survivor(mut self, v: $survivor) -> Self { self.inner = self.inner.survivor(v); self }
                 #[inline] pub fn fitness_fn(mut self, v: F) -> Self { self.inner = self.inner.fitness_fn(v); self }
                 #[inline] pub fn constraints_fn(mut self, v: G) -> Self { self.inner = self.inner.constraints_fn(v); self }
-                #[inline] pub fn duplicates_cleaner(mut self, v: DC) -> Self { self.inner = self.inner.duplicates_cleaner(v); self }
+                #[inline] pub fn duplicates_cleaner(mut self, v: impl $crate::duplicates::PopulationCleaner + 'static) -> Self { self.inner = self.inner.duplicates_cleaner(v); self }
                 #[inline] pub fn num_vars(mut self, v: usize) -> Self { self.inner = self.inner.num_vars(v); self }
                 #[inline] pub fn population_size(mut self, v: usize) -> Self { self.inner = self.inner.population_size(v); self }
                 #[inline] pub fn num_offsprings(mut self, v: usize) -> Self { self.inner = self.inner.num_offsprings(v); self }
@@ -147,7 +144,7 @@ macro_rules! define_algorithm_and_builder {
 
                 // === Build =====================================================
                 pub fn build(mut self) -> ::core::result::Result<
-                    $algorithm<S, Cross, Mut, F, G, DC>,
+                    $algorithm<S, Cross, Mut, F, G>,
                     $crate::algorithms::AlgorithmBuilderError
                 > {
                     if $ov {

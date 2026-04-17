@@ -15,12 +15,12 @@
 //! multi‑objective optimization, computing minima per objective as needed.
 //!
 //! ## Usage overview
-//! 1. Create an `AlgorithmBuilder<S, Sel, Sur, Cross, Mut, F, G, DC>::default()`.
+//! 1. Create an `AlgorithmBuilder<S, Sel, Sur, Cross, Mut, F, G>::default()`.
 //! 2. Call setter methods to specify your sampling operator, selection operator,
 //!    survivor operator, crossover and mutation operators, fitness function, optional
 //!    constraints function, duplicate cleaner, population size, number of variables,
 //!    iteration count, rates, and other options.
-//! 3. Call `.build()?` to validate parameters and obtain a `GeneticAlgorithm<S,Sel,Sur,Cross,Mut,F,G,DC>`.
+//! 3. Call `.build()?` to validate parameters and obtain a `GeneticAlgorithm<S,Sel,Sur,Cross,Mut,F,G>`.
 //! 4. Call `.run()?`. Internally, this will initialize the population, then loop
 //!    through the requested number of iterations, evolving, evaluating, and selecting
 //!    survivors. If `verbose` is enabled, it prints out per‑iteration minima.
@@ -30,7 +30,6 @@
 //!   its methods and `.build()` to configure and validate.
 //! - **`GeneticAlgorithm<...>`** – the engine; once constructed, call `.run()` to
 //!   execute the optimization loop.
-
 use std::sync::Arc;
 
 use derive_builder::Builder;
@@ -56,16 +55,8 @@ use crate::{
     name = "AlgorithmBuilder",
     build_fn(name = "build_params", validate = "Self::validate")
 )]
-pub struct GeneticAlgorithmParams<
-    S,
-    Sel,
-    Sur,
-    Cross,
-    Mut,
-    F,
-    G = NoConstraints,
-    DC = NoDuplicatesCleaner,
-> where
+pub struct GeneticAlgorithmParams<S, Sel, Sur, Cross, Mut, F, G = NoConstraints>
+where
     S: SamplingOperator,
     Sel: SelectionOperator<FDim = F::Dim>,
     Sur: SurvivalOperator<FDim = F::Dim>,
@@ -73,15 +64,15 @@ pub struct GeneticAlgorithmParams<
     Mut: MutationOperator,
     F: FitnessFn,
     G: ConstraintsFn,
-    DC: PopulationCleaner,
 {
     sampler: S,
     selector: Sel,
     survivor: Sur,
     crossover: Cross,
     mutation: Mut,
-    duplicates_cleaner: DC,
-    #[builder(default = "Arc::new(NoRepair)")]
+    #[builder(default = "Arc::new(NoDuplicatesCleaner)", setter(custom))]
+    duplicates_cleaner: Arc<dyn PopulationCleaner>,
+    #[builder(default = "Arc::new(NoRepair)", setter(custom))]
     repair: Arc<dyn RepairOperator>,
     fitness_fn: F,
     constraints_fn: G,
@@ -102,7 +93,7 @@ pub struct GeneticAlgorithmParams<
     seed: Option<u64>,
 }
 
-impl<S, Sel, Sur, Cross, Mut, F, G, DC> AlgorithmBuilder<S, Sel, Sur, Cross, Mut, F, G, DC>
+impl<S, Sel, Sur, Cross, Mut, F, G> AlgorithmBuilder<S, Sel, Sur, Cross, Mut, F, G>
 where
     S: SamplingOperator,
     Sel: SelectionOperator<FDim = F::Dim>,
@@ -111,9 +102,17 @@ where
     Mut: MutationOperator,
     F: FitnessFn,
     G: ConstraintsFn,
-    DC: PopulationCleaner,
 {
-    /// Pre build validation
+    pub fn duplicates_cleaner(mut self, v: impl PopulationCleaner + 'static) -> Self {
+        self.duplicates_cleaner = Some(Arc::new(v));
+        self
+    }
+
+    pub fn repair(mut self, v: impl RepairOperator + 'static) -> Self {
+        self.repair = Some(Arc::new(v));
+        self
+    }
+
     fn validate(&self) -> Result<(), AlgorithmBuilderError> {
         if let Some(num_vars) = self.num_vars {
             validate_positive(num_vars, "Number of variables")?;
@@ -134,7 +133,6 @@ where
             validate_positive(num_iterations, "Number of iterations")?;
         }
         if let Some(cf) = &self.constraints_fn {
-            // Now call the trait methods (note the parentheses!)
             if let (Some(lower), Some(upper)) = (cf.lower_bound(), cf.upper_bound()) {
                 validate_bounds(lower, upper)?;
             }
@@ -144,7 +142,7 @@ where
 
     pub fn build(
         self,
-    ) -> Result<GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G, DC>, AlgorithmBuilderError> {
+    ) -> Result<GeneticAlgorithm<S, Sel, Sur, Cross, Mut, F, G>, AlgorithmBuilderError> {
         let params = self.build_params()?;
         let lb = params.constraints_fn.lower_bound();
         let ub = params.constraints_fn.upper_bound();
