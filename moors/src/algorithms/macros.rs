@@ -126,12 +126,12 @@ macro_rules! define_algorithm_and_builder {
                 #[inline] pub fn sampler(mut self, v: S) -> Self { self.inner = self.inner.sampler(v); self }
                 #[inline] pub fn crossover(mut self, v: Cross) -> Self { self.inner = self.inner.crossover(v); self }
                 #[inline] pub fn mutation(mut self, v: Mut) -> Self { self.inner = self.inner.mutation(v); self }
-                #[inline] pub fn repair(mut self, v: impl $crate::operators::repair::RepairOperator + 'static) -> Self { self.inner = self.inner.repair(std::sync::Arc::new(v)); self }
+                #[inline] pub fn repair(mut self, v: impl $crate::operators::RepairOperator + 'static) -> Self { self.inner = self.inner.repair(v); self }
                 #[inline] pub fn selector(mut self, v: $selector) -> Self { self.inner = self.inner.selector(v); self }
                 #[inline] pub fn survivor(mut self, v: $survivor) -> Self { self.inner = self.inner.survivor(v); self }
                 #[inline] pub fn fitness_fn(mut self, v: F) -> Self { self.inner = self.inner.fitness_fn(v); self }
                 #[inline] pub fn constraints_fn(mut self, v: G) -> Self { self.inner = self.inner.constraints_fn(v); self }
-                #[inline] pub fn duplicates_cleaner(mut self, v: impl $crate::duplicates::PopulationCleaner + 'static) -> Self { self.inner = self.inner.duplicates_cleaner(::std::sync::Arc::new(v)); self }
+                #[inline] pub fn duplicates_cleaner(mut self, v: impl $crate::duplicates::PopulationCleaner + 'static) -> Self { self.inner = self.inner.duplicates_cleaner(v); self }
                 #[inline] pub fn num_vars(mut self, v: usize) -> Self { self.inner = self.inner.num_vars(v); self }
                 #[inline] pub fn population_size(mut self, v: usize) -> Self { self.inner = self.inner.population_size(v); self }
                 #[inline] pub fn num_offsprings(mut self, v: usize) -> Self { self.inner = self.inner.num_offsprings(v); self }

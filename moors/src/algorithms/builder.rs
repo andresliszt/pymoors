@@ -70,9 +70,9 @@ where
     survivor: Sur,
     crossover: Cross,
     mutation: Mut,
-    #[builder(default = "Arc::new(NoDuplicatesCleaner)")]
+    #[builder(default = "Arc::new(NoDuplicatesCleaner)", setter(custom))]
     duplicates_cleaner: Arc<dyn PopulationCleaner>,
-    #[builder(default = "Arc::new(NoRepair)")]
+    #[builder(default = "Arc::new(NoRepair)", setter(custom))]
     repair: Arc<dyn RepairOperator>,
     fitness_fn: F,
     constraints_fn: G,
@@ -103,6 +103,16 @@ where
     F: FitnessFn,
     G: ConstraintsFn,
 {
+    pub fn duplicates_cleaner(mut self, v: impl PopulationCleaner + 'static) -> Self {
+        self.duplicates_cleaner = Some(Arc::new(v));
+        self
+    }
+
+    pub fn repair(mut self, v: impl RepairOperator + 'static) -> Self {
+        self.repair = Some(Arc::new(v));
+        self
+    }
+
     fn validate(&self) -> Result<(), AlgorithmBuilderError> {
         if let Some(num_vars) = self.num_vars {
             validate_positive(num_vars, "Number of variables")?;
