@@ -30,6 +30,9 @@
 //!   its methods and `.build()` to configure and validate.
 //! - **`GeneticAlgorithm<...>`** – the engine; once constructed, call `.run()` to
 //!   execute the optimization loop.
+
+use std::sync::Arc;
+
 use derive_builder::Builder;
 
 use crate::{
@@ -41,8 +44,8 @@ use crate::{
     duplicates::{NoDuplicatesCleaner, PopulationCleaner},
     evaluator::{ConstraintsFn, EvaluatorBuilder, FitnessFn, NoConstraints},
     operators::{
-        CrossoverOperator, EvolveBuilder, MutationOperator, SamplingOperator, SelectionOperator,
-        SurvivalOperator,
+        CrossoverOperator, EvolveBuilder, MutationOperator, NoRepair, RepairOperator,
+        SamplingOperator, SelectionOperator, SurvivalOperator,
     },
     random::MOORandomGenerator,
 };
@@ -78,6 +81,8 @@ pub struct GeneticAlgorithmParams<
     crossover: Cross,
     mutation: Mut,
     duplicates_cleaner: DC,
+    #[builder(default = "Arc::new(NoRepair)")]
+    repair: Arc<dyn RepairOperator>,
     fitness_fn: F,
     constraints_fn: G,
     num_vars: usize,
@@ -165,6 +170,7 @@ where
             .crossover(params.crossover)
             .mutation(params.mutation)
             .duplicates_cleaner(params.duplicates_cleaner)
+            .repair(params.repair)
             .crossover_rate(params.crossover_rate)
             .mutation_rate(params.mutation_rate)
             .lower_bound(lb)

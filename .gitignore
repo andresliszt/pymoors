@@ -17,6 +17,7 @@ dist/
 docs/_build/
 htmlcov/
 node_modules/
+.claude/
 
 /.benchmarks/
 /.idea/
