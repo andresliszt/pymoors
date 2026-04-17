@@ -5,6 +5,7 @@ use thiserror::Error;
 use crate::{
     duplicates::PopulationCleaner,
     genetic::{D01, D12, Population},
+    operators::repair::RepairOperator,
     operators::{CrossoverOperator, MutationOperator, SelectionOperator},
     random::RandomGenerator,
 };
@@ -22,6 +23,7 @@ where
     crossover: Cross,
     mutation: Mut,
     pub duplicates_cleaner: DC,
+    repair: std::sync::Arc<dyn RepairOperator>,
     mutation_rate: f64,
     crossover_rate: f64,
     lower_bound: Option<f64>,
@@ -58,6 +60,8 @@ where
         // 2) Perform mutation in one batch (often in-place).
         self.mutation
             .operate(&mut offsprings, self.mutation_rate, rng);
+        // 3) Optionally repair infeasible individuals.
+        self.repair.operate(&mut offsprings);
         // Clamp each gene's value if bounds are provided.
         if let Some(lb) = self.lower_bound {
             for x in offsprings.iter_mut() {

@@ -69,6 +69,7 @@
 pub mod crossover;
 pub mod evolve;
 pub mod mutation;
+pub mod repair;
 pub mod sampling;
 pub mod selection;
 pub mod survival;
@@ -83,6 +84,7 @@ pub use mutation::{
     BitFlipMutation, DisplacementMutation, GaussianMutation, InversionMutation, MutationOperator,
     ScrambleMutation, SwapMutation, UniformBinaryMutation, UniformRealMutation,
 };
+pub use repair::{NoRepair, RepairOperator};
 pub use sampling::{
     PermutationSampling, RandomSamplingBinary, RandomSamplingFloat, RandomSamplingInt,
     SamplingOperator,
