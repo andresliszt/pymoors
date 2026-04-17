@@ -1,7 +1,7 @@
 use moors::{
     EvaluatorError,
     algorithms::{AlgorithmError, InitializationError, Nsga2Builder},
-    duplicates::{ExactDuplicatesCleaner, NoDuplicatesCleaner},
+    duplicates::ExactDuplicatesCleaner,
     impl_constraints_fn,
     operators::{BitFlipMutation, RandomSamplingBinary, SinglePointBinaryCrossover},
 };
@@ -31,7 +31,6 @@ fn test_keep_infeasible() {
         .sampler(RandomSamplingBinary::new())
         .crossover(SinglePointBinaryCrossover::new())
         .mutation(BitFlipMutation::new(0.5))
-        .duplicates_cleaner(NoDuplicatesCleaner)
         .num_vars(5)
         .num_iterations(100)
         .population_size(100)
@@ -57,7 +56,6 @@ fn test_keep_infeasible_out_of_bounds() {
         .sampler(RandomSamplingBinary::new())
         .crossover(SinglePointBinaryCrossover::new())
         .mutation(BitFlipMutation::new(0.5))
-        .duplicates_cleaner(NoDuplicatesCleaner)
         .num_vars(5)
         .population_size(100)
         .num_offsprings(32)

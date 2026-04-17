@@ -2,28 +2,31 @@ use derive_builder::Builder;
 use ndarray::Array2;
 use thiserror::Error;
 
+use std::sync::Arc;
+
 use crate::{
-    duplicates::PopulationCleaner,
+    duplicates::{NoDuplicatesCleaner, PopulationCleaner},
     genetic::{D01, D12, Population},
-    operators::repair::RepairOperator,
+    operators::repair::{NoRepair, RepairOperator},
     operators::{CrossoverOperator, MutationOperator, SelectionOperator},
     random::RandomGenerator,
 };
 
 #[derive(Debug, Clone, Builder)]
 #[builder(pattern = "owned")]
-pub struct Evolve<Sel, Cross, Mut, DC>
+pub struct Evolve<Sel, Cross, Mut>
 where
     Sel: SelectionOperator,
     Cross: CrossoverOperator,
     Mut: MutationOperator,
-    DC: PopulationCleaner,
 {
     selection: Sel,
     crossover: Cross,
     mutation: Mut,
-    pub duplicates_cleaner: DC,
-    repair: std::sync::Arc<dyn RepairOperator>,
+    #[builder(default = "Arc::new(NoDuplicatesCleaner)")]
+    pub duplicates_cleaner: Arc<dyn PopulationCleaner>,
+    #[builder(default = "Arc::new(NoRepair)")]
+    repair: Arc<dyn RepairOperator>,
     mutation_rate: f64,
     crossover_rate: f64,
     lower_bound: Option<f64>,
@@ -36,12 +39,11 @@ pub enum EvolveError {
     EmptyMatingResult,
 }
 
-impl<Sel, Cross, Mut, DC> Evolve<Sel, Cross, Mut, DC>
+impl<Sel, Cross, Mut> Evolve<Sel, Cross, Mut>
 where
     Sel: SelectionOperator,
     Cross: CrossoverOperator,
     Mut: MutationOperator,
-    DC: PopulationCleaner,
 {
     /// Performs a single-step crossover + mutation for a batch of selected parents.
     ///
