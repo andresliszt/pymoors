@@ -1,4 +1,4 @@
-use ndarray::{Array2, Axis, array, stack};
+use ndarray::{Array2, ArrayViewMut1, Axis, array, stack};
 
 use moors::{
     IbeaBuilder,
@@ -7,8 +7,8 @@ use moors::{
     genetic::PopulationMOO,
     impl_constraints_fn,
     operators::{
-        ArithmeticCrossover, GaussianMutation, RandomSamplingFloat, SimulatedBinaryCrossover,
-        UniformRealMutation,
+        ArithmeticCrossover, GaussianMutation, RandomSamplingFloat, RepairOperator,
+        SimulatedBinaryCrossover, UniformRealMutation,
         survival::moo::{DanAndDenisReferencePoints, StructuredReferencePoints},
     },
 };
@@ -161,6 +161,52 @@ fn test_ibea_three_objectives() {
 
     // 3) run & assert
     algorithm.run().expect("IBEA run failed");
+    let population = algorithm
+        .population
+        .expect("population should have been initialized");
+    assert_full_unit_sphere(&population);
+}
+
+/// Repair that clamps every gene to [0.0, 1.0].
+/// In DTLZ2 genes are already in [0,1], so this repair is a no-op in practice
+/// but exercises the full repair pipeline through the algorithm.
+#[derive(Debug)]
+struct ClampToUnitInterval;
+
+impl RepairOperator for ClampToUnitInterval {
+    fn repair(&self, mut individual: ArrayViewMut1<f64>) {
+        individual.mapv_inplace(|g| g.clamp(0.0, 1.0));
+    }
+}
+
+#[test]
+fn test_nsga3_dtlz2_with_repair_operator() {
+    let rp = DanAndDenisReferencePoints::new(100, 3).generate();
+    impl_constraints_fn!(MyConstr, lower_bound = 0.0, upper_bound = 1.0);
+
+    let mut algorithm = Nsga3Builder::default()
+        .sampler(RandomSamplingFloat::new(0.0, 1.0))
+        .crossover(SimulatedBinaryCrossover::new(20.0))
+        .mutation(GaussianMutation::new(0.05, 0.1))
+        .repair(ClampToUnitInterval)
+        .reference_points(rp)
+        .are_aspirational(false)
+        .duplicates_cleaner(CloseDuplicatesCleaner::new(1e-6))
+        .fitness_fn(fitness_dtlz2_3obj)
+        .constraints_fn(MyConstr)
+        .num_vars(2)
+        .population_size(100)
+        .num_offsprings(100)
+        .num_iterations(200)
+        .mutation_rate(0.05)
+        .crossover_rate(0.9)
+        .keep_infeasible(false)
+        .verbose(false)
+        .seed(123)
+        .build()
+        .expect("failed to build NSGA3 with repair");
+
+    algorithm.run().expect("NSGA3 with repair run failed");
     let population = algorithm
         .population
         .expect("population should have been initialized");
