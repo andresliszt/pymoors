@@ -11,6 +11,7 @@
 	build build-dev build-release \
 	build-moors-dev build-moors-release \
 	build-pymoors-dev build-pymoors-release \
+	docs docs-serve \
 	clean \
 	.check-tools .check-cargo .check-uv
 
@@ -92,6 +93,16 @@ build-pymoors-dev:
 build-pymoors-release:
 	@$(MAKE) -C pymoors build-release
 
+
+docs:  ## Build documentation
+	@echo "[docs] Building..."
+	@uv sync --group docs
+	@uv run mkdocs build --strict
+
+docs-serve:  ## Serve documentation locally
+	@echo "[docs] Serving at http://127.0.0.1:8000"
+	@uv sync --group docs
+	@uv run mkdocs serve
 
 clean:  ## Clean all build artifacts
 	@echo "Cleaning all artifacts..."
