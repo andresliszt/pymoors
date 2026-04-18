@@ -8,6 +8,7 @@ theme:
   logo: images/moors-logo.png
   favicon: images/moors-logo.png
   name: material
+  custom_dir: docs/overrides
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -34,7 +35,6 @@ theme:
     - navigation.indexes
     - navigation.instant
     - navigation.instant.prefetch
-    - navigation.instant.preview
     - navigation.instant.progress
     - navigation.path
     - navigation.sections
@@ -64,6 +64,7 @@ markdown_extensions:
 extra_javascript:
   - js/custom_mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - js/mathjax-reload.js
 
 extra_css:
   - stylesheets/extra.css
@@ -71,83 +72,24 @@ extra_css:
 nav:
   - Home: index.md
   - Getting Started:
-    - Python:
-      - Installation: getting_started/python/installation.md
-      - Quick Start: getting_started/python/quick_start.md
-      - Knapsack Problem: getting_started/python/knapsack.md
-      - Real-Valued Problem: getting_started/python/real_valued.md
-    - Rust:
-      - Installation: getting_started/rust/installation.md
-      - Quick Start: getting_started/rust/quick_start.md
-      - Knapsack Problem: getting_started/rust/knapsack.md
-      - Real-Valued Problem: getting_started/rust/real_valued.md
+    - Quick Start: getting_started/quick_start.md
+    - Installation: getting_started/installation.md
+    - Knapsack Problem: getting_started/knapsack.md
+    - Real-Valued Problem: getting_started/real_valued.md
   - User Guide:
-    - Fitness & Constraints:
-      - Overview: user_guide/fitness_and_constraints/fitness_and_constraints.md
-      - Python:
-        - Fitness Function: user_guide/fitness_and_constraints/python/fitness.md
-        - Inequality Constraints: user_guide/fitness_and_constraints/python/ineq_constraints.md
-        - Equality Constraints: user_guide/fitness_and_constraints/python/eq_constraints.md
-        - Bounds: user_guide/fitness_and_constraints/python/lower_upper_bounds.md
-      - Rust:
-        - Fitness Function: user_guide/fitness_and_constraints/rust/fitness.md
-        - Inequality Constraints: user_guide/fitness_and_constraints/rust/ineq_constraints.md
-        - Equality Constraints: user_guide/fitness_and_constraints/rust/eq_constraints.md
-        - Bounds: user_guide/fitness_and_constraints/rust/lower_upper_bounds.md
-    - Genetic Operators:
-      - Overview: user_guide/operators/operators.md
-      - Python:
-        - Sampling: user_guide/operators/python/sampling.md
-        - Crossover: user_guide/operators/python/crossover.md
-        - Mutation: user_guide/operators/python/mutation.md
-        - Selection: user_guide/operators/python/selection.md
-        - Survival: user_guide/operators/python/survival.md
-      - Rust:
-        - Sampling: user_guide/operators/rust/sampling.md
-        - Crossover: user_guide/operators/rust/crossover.md
-        - Mutation: user_guide/operators/rust/mutation.md
-        - Selection: user_guide/operators/rust/selection.md
-        - Survival: user_guide/operators/rust/survival.md
-    - Duplicates Cleaner:
-      - Overview: user_guide/duplicates/duplicates.md
-      - Python:
-        - Exact: user_guide/duplicates/python/exact.md
-        - Close: user_guide/duplicates/python/close.md
-        - Custom: user_guide/duplicates/python/custom.md
-      - Rust:
-        - Exact: user_guide/duplicates/rust/exact.md
-        - Close: user_guide/duplicates/rust/close.md
-        - Custom: user_guide/duplicates/rust/custom.md
+    - Fitness & Constraints: user_guide/fitness_and_constraints/fitness_and_constraints.md
+    - Genetic Operators: user_guide/operators/operators.md
+    - Duplicates Cleaner: user_guide/duplicates/duplicates.md
     - Algorithms:
-      - Introduction:
-        - Overview: user_guide/algorithms/introduction/introduction.md
-        - Python: user_guide/algorithms/introduction/python-introduction.md
-        - Rust: user_guide/algorithms/introduction/rust-introduction.md
-      - Custom Algorithms:
-        - Overview: user_guide/algorithms/custom/custom.md
-        - Python: user_guide/algorithms/custom/python-custom.md
-        - Rust: user_guide/algorithms/custom/rust-custom.md
-      - NSGA-II:
-        - Python: user_guide/algorithms/python/nsga2.md
-        - Rust: user_guide/algorithms/rust/nsga2.md
-      - NSGA-III:
-        - Python: user_guide/algorithms/python/nsga3.md
-        - Rust: user_guide/algorithms/rust/nsga3.md
-      - IBEA:
-        - Python: user_guide/algorithms/python/ibea.md
-        - Rust: user_guide/algorithms/rust/ibea.md
-      - SPEA-II:
-        - Python: user_guide/algorithms/python/spea2.md
-        - Rust: user_guide/algorithms/rust/spea2.md
-      - AGE-MOEA:
-        - Python: user_guide/algorithms/python/agemoea.md
-        - Rust: user_guide/algorithms/rust/agemoea.md
-      - RNSGA-II:
-        - Python: user_guide/algorithms/python/rnsga2.md
-        - Rust: user_guide/algorithms/rust/rnsga2.md
-      - REVEA:
-        - Python: user_guide/algorithms/python/revea.md
-        - Rust: user_guide/algorithms/rust/revea.md
+      - Introduction: user_guide/algorithms/introduction/introduction.md
+      - Custom Algorithms: user_guide/algorithms/custom/custom.md
+      - NSGA-II: user_guide/algorithms/nsga2.md
+      - RNSGA-II: user_guide/algorithms/rnsga2.md
+      - NSGA-III: user_guide/algorithms/nsga3.md
+      - AGE-MOEA: user_guide/algorithms/agemoea.md
+      - REVEA: user_guide/algorithms/revea.md
+      - SPEA-II: user_guide/algorithms/spea2.md
+      - IBEA: user_guide/algorithms/ibea.md
   - Development:
     - Environment Setup: development/setup_environment.md
     - Algorithm Setup: development/setup_algorithm.md
