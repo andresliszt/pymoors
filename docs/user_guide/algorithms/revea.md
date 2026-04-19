@@ -68,8 +68,14 @@ where:
 
 REVEA leverages dynamic reference vector adaptation and the innovative Angle Penalized Distance metric to balance convergence and diversity in many-objective optimization. By continuously realigning its reference vectors with the evolving objective landscape and selecting solutions that are both close in angle (small $\theta$) and robust in performance, REVEA offers an effective strategy for tackling complex multi-objective problems.
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/revea.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/revea.md" %}
+{% include-markdown "user_guide/algorithms/rust/revea.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/revea.md" %}
+
+</div>

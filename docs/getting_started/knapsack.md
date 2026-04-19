@@ -20,11 +20,17 @@ $$
 \end{aligned}
 $$
 
-=== "Rust"
-    {% include-markdown "getting_started/rust/knapsack.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "getting_started/python/knapsack.md" %}
+{% include-markdown "getting_started/rust/knapsack.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "getting_started/python/knapsack.md" %}
+
+</div>
 
 !!! info
     Note that although the specified `population_size` was 16, the final population ended up

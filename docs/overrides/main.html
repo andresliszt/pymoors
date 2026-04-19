@@ -4,6 +4,7 @@
 {{ super() }}
 
 {% if page and page.file and page.file.src_path == "index.md" %}
+<style>.md-content__inner > h1 { display: none !important; }</style>
 <section class="moo-hero">
   <div class="moo-hero__inner">
     <div class="moo-hero__text">
@@ -12,6 +13,15 @@
         Multi-objective evolutionary algorithms —<br>
         <strong>blazing fast in Rust</strong>, ergonomic in Python.
       </p>
+      <div class="moo-hero__lang-nav">
+        <a class="moo-hero__lang-link moo-hero__lang-link--moors"
+           href="getting_started/quick_start.html"
+           data-setlang="moors">moors docs</a>
+        <span class="moo-hero__lang-sep">·</span>
+        <a class="moo-hero__lang-link"
+           href="getting_started/quick_start.html"
+           data-setlang="pymoors">pymoors docs</a>
+      </div>
       <div class="moo-hero__cta">
         <a href="getting_started/quick_start.html" class="md-button md-button--primary moo-btn-python">
           Quickstart

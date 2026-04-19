@@ -1,7 +1,13 @@
 # Custom Defined Algorithms
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/custom/rust-custom.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/custom/python-custom.md" %}
+{% include-markdown "user_guide/algorithms/custom/rust-custom.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/custom/python-custom.md" %}
+
+</div>

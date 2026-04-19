@@ -41,8 +41,14 @@ AgeMoea introduces an innovative approach to many-objective optimization by inco
 This problem was explained in the RNSGA-II section
 
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/agemoea.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/agemoea.md" %}
+{% include-markdown "user_guide/algorithms/rust/agemoea.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/agemoea.md" %}
+
+</div>

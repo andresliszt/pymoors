@@ -26,8 +26,14 @@ $$
 Thus, $\mathbf{x}$ must compromise between being close to $(0,0)$ and being close to $(1,0)$. There is no single point in $[-2,2]^2$ that *simultaneously* minimizes both distances perfectly (other than at the boundary of these trade-offs), so we end up with a **Pareto front** rather than a single best solution.
 
 
-=== "Rust"
-    {% include-markdown "getting_started/rust/real_valued.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "getting_started/python/real_valued.md" %}
+{% include-markdown "getting_started/rust/real_valued.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "getting_started/python/real_valued.md" %}
+
+</div>

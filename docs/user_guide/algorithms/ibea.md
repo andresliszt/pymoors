@@ -116,13 +116,17 @@ To avoid this, choose $r$ significantly larger than the normalized range (e.g., 
 ---
 
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/ibea.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/ibea.md" %}
+{% include-markdown "user_guide/algorithms/rust/ibea.md" %}
 
+</div>
 
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/ibea.md" %}
+
+</div>
 
 ## References
 

@@ -60,8 +60,14 @@ Each decision variable $x_i$ typically belongs to the interval $[0, 1]$, and the
 ZDT3 is ideal for evaluating how well an algorithm can balance convergence toward the Pareto-optimal front while maintaining diversity in the presence of a complex, discontinuous solution landscape.
 
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/nsga2.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/nsga2.md" %}
+{% include-markdown "user_guide/algorithms/rust/nsga2.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/nsga2.md" %}
+
+</div>

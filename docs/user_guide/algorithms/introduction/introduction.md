@@ -39,8 +39,14 @@ $$
 \end{aligned}
 $$
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/introduction/rust-introduction.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/introduction/python-introduction.md" %}
+{% include-markdown "user_guide/algorithms/introduction/rust-introduction.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/introduction/python-introduction.md" %}
+
+</div>

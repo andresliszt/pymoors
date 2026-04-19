@@ -136,11 +136,17 @@ $$
 
 This continuous and convex Pareto front makes DTLZ2 an excellent test case to assess the balance between convergence and diversity in NSGA-III.
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/nsga3.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/nsga3.md" %}
+{% include-markdown "user_guide/algorithms/rust/nsga3.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/nsga3.md" %}
+
+</div>
 
 ## Das and Dennis Procedure for Generating Reference Points
 

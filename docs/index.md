@@ -10,7 +10,7 @@ hide:
   <div class="moo-feature">
     <span class="moo-feature__icon">⚡</span>
     <h3>Rust performance</h3>
-    <p>Core algorithms implemented in pure Rust — no Python bottlenecks, no GIL, no overhead.</p>
+    <p>moors is a pure Rust crate and it's exposed completely independent to Python.</p>
   </div>
   <div class="moo-feature">
     <span class="moo-feature__icon">🐍</span>

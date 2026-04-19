@@ -9,13 +9,17 @@ In `moors`/`pymoors`, both fitness and constraint functions are implemented as v
 Fitness is a numerical measure of how well a candidate solution meets the optimization objectives.
 It assigns each individual a score that guides selection and reproduction in evolutionary algorithms.
 
-=== "Rust"
+<div class="lang-rust" markdown>
 
-    {% include-markdown "user_guide/fitness_and_constraints/rust/fitness.md" %}
+{% include-markdown "user_guide/fitness_and_constraints/rust/fitness.md" %}
 
-=== "Python"
+</div>
 
-    {% include-markdown "user_guide/fitness_and_constraints/python/fitness.md" %}
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/fitness_and_constraints/python/fitness.md" %}
+
+</div>
 
 ## Constraints
 
@@ -25,11 +29,17 @@ Feasibility is the key concept in constraints. This is very important in optimiz
 
 In `moors`/`pymoors` as mentioned, any output from a constraint function is evaluated as less than or equal to zero. If this condition is met, the individual is considered feasible. For constraints that are naturally expressed as greater than zero, the user should modify the function by multiplying it by -1, as shown in the following example
 
-=== "Rust"
-    {% include-markdown "user_guide/fitness_and_constraints/rust/ineq_constraints.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/fitness_and_constraints/python/ineq_constraints.md" %}
+{% include-markdown "user_guide/fitness_and_constraints/rust/ineq_constraints.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/fitness_and_constraints/python/ineq_constraints.md" %}
+
+</div>
 
 ### Equality Constraints
 
@@ -39,16 +49,28 @@ $$g_{\text{ineq}}(x) = \bigl|g(x)\bigr| - \varepsilon \;\le\; 0.$$
 
 An example is given below
 
-=== "Rust"
-    {% include-markdown "user_guide/fitness_and_constraints/rust/eq_constraints.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/fitness_and_constraints/python/eq_constraints.md" %}
+{% include-markdown "user_guide/fitness_and_constraints/rust/eq_constraints.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/fitness_and_constraints/python/eq_constraints.md" %}
+
+</div>
 
 ### Lower and Upper Bounds
 
-=== "Rust"
-    {% include-markdown "user_guide/fitness_and_constraints/rust/lower_upper_bounds.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/fitness_and_constraints/python/lower_upper_bounds.md" %}
+{% include-markdown "user_guide/fitness_and_constraints/rust/lower_upper_bounds.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/fitness_and_constraints/python/lower_upper_bounds.md" %}
+
+</div>

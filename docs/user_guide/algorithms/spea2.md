@@ -90,8 +90,14 @@ This design lets the population evolve generation by generation while concurrent
 
 ZDT6 is ideal for evaluating how well an algorithm balances exploration of multiple local optima in $f_{1}$ with exploitation toward a concentrated, non-uniform Pareto front.
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/spea2.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/spea2.md" %}
+{% include-markdown "user_guide/algorithms/rust/spea2.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/spea2.md" %}
+
+</div>

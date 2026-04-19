@@ -1,10 +1,16 @@
 # Installation
 
-=== "Rust"
-    {% include-markdown "getting_started/rust/installation.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "getting_started/python/installation.md" %}
+{% include-markdown "getting_started/rust/installation.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "getting_started/python/installation.md" %}
+
+</div>
 
 
 # Development

@@ -50,8 +50,14 @@ The **ZTD1** problem is commonly used as a benchmark problem to evaluate multiob
 **Domain:**
 Each decision variable $x_i$ is typically within the interval $[0, 1]$, and the problem is commonly defined with $n = 30$ variables.
 
-=== "Rust"
-    {% include-markdown "user_guide/algorithms/rust/rnsga2.md" %}
+<div class="lang-rust" markdown>
 
-=== "Python"
-    {% include-markdown "user_guide/algorithms/python/rnsga2.md" %}
+{% include-markdown "user_guide/algorithms/rust/rnsga2.md" %}
+
+</div>
+
+<div class="lang-python" markdown>
+
+{% include-markdown "user_guide/algorithms/python/rnsga2.md" %}
+
+</div>
