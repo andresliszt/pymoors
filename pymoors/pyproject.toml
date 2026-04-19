@@ -55,24 +55,9 @@ linting = [
     "isort",
     "pytest"
 ]
-docs = [
-    { include-group = "dev" },
-    "matplotlib",
-    "mkdocs",
-    "mkdocs-jupyter",
-    "mkdocs-material",
-    "pymdown-extensions",
-    "neoteroi-mkdocs",
-    "mkdocs-include-markdown-plugin",
-    "mkdocs-macros-plugin",
-    "mkdocstrings",
-    "mkdocstrings-python"
-]
-
 all = [
   { include-group = "testing" },
   { include-group = "linting" },
-  { include-group = "docs" }
 ]
 
 [tool.maturin]

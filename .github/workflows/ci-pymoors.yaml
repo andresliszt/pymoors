@@ -62,6 +62,9 @@ jobs:
   build-docs:
     name: Build Docs
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: .
     steps:
       - uses: actions/checkout@v4
 
@@ -73,7 +76,7 @@ jobs:
       - name: Build documentation
         run: |
           uv sync --group docs
-          make docs
+          uv run mkdocs build --strict
 
   test-python:
     name: Test on Python ${{ matrix.python-version }}
