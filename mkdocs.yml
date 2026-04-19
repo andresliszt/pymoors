@@ -1,0 +1,107 @@
+site_name: moo-rs
+site_author: Andrés Sandoval
+site_description: Multi-objective optimization using genetic algorithms in Rust and Python.
+use_directory_urls: false
+
+theme:
+  language: en
+  logo: images/moors-logo.png
+  favicon: images/moors-logo.png
+  name: material
+  custom_dir: docs/overrides
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/lightbulb
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: amber
+      toggle:
+        icon: material/lightbulb-outline
+        name: Switch to light mode
+  highlightjs: true
+  features:
+    - content.code.annotate
+    - content.code.copy
+    - announce.dismiss
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.indexes
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.path
+    - navigation.sections
+    - navigation.top
+    - navigation.tracking
+    - search.suggest
+    - search.highlight
+    - toc.follow
+
+repo_url: https://github.com/andresliszt/moo-rs
+repo_name: "andresliszt/moo-rs"
+
+markdown_extensions:
+  - admonition
+  - md_in_html
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.snippets
+  # - pymdownx.highlight:
+  #     linenums: true
+  - pymdownx.arithmatex:
+      generic: true
+  - neoteroi.cards
+  - neoteroi.timeline
+  - neoteroi.projects
+extra_javascript:
+  - js/custom_mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+  - js/mathjax-reload.js
+  - js/language-selector.js
+
+extra_css:
+  - stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting Started:
+    - Quick Start: getting_started/quick_start.md
+    - Installation: getting_started/installation.md
+    - Knapsack Problem: getting_started/knapsack.md
+    - Real-Valued Problem: getting_started/real_valued.md
+  - User Guide:
+    - Fitness & Constraints: user_guide/fitness_and_constraints/fitness_and_constraints.md
+    - Genetic Operators: user_guide/operators/operators.md
+    - Duplicates Cleaner: user_guide/duplicates/duplicates.md
+    - Algorithms:
+      - Introduction: user_guide/algorithms/introduction/introduction.md
+      - Custom Algorithms: user_guide/algorithms/custom/custom.md
+      - NSGA-II: user_guide/algorithms/nsga2.md
+      - RNSGA-II: user_guide/algorithms/rnsga2.md
+      - NSGA-III: user_guide/algorithms/nsga3.md
+      - AGE-MOEA: user_guide/algorithms/agemoea.md
+      - REVEA: user_guide/algorithms/revea.md
+      - SPEA-II: user_guide/algorithms/spea2.md
+      - IBEA: user_guide/algorithms/ibea.md
+  - Development:
+    - Environment Setup: development/setup_environment.md
+    - Algorithm Setup: development/setup_algorithm.md
+    - From moors to pymoors: development/from_moors_to_pymoors.md
+  - API Reference:
+    - Python API: reference.md
+    - Rust API (docs.rs): https://docs.rs/moors/latest/moors/
+
+plugins:
+  - mkdocs-jupyter
+  - search
+  - include-markdown
+  - macros:
+      module_name: docs/macros
+extra:
+  moors_crate_version: 0.2.9

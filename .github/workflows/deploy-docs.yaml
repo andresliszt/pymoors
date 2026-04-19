@@ -13,7 +13,7 @@ permissions:
 
 defaults:
   run:
-    working-directory: pymoors
+    working-directory: .
 
 jobs:
   build-and-deploy:
@@ -32,10 +32,7 @@ jobs:
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
 
-      - name: Build Documentation
+      - name: Deploy to GitHub Pages
         run: |
           uv sync --group docs
-          make docs
-
-      - name: Deploy to GitHub Pages
-        run: uv run mkdocs gh-deploy --force
+          uv run mkdocs gh-deploy --force
