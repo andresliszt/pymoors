@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./pymoors/docs/images/moors-logo.png" alt="moo-rs logo" width="350"/>
+  <img src="./docs/images/moors-logo.png" alt="moo-rs logo" width="350"/>
 </p>
 
 # moo-rs
