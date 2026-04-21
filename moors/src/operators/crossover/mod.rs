@@ -4,6 +4,7 @@ use crate::random::RandomGenerator;
 
 mod arithmetic;
 mod exponential;
+mod no_crossover;
 mod order;
 mod sbx;
 mod single_point;
@@ -12,6 +13,7 @@ mod uniform;
 
 pub use arithmetic::ArithmeticCrossover;
 pub use exponential::ExponentialCrossover;
+pub use no_crossover::NoCrossover;
 pub use order::OrderCrossover;
 pub use sbx::SimulatedBinaryCrossover;
 pub use single_point::SinglePointBinaryCrossover;
