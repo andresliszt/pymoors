@@ -13,6 +13,7 @@ impl NoCrossover {
 }
 
 impl CrossoverOperator for NoCrossover {
+    #[inline]
     fn crossover(
         &self,
         parent_a: &Array1<f64>,
